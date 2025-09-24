@@ -1,0 +1,26 @@
+{
+  "name": "nexopos",
+  "version": "1.0.0",
+  "description": "Sistema POS completo para tiendas en Colombia",
+  "scripts": {
+    "verificar": "node verificar-sistema.js",
+    "backend": "cd backend && npm run start:dev",
+    "frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "seed": "cd backend && npm run seed",
+    "start": "npm run dev"
+  },
+  "keywords": ["pos", "point-of-sale", "retail", "colombia", "dian"],
+  "author": "NexoPOS Team",
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.11.3",
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
