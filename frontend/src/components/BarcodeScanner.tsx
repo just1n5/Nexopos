@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react'
+﻿import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Camera, Keyboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,8 +23,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
   // Verificar si hay cámara disponible
   useEffect(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.enumerateDevices().then(devices => {
+    if ('mediaDevices' in navigator && typeof navigator.mediaDevices.enumerateDevices === 'function') {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
         const hasVideo = devices.some(device => device.kind === 'videoinput')
         setHasCamera(hasVideo)
       })
@@ -44,8 +44,12 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     }
 
     try {
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        throw new Error('getUserMedia no está soportado en este navegador')
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+        video: {
           facingMode: 'environment',
           width: { ideal: 1920 },
           height: { ideal: 1080 }
@@ -271,3 +275,5 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     </AnimatePresence>
   )
 }
+
+

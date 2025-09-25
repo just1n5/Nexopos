@@ -5,6 +5,7 @@ import { Sale, SaleStatus, SaleType } from './entities/sale.entity';
 import { SaleItem } from './entities/sale-item.entity';
 import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 import { CreateSaleDto, QuickSaleDto, CalculateSaleDto } from './dto/create-sale.dto';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class SalesService {
@@ -16,6 +17,7 @@ export class SalesService {
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
     private dataSource: DataSource,
+    private productsService: ProductsService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto, userId: string): Promise<Sale> {
@@ -385,17 +387,44 @@ export class SalesService {
   }
 
   private async getProductInfo(productId: string, variantId?: string): Promise<any> {
-    // This should query the product service/repository
-    // For now, returning mock data
-    return {
-      id: productId,
-      name: 'Product Name',
-      sku: 'SKU123',
-      variantName: variantId ? 'Variant Name' : null,
-      costPrice: 100,
-      taxRate: 19, // Colombian IVA
-      taxCode: 'IVA',
-    };
+    try {
+      const product = await this.productsService.findOne(productId);
+      
+      if (!product) {
+        throw new NotFoundException(`Product with ID ${productId} not found`);
+      }
+
+      // Find the specific variant if variantId is provided
+      let variant = null;
+      if (variantId && product.variants) {
+        variant = product.variants.find(v => v.id === variantId);
+        if (!variant) {
+          throw new NotFoundException(`Variant with ID ${variantId} not found`);
+        }
+      }
+
+      return {
+        id: productId,
+        name: product.name,
+        sku: variant?.sku || product.sku,
+        variantName: variant?.name || null,
+        costPrice: variant?.price || product.basePrice || 0,
+        taxRate: 19, // Colombian IVA - this should come from product config
+        taxCode: 'IVA',
+      };
+    } catch (error) {
+      console.error('Error getting product info:', error);
+      // Return fallback data to not break the sale
+      return {
+        id: productId,
+        name: 'Unknown Product',
+        sku: 'UNKNOWN',
+        variantName: null,
+        costPrice: 0,
+        taxRate: 19,
+        taxCode: 'IVA',
+      };
+    }
   }
 
   private async findProductByCode(code: string): Promise<any> {

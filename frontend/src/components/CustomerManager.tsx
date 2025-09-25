@@ -1,13 +1,10 @@
-import React, { useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  UserPlus, 
-  Search, 
-  Phone, 
-  CreditCard as CardIcon,
+import {
+  UserPlus,
+  Search,
   MapPin,
   Mail,
-  DollarSign,
   X,
   Check,
   AlertCircle
@@ -17,9 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
+import { customersService, type CreateCustomerDto } from '@/services'
 import type { Customer } from '@/types'
+import { useAuthStore } from '@/stores/authStore'
 
 interface CustomerManagerProps {
   onSelectCustomer?: (customer: Customer) => void
@@ -27,148 +27,177 @@ interface CustomerManagerProps {
   showCreditInfo?: boolean
 }
 
-export default function CustomerManager({ 
-  onSelectCustomer, 
+type CustomerFormState = {
+  name: string
+  document: string
+  phone: string
+  email: string
+  address: string
+  creditLimit: string
+}
+
+const INITIAL_FORM: CustomerFormState = {
+  name: '',
+  document: '',
+  phone: '',
+  email: '',
+  address: '',
+  creditLimit: ''
+}
+
+const splitName = (fullName: string): { firstName: string; lastName?: string } => {
+  const parts = fullName.trim().split(/\s+/)
+  if (parts.length === 0) {
+    return { firstName: 'Cliente' }
+  }
+  if (parts.length === 1) {
+    return { firstName: parts[0] }
+  }
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    lastName: parts.slice(-1).join(' ')
+  }
+}
+
+export default function CustomerManager({
+  onSelectCustomer,
   selectedCustomer,
-  showCreditInfo = true 
+  showCreditInfo = true
 }: CustomerManagerProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
+  const { token } = useAuthStore()
   const { toast } = useToast()
-  
-  // Formulario de nuevo cliente
-  const [newCustomer, setNewCustomer] = useState({
-    name: '',
-    document: '',
-    phone: '',
-    email: '',
-    address: '',
-    creditLimit: ''
-  })
-  
-  // Mock de clientes para demostración
-  const [customers, setCustomers] = useState<Customer[]>([
-    {
-      id: '1',
-      name: 'Juan Pérez',
-      document: '1234567890',
-      phone: '300 123 4567',
-      email: 'juan@email.com',
-      address: 'Calle 123 #45-67',
-      creditLimit: 500000,
-      currentDebt: 125000,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '2',
-      name: 'María García',
-      document: '9876543210',
-      phone: '310 987 6543',
-      email: 'maria@email.com',
-      address: 'Carrera 45 #12-34',
-      creditLimit: 300000,
-      currentDebt: 85000,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '3',
-      name: 'Carlos Rodríguez',
-      document: '5555555555',
-      phone: '320 555 5555',
-      email: 'carlos@email.com',
-      address: 'Avenida 10 #20-30',
-      creditLimit: 1000000,
-      currentDebt: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
+
+  const [isOpen, setIsOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [newCustomer, setNewCustomer] = useState<CustomerFormState>(INITIAL_FORM)
+
+  useEffect(() => {
+    if (!token) return
+
+    const loadCustomers = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await customersService.getCustomers(token)
+        setCustomers(data)
+      } catch (err) {
+        console.error('Error cargando clientes:', err)
+        setError(err instanceof Error ? err.message : 'No fue posible cargar los clientes')
+      } finally {
+        setIsLoading(false)
+      }
     }
-  ])
-  
-  // Filtrar clientes
-  const filteredCustomers = customers.filter(customer => {
+
+    loadCustomers()
+  }, [token])
+
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery) return customers
     const query = searchQuery.toLowerCase()
-    return customer.name.toLowerCase().includes(query) ||
-           customer.document?.includes(query) ||
-           customer.phone?.includes(query)
-  })
-  
-  // Crear nuevo cliente
-  const handleCreateCustomer = () => {
-    if (!newCustomer.name || !newCustomer.phone) {
+    return customers.filter((customer) => {
+      return (
+        customer.name.toLowerCase().includes(query) ||
+        customer.document?.toLowerCase().includes(query) ||
+        customer.phone?.replace(/\s+/g, '').includes(query.replace(/\s+/g, ''))
+      )
+    })
+  }, [customers, searchQuery])
+
+  const handleCreateCustomer = async () => {
+    if (!token) {
       toast({
-        title: "Error",
-        description: "El nombre y teléfono son obligatorios",
-        variant: "destructive"
+        title: 'Sesión requerida',
+        description: 'Inicia sesión para crear clientes nuevos.',
+        variant: 'destructive'
       })
       return
     }
-    
-    const customer: Customer = {
-      id: Date.now().toString(),
-      name: newCustomer.name,
-      document: newCustomer.document,
-      phone: newCustomer.phone,
-      email: newCustomer.email,
-      address: newCustomer.address,
-      creditLimit: parseFloat(newCustomer.creditLimit) || 0,
-      currentDebt: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
+
+    if (!newCustomer.name.trim() || !newCustomer.phone.trim()) {
+      toast({
+        title: 'Faltan datos',
+        description: 'El nombre y el teléfono son obligatorios.',
+        variant: 'destructive'
+      })
+      return
     }
-    
-    setCustomers([...customers, customer])
-    setIsCreating(false)
-    setNewCustomer({
-      name: '',
-      document: '',
-      phone: '',
-      email: '',
-      address: '',
-      creditLimit: ''
-    })
-    
-    if (onSelectCustomer) {
-      onSelectCustomer(customer)
+
+    if (!newCustomer.document.trim()) {
+      toast({
+        title: 'Documento requerido',
+        description: 'Ingresa un documento para registrar al cliente.',
+        variant: 'destructive'
+      })
+      return
     }
-    
-    toast({
-      title: "Cliente creado",
-      description: `${customer.name} ha sido agregado exitosamente`,
-      variant: "success" as any
-    })
-    
-    setIsOpen(false)
+
+    const { firstName, lastName } = splitName(newCustomer.name)
+
+    const payload: CreateCustomerDto = {
+      type: 'individual',
+      documentType: 'CC',
+      documentNumber: newCustomer.document.trim(),
+      firstName,
+      lastName,
+      email: newCustomer.email.trim() || undefined,
+      mobile: newCustomer.phone.trim(),
+      address: newCustomer.address.trim() || undefined,
+      creditLimit: newCustomer.creditLimit ? Number(newCustomer.creditLimit) : undefined
+    }
+
+    try {
+      const created = await customersService.createCustomer(payload, token)
+      setCustomers((prev) => [...prev, created])
+      setNewCustomer(INITIAL_FORM)
+      setIsCreating(false)
+      setIsOpen(false)
+
+      if (onSelectCustomer) {
+        onSelectCustomer(created)
+      }
+
+      toast({
+        title: 'Cliente creado',
+        description: `${created.name} se agregó correctamente`,
+        variant: 'success' as any
+      })
+    } catch (err) {
+      console.error('Error creando cliente:', err)
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'No fue posible crear el cliente',
+        variant: 'destructive'
+      })
+    }
   }
-  
-  // Seleccionar cliente
+
   const handleSelectCustomer = (customer: Customer) => {
     if (onSelectCustomer) {
       onSelectCustomer(customer)
     }
     setIsOpen(false)
-    
+
     toast({
-      title: "Cliente seleccionado",
+      title: 'Cliente seleccionado',
       description: customer.name,
-      variant: "success" as any
+      variant: 'success' as any
     })
   }
-  
-  // Calcular crédito disponible
+
   const getAvailableCredit = (customer: Customer) => {
-    const creditLimit = customer.creditLimit || 0
-    const currentDebt = customer.currentDebt || 0
-    return creditLimit - currentDebt
+    const limit = customer.creditLimit ?? 0
+    const debt = customer.currentDebt ?? 0
+    return limit - debt
   }
 
   return (
     <>
-      {/* Botón o información del cliente seleccionado */}
       {selectedCustomer ? (
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setIsOpen(true)}
         >
@@ -184,41 +213,30 @@ export default function CustomerManager({
                   )}
                 </div>
                 <p className="text-sm text-gray-600">
-                  {selectedCustomer.document && `CC: ${selectedCustomer.document} • `}
+                  {selectedCustomer.document && `CC: ${selectedCustomer.document} · `}
                   {selectedCustomer.phone}
                 </p>
                 {showCreditInfo && selectedCustomer.creditLimit && selectedCustomer.creditLimit > 0 && (
                   <div className="mt-2 space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Crédito disponible:</span>
-                      <span className={`font-medium ${
-                        getAvailableCredit(selectedCustomer) > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span
+                        className={`font-medium ${getAvailableCredit(selectedCustomer) > 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
                         {formatCurrency(getAvailableCredit(selectedCustomer))}
                       </span>
                     </div>
                     {selectedCustomer.currentDebt && selectedCustomer.currentDebt > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Deuda actual:</span>
-                        <span className="font-medium text-orange-600">
-                          {formatCurrency(selectedCustomer.currentDebt)}
-                        </span>
+                      <div className="flex justify-between text-sm text-gray-500">
+                        <span>Deuda actual:</span>
+                        <span>{formatCurrency(selectedCustomer.currentDebt)}</span>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (onSelectCustomer) {
-                    onSelectCustomer(null!)
-                  }
-                }}
-              >
-                <X className="w-4 h-4" />
+              <Button variant="ghost" size="sm" onClick={() => onSelectCustomer?.(null as any)}>
+                Cambiar
               </Button>
             </div>
           </CardContent>
@@ -226,237 +244,264 @@ export default function CustomerManager({
       ) : (
         <Button
           variant="outline"
-          className="w-full justify-start"
+          className="w-full justify-start text-left h-auto py-3"
           onClick={() => setIsOpen(true)}
         >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Seleccionar Cliente
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-primary/10">
+              <UserPlus className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium">Seleccionar cliente</p>
+              <p className="text-sm text-gray-500">Opcional, requerido para ventas a crédito</p>
+            </div>
+          </div>
         </Button>
       )}
-      
-      {/* Modal de gestión de clientes */}
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
             >
-              <Card className="border-0 h-full flex flex-col">
+              <Card className="border-0 shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle>Gestión de Clientes</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setIsOpen(false)}
-                    >
+                    <div>
+                      <CardTitle className="text-2xl">Clientes</CardTitle>
+                      <p className="text-sm text-gray-500">Gestiona los clientes asociados a ventas y créditos</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
                       <X className="w-5 h-5" />
                     </Button>
                   </div>
-                  
-                  {/* Barra de búsqueda y botón de crear */}
-                  <div className="flex gap-2 mt-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+
+                  <div className="mt-4 flex flex-col md:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        type="text"
                         placeholder="Buscar por nombre, documento o teléfono..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
                       />
                     </div>
                     <Button onClick={() => setIsCreating(true)}>
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Nuevo
+                      Nuevo cliente
                     </Button>
                   </div>
                 </CardHeader>
-                
-                <CardContent className="flex-1 overflow-auto">
-                  {isCreating ? (
-                    /* Formulario de nuevo cliente */
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-lg">Nuevo Cliente</h3>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Nombre completo *
-                          </label>
-                          <Input
-                            value={newCustomer.name}
-                            onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                            placeholder="Juan Pérez"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Documento (CC/NIT)
-                          </label>
-                          <Input
-                            value={newCustomer.document}
-                            onChange={(e) => setNewCustomer({...newCustomer, document: e.target.value})}
-                            placeholder="1234567890"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Teléfono *
-                          </label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                              value={newCustomer.phone}
-                              onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                              placeholder="300 123 4567"
-                              className="pl-9"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Email
-                          </label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                              type="email"
-                              value={newCustomer.email}
-                              onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                              placeholder="cliente@email.com"
-                              className="pl-9"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="sm:col-span-2">
-                          <label className="block text-sm font-medium mb-1">
-                            Dirección
-                          </label>
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                              value={newCustomer.address}
-                              onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                              placeholder="Calle 123 #45-67"
-                              className="pl-9"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Límite de crédito
-                          </label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                              type="number"
-                              value={newCustomer.creditLimit}
-                              onChange={(e) => setNewCustomer({...newCustomer, creditLimit: e.target.value})}
-                              placeholder="500000"
-                              className="pl-9"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => setIsCreating(false)}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          className="flex-1"
-                          onClick={handleCreateCustomer}
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Crear Cliente
-                        </Button>
-                      </div>
+
+                <CardContent className="pt-0 pb-6">
+                  {error && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isLoading ? (
+                    <div className="py-12 flex flex-col items-center">
+                      <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      <p className="mt-4 text-sm text-gray-500">Cargando clientes...</p>
                     </div>
                   ) : (
-                    /* Lista de clientes */
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       {filteredCustomers.length === 0 ? (
-                        <div className="text-center py-8">
-                          <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-600">No se encontraron clientes</p>
+                        <div className="col-span-full py-12 text-center text-gray-500 border border-dashed rounded-lg">
+                          {searchQuery ? 'No encontramos clientes que coincidan con la búsqueda.' : 'Aún no hay clientes registrados.'}
                         </div>
                       ) : (
-                        filteredCustomers.map(customer => (
-                          <Card
-                            key={customer.id}
-                            className="cursor-pointer hover:shadow-md transition-all"
-                            onClick={() => handleSelectCustomer(customer)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-medium">{customer.name}</p>
-                                    {customer.creditLimit && customer.creditLimit > 0 && (
-                                      <Badge 
-                                        variant={getAvailableCredit(customer) > 0 ? 'success' : 'destructive'}
-                                      >
-                                        {getAvailableCredit(customer) > 0 ? 'Crédito disponible' : 'Sin crédito'}
-                                      </Badge>
+                        filteredCustomers.map((customer) => {
+                          const availableCredit = getAvailableCredit(customer)
+                          return (
+                            <Card
+                              key={customer.id}
+                              className="hover:shadow-lg transition-shadow cursor-pointer"
+                              onClick={() => handleSelectCustomer(customer)}
+                            >
+                              <CardContent className="p-4 space-y-3">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-semibold text-lg">{customer.name}</h3>
+                                      {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
+                                        <Badge variant={availableCredit > 0 ? 'success' : 'destructive'}>
+                                          Crédito
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                      {customer.document && `CC: ${customer.document} · `}
+                                      {customer.phone}
+                                    </p>
+                                  </div>
+                                  <Check className={`w-5 h-5 ${selectedCustomer?.id === customer.id ? 'text-primary' : 'text-transparent'}`} />
+                                </div>
+
+                                {(customer.email || customer.address) && (
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    {customer.email && (
+                                      <div className="flex items-center gap-2">
+                                        <Mail className="w-4 h-4 text-gray-400" />
+                                        <span>{customer.email}</span>
+                                      </div>
+                                    )}
+                                    {customer.address && (
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="w-4 h-4 text-gray-400" />
+                                        <span>{customer.address}</span>
+                                      </div>
                                     )}
                                   </div>
-                                  <p className="text-sm text-gray-600">
-                                    {customer.document && `CC: ${customer.document} • `}
-                                    Tel: {customer.phone}
-                                  </p>
-                                  {customer.creditLimit && customer.creditLimit > 0 && (
-                                    <div className="mt-2 flex items-center gap-4 text-sm">
-                                      <span className="text-gray-600">
-                                        Límite: {formatCurrency(customer.creditLimit)}
-                                      </span>
-                                      {customer.currentDebt && customer.currentDebt > 0 && (
-                                        <span className="text-orange-600">
-                                          Deuda: {formatCurrency(customer.currentDebt)}
-                                        </span>
-                                      )}
-                                      <span className={`font-medium ${
-                                        getAvailableCredit(customer) > 0 ? 'text-green-600' : 'text-red-600'
-                                      }`}>
-                                        Disponible: {formatCurrency(getAvailableCredit(customer))}
-                                      </span>
+                                )}
+
+                                {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
+                                  <div className="grid grid-cols-3 gap-2 text-sm bg-gray-50 rounded-lg p-3">
+                                    <div>
+                                      <p className="text-gray-500">Límite</p>
+                                      <p className="font-medium">{formatCurrency(customer.creditLimit)}</p>
                                     </div>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                >
-                                  Seleccionar
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
+                                    <div>
+                                      <p className="text-gray-500">Deuda</p>
+                                      <p className="font-medium">{formatCurrency(customer.currentDebt ?? 0)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-gray-500">Disponible</p>
+                                      <p className={`font-medium ${availableCredit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formatCurrency(availableCredit)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          )
+                        })
                       )}
                     </div>
                   )}
+
+                  <Separator className="my-4" />
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      {filteredCustomers.length} cliente{filteredCustomers.length === 1 ? '' : 's'} encontrados
+                    </div>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>
+                      Cerrar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isCreating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-xl"
+            >
+              <Card className="border-0 shadow-none">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-2xl">Nuevo cliente</CardTitle>
+                    <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)}>
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Registra un cliente para asociarlo a ventas o habilitar crédito.
+                  </p>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Nombre completo</label>
+                    <Input
+                      placeholder="Ej. Juan Pérez"
+                      value={newCustomer.name}
+                      onChange={(event) => setNewCustomer((prev) => ({ ...prev, name: event.target.value }))}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Documento</label>
+                      <Input
+                        placeholder="Número de identificación"
+                        value={newCustomer.document}
+                        onChange={(event) => setNewCustomer((prev) => ({ ...prev, document: event.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Teléfono</label>
+                      <Input
+                        placeholder="Celular o fijo"
+                        value={newCustomer.phone}
+                        onChange={(event) => setNewCustomer((prev) => ({ ...prev, phone: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
+                      <Input
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        value={newCustomer.email}
+                        onChange={(event) => setNewCustomer((prev) => ({ ...prev, email: event.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Crédito máximo</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={newCustomer.creditLimit}
+                        onChange={(event) => setNewCustomer((prev) => ({ ...prev, creditLimit: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Dirección</label>
+                    <Input
+                      placeholder="Dirección de contacto"
+                      value={newCustomer.address}
+                      onChange={(event) => setNewCustomer((prev) => ({ ...prev, address: event.target.value }))}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={() => setIsCreating(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleCreateCustomer}>Guardar cliente</Button>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

@@ -33,9 +33,11 @@ export interface CartItem {
   variant?: ProductVariant
   quantity: number
   price: number
+  unitPrice: number
   discount: number // Porcentaje de descuento
   subtotal: number
   tax: number
+  taxRate?: number
   total: number
   notes?: string
 }
@@ -49,13 +51,41 @@ export interface Sale {
   tax: number
   total: number
   paymentMethod: PaymentMethod
+  primaryPaymentMethod?: PaymentMethod
+  payments?: SalePayment[]
   customerId?: string
+  customerName?: string
   status: SaleStatus
+  saleType?: SaleType
+  saleNumber?: string
   invoiceNumber?: string
   notes?: string
   cashReceived?: number
   change?: number
-  createdBy: string
+  creditAmount?: number
+  creditDueDate?: Date
+  createdBy?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface PaymentInfo {
+  id: string
+  method: PaymentMethod
+  amount: number
+  receivedAmount?: number
+  changeGiven?: number
+}
+
+export interface SalePayment {
+  id: string
+  method: PaymentMethod
+  amount: number
+  receivedAmount?: number
+  changeGiven?: number
+  status?: string
+  transactionRef?: string
+  notes?: string
 }
 
 export enum PaymentMethod {
@@ -63,7 +93,15 @@ export enum PaymentMethod {
   CARD = 'card',
   NEQUI = 'nequi',
   DAVIPLATA = 'daviplata',
-  CREDIT = 'credit' // Fiado
+  CREDIT = 'credit', // Fiado
+  BANK_TRANSFER = 'bank_transfer',
+  OTHER = 'other'
+}
+
+export enum SaleType {
+  REGULAR = 'REGULAR',
+  CREDIT = 'CREDIT',
+  RETURN = 'RETURN'
 }
 
 export enum SaleStatus {

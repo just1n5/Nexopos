@@ -6,6 +6,15 @@ import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { CashRegisterModule } from './modules/cash-register/cash-register.module';
+import { SalesModule } from './modules/sales/sales.module';
+import { IntegrationModule } from './modules/integration/integration.module';
+import { TaxesModule } from './modules/taxes/taxes.module';
+import { CreditsModule } from './modules/credits/credits.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -33,9 +42,17 @@ import { AuthModule } from './modules/auth/auth.module';
     UsersModule,
     AuthModule,
     ProductsModule,
+    CategoriesModule,
+    CustomersModule,
+    InventoryModule,
+    CashRegisterModule,
+    SalesModule,
+    IntegrationModule,
+    TaxesModule,
+    CreditsModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [],
 })
 export class AppModule {}
-

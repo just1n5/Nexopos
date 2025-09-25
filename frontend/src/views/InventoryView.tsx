@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, Upload, RefreshCw, AlertCircle } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, FileSpreadsheet, Download, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useToast } from '@/hooks/useToast';
+import { productsService } from '@/services';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -45,18 +47,158 @@ type InventoryRow = {
   updatedAt: Date;
 };
 
+type NewProductVariantForm = {
+  size?: string;
+  color?: string;
+  stock: string;
+  priceDelta: string;
+};
+
+type NewProductFormState = {
+  name: string;
+  description: string;
+  sku: string;
+  basePrice: string;
+  stock: string;
+  variants: NewProductVariantForm[];
+};
+
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   ACTIVE: { label: 'Activo', variant: 'default' },
   INACTIVE: { label: 'Inactivo', variant: 'secondary' },
   ARCHIVED: { label: 'Archivado', variant: 'outline' },
 };
 
+const toSafeInteger = (value: string): number => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(parsed, 0);
+};
+
+const toSafeDecimal = (value: string): number => {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return parsed;
+};
+
+const stripDiacritics = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFC');
+
+const slugify = (value: string): string => {
+  if (!value.trim()) return '';
+  return stripDiacritics(value)
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase();
+};
+
+const buildVariantName = (productName: string, size?: string, color?: string): string => {
+  const base = productName.trim();
+  const descriptors = [size, color]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part && part.length));
+
+  if (!descriptors.length) {
+    return base;
+  }
+
+  return `${base} - ${descriptors.join(' / ')}`;
+};
+
+const buildVariantSku = (baseSku: string, size?: string, color?: string, index = 0): string => {
+  const suffixParts = [size, color]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part && part.length))
+    .map((part) => slugify(part));
+
+  if (!suffixParts.length) {
+    suffixParts.push(`VAR${index + 1}`);
+  }
+
+  const candidate = [baseSku.trim(), ...suffixParts]
+    .filter((part) => part.length)
+    .join('-')
+    .replace(/-+/g, '-');
+
+  return candidate.slice(0, 80);
+};
+
+const mapFormVariantToPayload = (
+  baseName: string,
+  baseSku: string,
+  variant: NewProductVariantForm,
+  index: number
+) => {
+  const size = variant.size?.trim() || undefined;
+  const color = variant.color?.trim() || undefined;
+  const stock = toSafeInteger(variant.stock);
+  const priceDelta = toSafeDecimal(variant.priceDelta);
+
+  const payload: {
+    name: string;
+    sku: string;
+    size?: string;
+    color?: string;
+    stock: number;
+    priceDelta?: number;
+  } = {
+    name: buildVariantName(baseName, size, color),
+    sku: buildVariantSku(baseSku, size, color, index),
+    stock,
+  };
+
+  if (size) {
+    payload.size = size;
+  }
+
+  if (color) {
+    payload.color = color;
+  }
+
+  if (priceDelta !== 0) {
+    payload.priceDelta = priceDelta;
+  }
+
+  return payload;
+};
+
+const buildDefaultVariant = (name: string, sku: string, stock: number) => ({
+  name: name.trim(),
+  sku: sku.trim(),
+  stock: Math.max(stock, 0),
+});
+
 export default function InventoryView() {
   const { token, logout } = useAuthStore();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<InventoryRow[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  
+  // Estados para el formulario de agregar producto
+  const [newProduct, setNewProduct] = useState<NewProductFormState>({
+    name: '',
+    description: '',
+    sku: '',
+    basePrice: '',
+    stock: '',
+    variants: []
+  });
+  
+  // Estado para las variantes
+  const [showVariants, setShowVariants] = useState(false);
+  const [currentVariant, setCurrentVariant] = useState<NewProductVariantForm>({
+    size: '',
+    color: '',
+    stock: '',
+    priceDelta: ''
+  });
 
   const fetchProducts = useCallback(async () => {
     if (!token) return;
@@ -100,8 +242,8 @@ export default function InventoryView() {
 
       setProducts(mapped);
     } catch (err) {
-      console.error('Error cargando inventario:', err);
-      setError('No fue posible cargar los productos. Intenta de nuevo.');
+      console.error('Error fetching products:', err);
+      setError('Hubo un problema al cargar el inventario. Por favor, intenta de nuevo.');
       setProducts([]);
     } finally {
       setIsLoading(false);
@@ -112,174 +254,304 @@ export default function InventoryView() {
     fetchProducts();
   }, [fetchProducts]);
 
+  const handleAddProduct = async () => {
+    const trimmedName = newProduct.name.trim();
+    const trimmedSku = newProduct.sku.trim();
+    const trimmedBasePrice = newProduct.basePrice.trim();
+
+    if (!token) {
+      toast({
+        title: 'Error',
+        description: 'Tu sesión expiró. Inicia sesión nuevamente.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!trimmedName || !trimmedSku || !trimmedBasePrice) {
+      toast({
+        title: 'Error',
+        description: 'Por favor complete los campos obligatorios',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const basePriceValue = Number.parseFloat(trimmedBasePrice);
+    if (!Number.isFinite(basePriceValue) || basePriceValue < 0) {
+      toast({
+        title: 'Error',
+        description: 'Ingrese un precio base válido.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const customVariants = newProduct.variants.map((variant, index) =>
+        mapFormVariantToPayload(trimmedName, trimmedSku, variant, index)
+      );
+
+      const defaultVariant = buildDefaultVariant(trimmedName, trimmedSku, toSafeInteger(newProduct.stock));
+      const variantsPayload = customVariants.length > 0 ? customVariants : [defaultVariant];
+
+      const productPayload = {
+        name: trimmedName,
+        description: newProduct.description.trim() || undefined,
+        sku: trimmedSku,
+        basePrice: basePriceValue,
+        variants: variantsPayload
+      };
+
+      await productsService.createProduct(productPayload, token);
+
+      toast({
+        title: 'Producto agregado',
+        description: 'El producto se ha agregado exitosamente',
+      });
+
+      setShowAddModal(false);
+      setShowVariants(false);
+      setNewProduct({
+        name: '',
+        description: '',
+        sku: '',
+        basePrice: '',
+        stock: '',
+        variants: []
+      });
+      setCurrentVariant({
+        size: '',
+        color: '',
+        stock: '',
+        priceDelta: ''
+      });
+
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error al agregar el producto:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo agregar el producto',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleAddVariant = () => {
+    if (!currentVariant.stock) {
+      toast({
+        title: 'Error',
+        description: 'Por favor ingrese el stock de la variante',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setNewProduct({
+      ...newProduct,
+      variants: [...newProduct.variants, currentVariant]
+    });
+    
+    setCurrentVariant({
+      size: '',
+      color: '',
+      stock: '',
+      priceDelta: ''
+    });
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setNewProduct({
+      ...newProduct,
+      variants: newProduct.variants.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await apiFetch('/products/import', {
+        method: 'POST',
+        body: formData,
+        token,
+        skipContentType: true
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al importar el archivo');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Importación Exitosa',
+        description: `Se importaron ${result.imported} productos correctamente`,
+      });
+      
+      setShowImportModal(false);
+      fetchProducts();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo importar el archivo CSV',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = 'nombre,descripcion,sku,precio,stock,talla,color\n';
+    const example = 'Camiseta Básica,Camiseta de algodón,CAM001,25000,50,M,Azul\n';
+    const content = template + example;
+    
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'plantilla_productos.csv';
+    link.click();
+  };
+
   const filteredProducts = useMemo(() => {
-    if (!searchQuery) return products;
     const query = searchQuery.toLowerCase();
-    return products.filter((product) =>
-      product.name.toLowerCase().includes(query) ||
-      product.sku.toLowerCase().includes(query)
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.sku.toLowerCase().includes(query) ||
+        (product.description && product.description.toLowerCase().includes(query))
     );
   }, [products, searchQuery]);
-
-  const metrics = useMemo(() => {
-    const totalProducts = products.length;
-    const totalStock = products.reduce((sum, product) => sum + product.totalStock, 0);
-    const lowStock = products.filter((product) => product.totalStock > 0 && product.totalStock <= LOW_STOCK_THRESHOLD).length;
-    const outOfStock = products.filter((product) => product.totalStock === 0).length;
-
-    return { totalProducts, totalStock, lowStock, outOfStock };
-  }, [products]);
 
   return (
     <div className="h-full bg-gray-50 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
+        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Inventario</h1>
-          <p className="text-gray-600">Gestiona tus productos y existencias</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              type="text"
-              placeholder="Buscar productos (nombre o SKU)..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold">Inventario</h1>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowImportModal(true)} variant="outline">
+                <FileSpreadsheet className="w-5 h-5 mr-2" />
+                Importar CSV
+              </Button>
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="w-5 h-5 mr-2" />
+                Agregar Producto
+              </Button>
+              <Button onClick={fetchProducts} variant="outline">
+                <RefreshCw className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-          <Button variant="outline" onClick={fetchProducts} disabled={isLoading}>
-            <RefreshCw className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button disabled>
-            <Plus className="w-5 h-5 mr-2" />
-            Agregar Producto
-          </Button>
-          <Button variant="outline" disabled>
-            <Upload className="w-5 h-5 mr-2" />
-            Importar Excel
-          </Button>
+          <p className="text-gray-600">Administra tu inventario de productos</p>
         </div>
 
+        {/* Búsqueda */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Buscar por nombre, SKU o descripción..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Alertas */}
         {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total productos</p>
-                  <p className="text-2xl font-bold">{metrics.totalProducts}</p>
-                </div>
-                <Package className="w-8 h-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Stock total</p>
-                  <p className="text-2xl font-bold">{metrics.totalStock}</p>
-                </div>
-                <Package className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Stock bajo</p>
-                  <p className="text-2xl font-bold text-yellow-600">{metrics.lowStock}</p>
-                </div>
-                <Package className="w-8 h-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Sin stock</p>
-                  <p className="text-2xl font-bold text-red-600">{metrics.outOfStock}</p>
-                </div>
-                <Package className="w-8 h-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Lista de Productos */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de productos</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Productos ({filteredProducts.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <RefreshCw className="w-8 h-8 mb-3 animate-spin" />
-                <p>Cargando inventario...</p>
+              <div className="py-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Cargando productos...</p>
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p>No encontramos productos. Asegúrate de haber ejecutado las semillas.</p>
+              <div className="py-8 text-center text-gray-500">
+                <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>{searchQuery ? 'No se encontraron productos' : 'No hay productos en el inventario'}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b bg-gray-100 text-gray-600">
-                    <tr>
-                      <th className="px-4 py-3">Producto</th>
-                      <th className="px-4 py-3">SKU</th>
-                      <th className="px-4 py-3 text-right">Precio base</th>
-                      <th className="px-4 py-3 text-right">Stock</th>
-                      <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Actualizado</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2 font-medium text-gray-700">Producto</th>
+                      <th className="text-left p-2 font-medium text-gray-700">SKU</th>
+                      <th className="text-right p-2 font-medium text-gray-700">Precio</th>
+                      <th className="text-center p-2 font-medium text-gray-700">Stock Total</th>
+                      <th className="text-center p-2 font-medium text-gray-700">Estado</th>
+                      <th className="text-center p-2 font-medium text-gray-700">Última Actualización</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody>
                     {filteredProducts.map((product) => {
-                      const statusInfo = statusLabels[product.status] ?? statusLabels.ACTIVE;
+                      const isLowStock = product.totalStock > 0 && product.totalStock <= LOW_STOCK_THRESHOLD;
+                      const isOutOfStock = product.totalStock === 0;
+
                       return (
-                        <tr key={product.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            {product.description && (
-                              <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
+                        <tr key={product.id} className="border-b hover:bg-gray-50 transition-colors">
+                          <td className="p-2">
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              {product.description && (
+                                <p className="text-sm text-gray-500">{product.description}</p>
+                              )}
+                              {product.variants.length > 0 && (
+                                <div className="mt-1 flex gap-2 flex-wrap">
+                                  {product.variants.map((variant) => (
+                                    <span key={variant.id} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                      {variant.size && `Talla: ${variant.size}`}
+                                      {variant.color && ` Color: ${variant.color}`}
+                                      {` (Stock: ${variant.stock})`}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-2 text-gray-600">{product.sku}</td>
+                          <td className="p-2 text-right font-medium">{formatCurrency(product.price)}</td>
+                          <td className="p-2 text-center">
+                            {isOutOfStock ? (
+                              <Badge variant="destructive">Agotado</Badge>
+                            ) : isLowStock ? (
+                              <Badge className="bg-yellow-100 text-yellow-800">
+                                {product.totalStock} (Bajo)
+                              </Badge>
+                            ) : (
+                              <Badge variant="default">{product.totalStock}</Badge>
                             )}
-                            {product.variants.length > 0 && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {product.variants.length} variante{product.variants.length > 1 ? 's' : ''}
-                              </p>
-                            )}
                           </td>
-                          <td className="px-4 py-3 text-gray-600">{product.sku}</td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            {formatCurrency(product.price)}
+                          <td className="p-2 text-center">
+                            <Badge variant={statusLabels[product.status]?.variant || 'default'}>
+                              {statusLabels[product.status]?.label || product.status}
+                            </Badge>
                           </td>
-                          <td className={`px-4 py-3 text-right font-medium ${product.totalStock === 0 ? 'text-red-600' : product.totalStock <= LOW_STOCK_THRESHOLD ? 'text-yellow-600' : 'text-gray-900'}`}>
-                            {product.totalStock}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {product.updatedAt.toLocaleDateString('es-CO', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
+                          <td className="p-2 text-center text-sm text-gray-500">
+                            {product.updatedAt.toLocaleDateString('es-CO')}
                           </td>
                         </tr>
                       );
@@ -290,6 +562,230 @@ export default function InventoryView() {
             )}
           </CardContent>
         </Card>
+
+        {/* Modal de Agregar Producto */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Agregar Nuevo Producto</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowAddModal(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Nombre del Producto *
+                    </label>
+                    <Input
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      placeholder="Ej: Camiseta Básica"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Descripción
+                    </label>
+                    <Input
+                      value={newProduct.description}
+                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                      placeholder="Ej: Camiseta de algodón 100%"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        SKU *
+                      </label>
+                      <Input
+                        value={newProduct.sku}
+                        onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                        placeholder="Ej: CAM001"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Precio Base *
+                      </label>
+                      <Input
+                        type="number"
+                        value={newProduct.basePrice}
+                        onChange={(e) => setNewProduct({ ...newProduct, basePrice: e.target.value })}
+                        placeholder="25000"
+                      />
+                    </div>
+                  </div>
+
+                  {!showVariants && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Stock Inicial
+                      </label>
+                      <Input
+                        type="number"
+                        value={newProduct.stock}
+                        onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                        placeholder="50"
+                      />
+                    </div>
+                  )}
+
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium">Variantes (Talla/Color)</h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowVariants(!showVariants)}
+                      >
+                        {showVariants ? 'Ocultar' : 'Agregar'} Variantes
+                      </Button>
+                    </div>
+
+                    {showVariants && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-4 gap-2">
+                          <Input
+                            placeholder="Talla"
+                            value={currentVariant.size}
+                            onChange={(e) => setCurrentVariant({ ...currentVariant, size: e.target.value })}
+                          />
+                          <Input
+                            placeholder="Color"
+                            value={currentVariant.color}
+                            onChange={(e) => setCurrentVariant({ ...currentVariant, color: e.target.value })}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Stock"
+                            value={currentVariant.stock}
+                            onChange={(e) => setCurrentVariant({ ...currentVariant, stock: e.target.value })}
+                          />
+                          <Button onClick={handleAddVariant} size="sm">
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {newProduct.variants.length > 0 && (
+                          <div className="space-y-2">
+                            {newProduct.variants.map((variant, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span>
+                                  {variant.size && `Talla: ${variant.size}`}
+                                  {variant.color && ` - Color: ${variant.color}`}
+                                  {` - Stock: ${variant.stock}`}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveVariant(index)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={handleAddProduct} className="flex-1">
+                      <Save className="w-4 h-4 mr-2" />
+                      Guardar Producto
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddModal(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Importar CSV */}
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Importar Productos desde CSV</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowImportModal(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      El archivo CSV debe contener las columnas: nombre, descripcion, sku, precio, stock, talla (opcional), color (opcional)
+                    </AlertDescription>
+                  </Alert>
+
+                  <div>
+                    <Button
+                      variant="outline"
+                      className="w-full mb-4"
+                      onClick={downloadTemplate}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Descargar Plantilla CSV
+                    </Button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Seleccionar Archivo CSV
+                    </label>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCSV}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium mb-1">Formato esperado:</p>
+                    <code className="block bg-gray-100 p-2 rounded text-xs">
+                      nombre,descripcion,sku,precio,stock,talla,color<br/>
+                      Camiseta Básica,Algodón 100%,CAM001,25000,50,M,Azul
+                    </code>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowImportModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

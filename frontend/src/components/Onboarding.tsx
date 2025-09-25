@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import { useState, useEffect, type ElementType } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   HelpCircle,
@@ -12,23 +12,19 @@ import {
   CreditCard,
   Calculator,
   BarChart3,
-  Settings,
   Smartphone,
-  Monitor,
   Zap,
   Gift
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface TutorialStep {
   id: string
   title: string
   description: string
-  icon: React.ElementType
+  icon: ElementType
   action?: () => void
   tips?: string[]
 }
@@ -410,3 +406,4 @@ export default function Onboarding({ onComplete, autoStart = false }: Onboarding
     </>
   )
 }
+

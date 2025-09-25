@@ -3,6 +3,49 @@ import { devtools, persist } from 'zustand/middleware'
 import { SaleStatus, type CartItem, type Product, type ProductVariant, type Customer, type PaymentMethod, type Sale } from '@/types'
 import { generateId } from '@/lib/utils'
 
+const DEFAULT_TAX_RATE = 19
+
+const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100
+
+const resolveTaxRate = (product: Product): number => {
+  const value = typeof product.tax === 'number' ? product.tax : NaN
+  if (Number.isFinite(value) && value > 0) {
+    return value
+  }
+  return DEFAULT_TAX_RATE
+}
+
+const toNetUnitPrice = (price: number, taxRate: number): number => {
+  const gross = Number.isFinite(price) ? price : 0
+  const divisor = 1 + (Math.max(taxRate, 0) / 100)
+  if (divisor <= 0) {
+    return roundCurrency(gross)
+  }
+  return roundCurrency(gross / divisor)
+}
+
+const calculateLineTotals = (price: number, quantity: number, discountPercent: number, taxRate: number) => {
+  const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 0
+  const normalizedDiscount = Number.isFinite(discountPercent) ? Math.min(Math.max(discountPercent, 0), 100) : 0
+  const normalizedTax = Number.isFinite(taxRate) ? Math.max(taxRate, 0) : DEFAULT_TAX_RATE
+
+  const unitPrice = toNetUnitPrice(price, normalizedTax)
+  const discountFactor = 1 - normalizedDiscount / 100
+
+  const netBeforeDiscount = unitPrice * safeQuantity
+  const netAfterDiscount = netBeforeDiscount * discountFactor
+  const subtotal = roundCurrency(netAfterDiscount)
+  const taxAmount = roundCurrency(subtotal * (normalizedTax / 100))
+  const total = roundCurrency(subtotal + taxAmount)
+
+  return {
+    unitPrice,
+    subtotal,
+    taxAmount,
+    total
+  }
+}
+
 interface POSState {
   // Cart State
   cart: CartItem[]
@@ -43,49 +86,57 @@ export const usePOSStore = create<POSState>()(
         // Add product to cart
         addToCart: (product, quantity = 1, variant) => {
           set((state) => {
-            const existingItem = state.cart.find(item => 
-              item.product.id === product.id && 
+            const existingItem = state.cart.find(item =>
+              item.product.id === product.id &&
               item.variant?.id === variant?.id
             )
-            
+
             if (existingItem) {
-              // Update quantity if item already exists
               return {
-                cart: state.cart.map(item =>
-                  item.id === existingItem.id
-                    ? {
-                        ...item,
-                        quantity: item.quantity + quantity,
-                        subtotal: (item.quantity + quantity) * item.price,
-                        total: (item.quantity + quantity) * item.price * (1 - item.discount / 100) * (1 + item.tax / 100)
-                      }
-                    : item
-                )
+                cart: state.cart.map(item => {
+                  if (item.id !== existingItem.id) {
+                    return item
+                  }
+
+                  const nextQuantity = item.quantity + quantity
+                  const taxRate = item.taxRate ?? resolveTaxRate(item.product)
+                  const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, nextQuantity, item.discount, taxRate)
+
+                  return {
+                    ...item,
+                    quantity: nextQuantity,
+                    unitPrice,
+                    subtotal,
+                    tax: taxAmount,
+                    taxRate,
+                    total
+                  }
+                })
               }
             }
-            
-            // Add new item to cart
-            const price = variant?.price || product.price
-            const subtotal = price * quantity
-            const tax = product.tax || 19 // Default 19% IVA in Colombia
-            const taxAmount = subtotal * (tax / 100)
-            
+
+            const price = variant?.price ?? product.price
+            const taxRate = resolveTaxRate(product)
+            const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(price, quantity, 0, taxRate)
+
             const newItem: CartItem = {
               id: generateId(),
               product,
               variant,
               quantity,
               price,
+              unitPrice,
               discount: 0,
               subtotal,
               tax: taxAmount,
-              total: subtotal + taxAmount
+              taxRate,
+              total
             }
-            
+
             return { cart: [...state.cart, newItem] }
           })
         },
-        
+
         // Remove item from cart
         removeFromCart: (itemId) => {
           set((state) => ({
@@ -99,37 +150,53 @@ export const usePOSStore = create<POSState>()(
             get().removeFromCart(itemId)
             return
           }
-          
+
           set((state) => ({
-            cart: state.cart.map(item =>
-              item.id === itemId
-                ? {
-                    ...item,
-                    quantity,
-                    subtotal: quantity * item.price,
-                    tax: quantity * item.price * (item.product.tax / 100),
-                    total: quantity * item.price * (1 - item.discount / 100) * (1 + item.product.tax / 100)
-                  }
-                : item
-            )
+            cart: state.cart.map(item => {
+              if (item.id !== itemId) {
+                return item
+              }
+
+              const taxRate = item.taxRate ?? resolveTaxRate(item.product)
+              const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, quantity, item.discount, taxRate)
+
+              return {
+                ...item,
+                quantity,
+                unitPrice,
+                subtotal,
+                tax: taxAmount,
+                taxRate,
+                total
+              }
+            })
           }))
         },
-        
+
         // Update item discount
         updateDiscount: (itemId, discount) => {
           set((state) => ({
-            cart: state.cart.map(item =>
-              item.id === itemId
-                ? {
-                    ...item,
-                    discount,
-                    total: item.subtotal * (1 - discount / 100) * (1 + item.product.tax / 100)
-                  }
-                : item
-            )
+            cart: state.cart.map(item => {
+              if (item.id !== itemId) {
+                return item
+              }
+
+              const taxRate = item.taxRate ?? resolveTaxRate(item.product)
+              const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, item.quantity, discount, taxRate)
+
+              return {
+                ...item,
+                discount,
+                unitPrice,
+                subtotal,
+                tax: taxAmount,
+                taxRate,
+                total
+              }
+            })
           }))
         },
-        
+
         // Clear cart
         clearCart: () => {
           set({ 
@@ -143,15 +210,24 @@ export const usePOSStore = create<POSState>()(
         // Set global discount
         setGlobalDiscount: (discount) => {
           set((state) => {
-            const updatedCart = state.cart.map(item => ({
-              ...item,
-              discount,
-              total: item.subtotal * (1 - discount / 100) * (1 + item.product.tax / 100)
-            }))
+            const updatedCart = state.cart.map(item => {
+              const taxRate = item.taxRate ?? resolveTaxRate(item.product)
+              const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, item.quantity, discount, taxRate)
+
+              return {
+                ...item,
+                discount,
+                unitPrice,
+                subtotal,
+                tax: taxAmount,
+                taxRate,
+                total
+              }
+            })
             return { discount, cart: updatedCart }
           })
         },
-        
+
         // Set customer
         setCustomer: (customer) => {
           set({ selectedCustomer: customer })
@@ -165,27 +241,35 @@ export const usePOSStore = create<POSState>()(
         // Calculate subtotal
         getSubtotal: () => {
           const state = get()
-          return state.cart.reduce((sum, item) => sum + item.subtotal, 0)
+          const subtotal = state.cart.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)
+          return roundCurrency(subtotal)
         },
         
         // Calculate total discount
         getTotalDiscount: () => {
           const state = get()
-          return state.cart.reduce((sum, item) => 
-            sum + (item.subtotal * item.discount / 100), 0
-          )
+          const discount = state.cart.reduce((sum, item) => {
+            const taxRate = item.taxRate ?? resolveTaxRate(item.product)
+            const baseUnitPrice = item.unitPrice ?? toNetUnitPrice(item.price, taxRate)
+            const quantity = Number.isFinite(item.quantity) ? item.quantity : 0
+            const netBeforeDiscount = baseUnitPrice * quantity
+            return sum + (netBeforeDiscount - (item.subtotal ?? 0))
+          }, 0)
+          return roundCurrency(discount)
         },
         
         // Calculate total tax
         getTotalTax: () => {
           const state = get()
-          return state.cart.reduce((sum, item) => sum + item.tax, 0)
+          const tax = state.cart.reduce((sum, item) => sum + (item.tax ?? 0), 0)
+          return roundCurrency(tax)
         },
         
         // Calculate total
         getTotal: () => {
           const state = get()
-          return state.cart.reduce((sum, item) => sum + item.total, 0)
+          const total = state.cart.reduce((sum, item) => sum + (item.total ?? 0), 0)
+          return roundCurrency(total)
         },
         
         // Process sale
@@ -207,7 +291,7 @@ export const usePOSStore = create<POSState>()(
             status: SaleStatus.COMPLETED,
             notes: state.notes,
             cashReceived,
-            change: cashReceived ? cashReceived - state.getTotal() : undefined,
+            change: cashReceived ? roundCurrency(cashReceived - state.getTotal()) : undefined,
             createdBy: 'current-user-id' // This should come from auth
           }
           

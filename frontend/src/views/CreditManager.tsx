@@ -1,519 +1,517 @@
-import React, { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  UserPlus,
   DollarSign,
-  Calendar,
   AlertCircle,
   TrendingUp,
-  TrendingDown,
   Search,
   Filter,
-  Phone,
   MessageCircle,
   X,
   Check,
   History,
-  CreditCard
+  CreditCard,
+  Clock,
+  User
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
-import type { Customer, Sale } from '@/types'
-
-interface CreditSale extends Sale {
-  customer: Customer
-  payments: Payment[]
-  remainingBalance: number
-}
-
-interface Payment {
-  id: string
-  amount: number
-  date: Date
-  method: 'cash' | 'transfer'
-  notes?: string
-}
+import { useAuthStore } from '@/stores/authStore'
+import { creditService, type CreditSale } from '@/services/creditService'
 
 export default function CreditManager() {
+  const { token } = useAuthStore()
+  const { toast } = useToast()
   const [creditSales, setCreditSales] = useState<CreditSale[]>([])
   const [selectedSale, setSelectedSale] = useState<CreditSale | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'card'>('cash')
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('pending')
-  const { toast } = useToast()
-  
-  // Cargar ventas a crédito desde localStorage
-  useEffect(() => {
-    const loadCreditSales = () => {
-      const sales = JSON.parse(localStorage.getItem('nexopos_sales') || '[]')
-      const customers = JSON.parse(localStorage.getItem('nexopos_customers') || '[]')
-      
-      const creditSalesData = sales
-        .filter((sale: Sale) => sale.paymentMethod === 'credit' && sale.customerId)
-        .map((sale: Sale) => {
-          const customer = customers.find((c: Customer) => c.id === sale.customerId)
-          const payments = JSON.parse(localStorage.getItem(`nexopos_payments_${sale.id}`) || '[]')
-          const totalPaid = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0)
-          
-          return {
-            ...sale,
-            customer,
-            payments,
-            remainingBalance: sale.total - totalPaid
-          }
-        })
-        .filter((sale: CreditSale) => sale.customer)
-      
-      setCreditSales(creditSalesData)
-    }
-    
-    loadCreditSales()
-    
-    // Actualizar cada 5 segundos para reflejar cambios
-    const interval = setInterval(loadCreditSales, 5000)
-    return () => clearInterval(interval)
-  }, [])
-  
-  // Filtrar ventas
-  const filteredSales = creditSales.filter(sale => {
-    const matchesSearch = searchQuery === '' ||
-      sale.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sale.customer.phone?.includes(searchQuery) ||
-      sale.invoiceNumber?.includes(searchQuery)
-    
-    let matchesFilter = true
-    if (filterStatus === 'pending') {
-      matchesFilter = sale.remainingBalance > 0
-    } else if (filterStatus === 'paid') {
-      matchesFilter = sale.remainingBalance === 0
-    }
-    
-    return matchesSearch && matchesFilter
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid' | 'overdue'>('pending')
+  const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState({
+    totalCredits: 0,
+    totalPending: 0,
+    totalOverdue: 0,
+    creditsCount: 0,
+    pendingCount: 0,
+    overdueCount: 0
   })
-  
-  // Calcular estadísticas
-  const totalCredit = creditSales.reduce((sum, sale) => sum + sale.total, 0)
-  const totalPending = creditSales.reduce((sum, sale) => sum + sale.remainingBalance, 0)
-  const totalCollected = totalCredit - totalPending
-  
-  // Procesar pago
-  const handlePayment = () => {
-    if (!selectedSale || !paymentAmount) return
-    
-    const amount = parseFloat(paymentAmount)
-    if (amount <= 0 || amount > selectedSale.remainingBalance) {
+
+  useEffect(() => {
+    if (token) {
+      loadCreditData()
+    }
+  }, [token, filterStatus])
+
+  const loadCreditData = async () => {
+    try {
+      setLoading(true)
+      const status = filterStatus === 'all' ? undefined : filterStatus
+      const sales = await creditService.getCreditSales(token!, { status })
+      setCreditSales(sales)
+      
+      const summaryData = await creditService.getCreditSummary(token!)
+      setSummary(summaryData)
+    } catch (error) {
+      console.error('Error loading credit data:', error)
       toast({
-        title: "Error",
-        description: "El monto debe ser mayor a 0 y no exceder la deuda",
-        variant: "destructive"
+        title: 'Error',
+        description: 'No se pudo cargar la información de créditos',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddPayment = async () => {
+    if (!selectedSale || !paymentAmount || parseFloat(paymentAmount) <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Por favor ingrese un monto válido',
+        variant: 'destructive'
       })
       return
     }
-    
-    const payment: Payment = {
-      id: Date.now().toString(),
-      amount,
-      date: new Date(),
-      method: 'cash',
-      notes: paymentNotes
+
+    const amount = parseFloat(paymentAmount)
+    if (amount > selectedSale.remainingBalance) {
+      toast({
+        title: 'Error',
+        description: 'El monto excede el saldo pendiente',
+        variant: 'destructive'
+      })
+      return
     }
-    
-    // Guardar pago
-    const payments = [...selectedSale.payments, payment]
-    localStorage.setItem(`nexopos_payments_${selectedSale.id}`, JSON.stringify(payments))
-    
-    // Actualizar deuda del cliente
-    const customers = JSON.parse(localStorage.getItem('nexopos_customers') || '[]')
-    const customerIndex = customers.findIndex((c: Customer) => c.id === selectedSale.customer.id)
-    if (customerIndex !== -1) {
-      customers[customerIndex].currentDebt = Math.max(0, (customers[customerIndex].currentDebt || 0) - amount)
-      localStorage.setItem('nexopos_customers', JSON.stringify(customers))
+
+    try {
+      await creditService.addPayment(
+        selectedSale.id,
+        {
+          amount,
+          paymentMethod,
+          notes: paymentNotes
+        },
+        token!
+      )
+      
+      toast({
+        title: 'Pago Registrado',
+        description: `Se ha registrado un pago de ${formatCurrency(amount)}`,
+      })
+      
+      setShowPaymentModal(false)
+      setPaymentAmount('')
+      setPaymentNotes('')
+      setSelectedSale(null)
+      await loadCreditData()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo registrar el pago',
+        variant: 'destructive'
+      })
     }
-    
-    // Actualizar estado local
-    const updatedSales = creditSales.map(sale => 
-      sale.id === selectedSale.id
-        ? {
-            ...sale,
-            payments,
-            remainingBalance: sale.total - payments.reduce((sum, p) => sum + p.amount, 0)
-          }
-        : sale
-    )
-    setCreditSales(updatedSales)
-    setSelectedSale(null)
-    setShowPaymentModal(false)
-    setPaymentAmount('')
-    setPaymentNotes('')
-    
-    toast({
-      title: "✓ Pago registrado",
-      description: `${formatCurrency(amount)} abonado a la cuenta de ${selectedSale.customer.name}`,
-      variant: "success" as any
-    })
   }
-  
-  // Enviar recordatorio por WhatsApp
-  const sendWhatsAppReminder = (sale: CreditSale) => {
-    const message = `Hola ${sale.customer.name}, te recordamos que tienes una deuda pendiente de ${formatCurrency(sale.remainingBalance)} en nuestra tienda. Factura: ${sale.invoiceNumber}. ¡Gracias!`
-    const whatsappUrl = `https://wa.me/${sale.customer.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
-    
-    toast({
-      title: "Recordatorio enviado",
-      description: "Se abrió WhatsApp con el mensaje",
-      variant: "default"
-    })
+
+  const handleSendReminder = async (creditSale: CreditSale) => {
+    try {
+      await creditService.sendPaymentReminder(creditSale.id, 'whatsapp', token!)
+      toast({
+        title: 'Recordatorio Enviado',
+        description: 'Se ha enviado un recordatorio por WhatsApp',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo enviar el recordatorio',
+        variant: 'destructive'
+      })
+    }
   }
-  
-  return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Fiado</p>
-                <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(totalCredit)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Por Cobrar</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(totalPending)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <TrendingDown className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Cobrado</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(totalCollected)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+  const filteredSales = creditSales.filter(sale => {
+    const matchesSearch = sale.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          sale.customer?.phone?.includes(searchQuery)
+    return matchesSearch
+  })
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+      case 'overdue':
+        return <Badge className="bg-red-100 text-red-800">Vencido</Badge>
+      default:
+        return <Badge className="bg-yellow-100 text-yellow-800">Pendiente</Badge>
+    }
+  }
+
+  const getDaysOverdue = (dueDate?: Date) => {
+    if (!dueDate) return 0
+    const today = new Date()
+    const due = new Date(dueDate)
+    const diffTime = today.getTime() - due.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return Math.max(0, diffDays)
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Cargando información de créditos...</p>
+        </div>
       </div>
-      
-      {/* Filtros y búsqueda */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Buscar por cliente, teléfono o factura..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={filterStatus === 'all' ? 'default' : 'outline'}
-                onClick={() => setFilterStatus('all')}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={filterStatus === 'pending' ? 'default' : 'outline'}
-                onClick={() => setFilterStatus('pending')}
-              >
-                Pendientes
-                {creditSales.filter(s => s.remainingBalance > 0).length > 0 && (
-                  <Badge className="ml-2" variant="destructive">
-                    {creditSales.filter(s => s.remainingBalance > 0).length}
-                  </Badge>
-                )}
-              </Button>
-              <Button
-                variant={filterStatus === 'paid' ? 'default' : 'outline'}
-                onClick={() => setFilterStatus('paid')}
-              >
-                Pagados
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Lista de ventas a crédito */}
-      <div className="space-y-4">
-        {filteredSales.length === 0 ? (
+    )
+  }
+
+  return (
+    <div className="h-full bg-gray-50 overflow-auto">
+      <div className="p-6 max-w-screen-xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Gestión de Créditos (Fiado)</h1>
+          <p className="text-gray-600">Administra las ventas a crédito y registra los pagos</p>
+        </div>
+
+        {/* Resumen de Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
-            <CardContent className="p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600">
-                {searchQuery || filterStatus !== 'all'
-                  ? 'No se encontraron resultados'
-                  : 'No hay ventas a crédito registradas'}
-              </p>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total en Créditos</p>
+                  <p className="text-2xl font-bold">{formatCurrency(summary.totalCredits)}</p>
+                  <p className="text-xs text-gray-500">{summary.creditsCount} créditos</p>
+                </div>
+                <CreditCard className="w-8 h-8 text-blue-500" />
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          filteredSales.map(sale => (
-            <motion.div
-              key={sale.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Por Cobrar</p>
+                  <p className="text-2xl font-bold text-yellow-600">{formatCurrency(summary.totalPending)}</p>
+                  <p className="text-xs text-gray-500">{summary.pendingCount} pendientes</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Vencidos</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalOverdue)}</p>
+                  <p className="text-xs text-gray-500">{summary.overdueCount} vencidos</p>
+                </div>
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Tasa de Recuperación</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {summary.totalCredits > 0 
+                      ? `${Math.round(((summary.totalCredits - summary.totalPending) / summary.totalCredits) * 100)}%`
+                      : '0%'
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500">del total cobrado</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filtros y Búsqueda */}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Buscar por cliente o teléfono..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className="px-4 py-2 border rounded-md"
             >
-              <Card className={sale.remainingBalance === 0 ? 'opacity-75' : ''}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <UserPlus className="w-5 h-5 text-gray-600" />
+              <option value="all">Todos</option>
+              <option value="pending">Pendientes</option>
+              <option value="paid">Pagados</option>
+              <option value="overdue">Vencidos</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Lista de Créditos */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Créditos {filterStatus !== 'all' && `(${filterStatus === 'pending' ? 'Pendientes' : filterStatus === 'paid' ? 'Pagados' : 'Vencidos'})`}
+            </h2>
+          </div>
+
+          {filteredSales.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No hay créditos para mostrar</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {filteredSales.map((sale) => {
+                const daysOverdue = getDaysOverdue(sale.dueDate)
+                
+                return (
+                  <motion.div
+                    key={sale.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-gray-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{sale.customer?.name || 'Cliente Sin Nombre'}</h3>
+                            <p className="text-sm text-gray-500">{sale.customer?.phone || 'Sin teléfono'}</p>
+                          </div>
+                          {getStatusBadge(sale.status)}
+                          {daysOverdue > 0 && (
+                            <Badge className="bg-red-100 text-red-800">
+                              {daysOverdue} días vencido
+                            </Badge>
+                          )}
                         </div>
-                        <div>
-                          <p className="font-medium">{sale.customer.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {sale.customer.phone} • Factura: {sale.invoiceNumber}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                        <div>
-                          <p className="text-xs text-gray-500">Fecha</p>
-                          <p className="text-sm font-medium">
-                            {formatDateTime(sale.date)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Total</p>
-                          <p className="text-sm font-medium">
-                            {formatCurrency(sale.total)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Pagado</p>
-                          <p className="text-sm font-medium text-green-600">
-                            {formatCurrency(sale.total - sale.remainingBalance)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Pendiente</p>
-                          <p className={`text-sm font-bold ${
-                            sale.remainingBalance > 0 ? 'text-orange-600' : 'text-green-600'
-                          }`}>
-                            {formatCurrency(sale.remainingBalance)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Historial de pagos */}
-                      {sale.payments.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs text-gray-500 mb-2">Historial de pagos:</p>
-                          <div className="space-y-1">
-                            {sale.payments.slice(-3).map(payment => (
-                              <div key={payment.id} className="flex items-center justify-between text-xs">
-                                <span className="text-gray-600">
-                                  {formatDateTime(payment.date)}
-                                  {payment.notes && ` - ${payment.notes}`}
-                                </span>
-                                <span className="font-medium text-green-600">
-                                  +{formatCurrency(payment.amount)}
-                                </span>
-                              </div>
-                            ))}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Total:</span>
+                            <p className="font-semibold">{formatCurrency(sale.totalAmount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Pagado:</span>
+                            <p className="font-semibold text-green-600">{formatCurrency(sale.paidAmount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Pendiente:</span>
+                            <p className="font-semibold text-red-600">{formatCurrency(sale.remainingBalance)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Fecha:</span>
+                            <p>{new Date(sale.createdAt).toLocaleDateString('es-CO')}</p>
                           </div>
                         </div>
-                      )}
+
+                        {/* Historial de Pagos */}
+                        {sale.payments && sale.payments.length > 0 && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex items-center gap-2 mb-2">
+                              <History className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm text-gray-600">Historial de pagos:</span>
+                            </div>
+                            <div className="space-y-1">
+                              {sale.payments.slice(0, 3).map((payment) => (
+                                <div key={payment.id} className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">
+                                    {new Date(payment.date).toLocaleDateString('es-CO')} - {payment.paymentMethod === 'cash' ? 'Efectivo' : payment.paymentMethod === 'transfer' ? 'Transferencia' : 'Tarjeta'}
+                                  </span>
+                                  <span className="font-medium text-green-600">
+                                    +{formatCurrency(payment.amount)}
+                                  </span>
+                                </div>
+                              ))}
+                              {sale.payments.length > 3 && (
+                                <p className="text-xs text-gray-500">
+                                  +{sale.payments.length - 3} pagos más...
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 ml-4">
+                        {sale.status !== 'paid' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSale(sale)
+                                setShowPaymentModal(true)
+                              }}
+                            >
+                              <DollarSign className="w-4 h-4 mr-1" />
+                              Registrar Pago
+                            </Button>
+                            
+                            {sale.customer?.phone && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleSendReminder(sale)}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-col gap-2 ml-4">
-                      {sale.remainingBalance > 0 ? (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setSelectedSale(sale)
-                              setShowPaymentModal(true)
-                            }}
-                          >
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            Abonar
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => sendWhatsAppReminder(sale)}
-                          >
-                            <MessageCircle className="w-4 h-4 mr-1" />
-                            Recordar
-                          </Button>
-                        </>
-                      ) : (
-                        <Badge className="bg-green-100 text-green-700">
-                          <Check className="w-3 h-3 mr-1" />
-                          Pagado
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))
-        )}
-      </div>
-      
-      {/* Modal de pago */}
-      <AnimatePresence>
-        {showPaymentModal && selectedSale && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowPaymentModal(false)}
-          >
+                  </motion.div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Modal de Pago */}
+        <AnimatePresence>
+          {showPaymentModal && selectedSale && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+              onClick={() => setShowPaymentModal(false)}
             >
-              <Card className="border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Registrar Abono
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowPaymentModal(false)}
-                      className="h-8 w-8"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Cliente</p>
-                    <p className="font-medium">{selectedSale.customer.name}</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-500">Total:</span>
-                        <span className="ml-1 font-medium">
-                          {formatCurrency(selectedSale.total)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Pendiente:</span>
-                        <span className="ml-1 font-bold text-orange-600">
-                          {formatCurrency(selectedSale.remainingBalance)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-lg p-6 max-w-md w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Registrar Pago</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowPaymentModal(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Monto a abonar
+                    <p className="text-sm text-gray-600">Cliente</p>
+                    <p className="font-semibold">{selectedSale.customer?.name}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Saldo Pendiente</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {formatCurrency(selectedSale.remainingBalance)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Monto a Pagar
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        $
-                      </span>
+                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                       <Input
                         type="number"
-                        placeholder="0"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
-                        className="pl-8"
-                        max={selectedSale.remainingBalance}
+                        placeholder="0"
+                        className="pl-10"
                       />
                     </div>
                   </div>
-                  
-                  {/* Botones de monto rápido */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPaymentAmount((selectedSale.remainingBalance * 0.25).toString())}
-                    >
-                      25%
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPaymentAmount((selectedSale.remainingBalance * 0.5).toString())}
-                    >
-                      50%
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPaymentAmount(selectedSale.remainingBalance.toString())}
-                    >
-                      Total
-                    </Button>
-                  </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Notas (opcional)
+                    <label className="block text-sm font-medium mb-2">
+                      Método de Pago
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as any)}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="cash">Efectivo</option>
+                      <option value="transfer">Transferencia</option>
+                      <option value="card">Tarjeta</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Notas (Opcional)
                     </label>
                     <Input
-                      type="text"
-                      placeholder="Ej: Pago parcial, efectivo"
                       value={paymentNotes}
                       onChange={(e) => setPaymentNotes(e.target.value)}
+                      placeholder="Ej: Abono parcial"
                     />
                   </div>
-                  
-                  <Button
-                    className="w-full"
-                    onClick={handlePayment}
-                    disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Registrar Abono
-                  </Button>
-                </CardContent>
-              </Card>
+
+                  {paymentAmount && parseFloat(paymentAmount) === selectedSale.remainingBalance && (
+                    <Alert>
+                      <Check className="w-4 h-4" />
+                      <AlertDescription>
+                        Este pago liquidará completamente la deuda
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      className="flex-1"
+                      onClick={handleAddPayment}
+                      disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Registrar Pago
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPaymentModal(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
+
+
+

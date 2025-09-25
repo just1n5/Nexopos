@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
@@ -32,7 +32,9 @@ import { usePOSStore } from '@/stores/posStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { useCashRegisterStore } from '@/stores/cashRegisterStore'
 import { formatCurrency } from '@/lib/utils'
-import { PaymentMethod, Customer } from '@/types'
+import { salesService, mapFrontPaymentMethodToBackend } from '@/services'
+import { useAuthStore } from '@/stores/authStore'
+import { PaymentMethod, Sale, SaleType } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import CustomerManager from '@/components/CustomerManager'
 import Receipt from '@/components/Receipt'
@@ -50,6 +52,7 @@ export default function POSView() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [discountValue, setDiscountValue] = useState<string>('')
   const [showDiscountModal, setShowDiscountModal] = useState(false)
+  const [isProcessingSale, setIsProcessingSale] = useState(false)
   const { toast } = useToast()
   
   const {
@@ -61,7 +64,6 @@ export default function POSView() {
     getSubtotal,
     getTotalTax,
     getTotal,
-    processSale,
     selectedCustomer,
     setCustomer,
     discount,
@@ -76,17 +78,29 @@ export default function POSView() {
     filterByCategory,
     getFilteredProducts,
     getCategories,
+    fetchProducts,
+    fetchCategories,
     updateStock
   } = useInventoryStore()
   
   const { addSale } = useCashRegisterStore()
+
+  const { token } = useAuthStore()
+
+  useEffect(() => {
+    if (!token) {
+      return
+    }
+    fetchProducts(token)
+    fetchCategories(token)
+  }, [token, fetchProducts, fetchCategories])
   
   // Obtener productos filtrados
   const filteredProducts = useMemo(() => {
     return getFilteredProducts().filter(p => p.isActive)
   }, [searchQuery, selectedCategory, products])
   
-  // Obtener categorÃ­as
+  // Obtener categorias
   const categories = useMemo(() => {
     return getCategories()
   }, [products])
@@ -114,64 +128,141 @@ export default function POSView() {
   }
 
   // Procesar el pago
-  const handlePayment = () => {
-    if (!selectedPayment) return
-    
-    // Validar si es venta a crÃ©dito y requiere cliente
-    if (selectedPayment === PaymentMethod.CREDIT && !selectedCustomer) {
+  const handlePayment = async () => {
+    if (!selectedPayment) {
       toast({
-        title: "Cliente requerido",
-        description: "Debes seleccionar un cliente para ventas a crÃ©dito",
+        title: "Selecciona un metodo de pago",
+        description: "Elige como deseas registrar el pago antes de continuar.",
         variant: "destructive"
       })
       return
     }
-    
-    // Validar si el cliente tiene crÃ©dito disponible
+
+    if (cart.length === 0) {
+      toast({
+        title: "Carrito vacio",
+        description: "Agrega productos al carrito antes de procesar la venta.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!token) {
+      toast({
+        title: "Sesion requerida",
+        description: "Inicia sesion nuevamente para poder registrar la venta.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (selectedPayment === PaymentMethod.CREDIT && !selectedCustomer) {
+      toast({
+        title: "Cliente requerido",
+        description: "Debes seleccionar un cliente para ventas a credito.",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (selectedPayment === PaymentMethod.CREDIT && selectedCustomer) {
-      const creditLimit = selectedCustomer.creditLimit || 0
-      const currentDebt = selectedCustomer.currentDebt || 0
+      const creditLimit = selectedCustomer.creditLimit ?? 0
+      const currentDebt = selectedCustomer.currentDebt ?? 0
       const availableCredit = creditLimit - currentDebt
-      
+
       if (getTotal() > availableCredit) {
         toast({
-          title: "CrÃ©dito insuficiente",
-          description: `El cliente solo tiene ${formatCurrency(availableCredit)} de crÃ©dito disponible`,
+          title: "Credito insuficiente",
+          description: `El cliente solo tiene ${formatCurrency(availableCredit)} de credito disponible`,
           variant: "destructive"
         })
         return
       }
     }
-    
-    const cashAmount = selectedPayment === PaymentMethod.CASH ? parseFloat(cashReceived) : undefined
-    const sale = processSale(selectedPayment, cashAmount)
-    
-    if (sale) {
-      // Actualizar inventario
-      sale.items.forEach(item => {
+
+    const parsedCash = parseFloat(cashReceived)
+    const cashAmount = Number.isFinite(parsedCash) ? parsedCash : 0
+
+    if (selectedPayment === PaymentMethod.CASH && cashAmount < getTotal()) {
+      toast({
+        title: "Monto insuficiente",
+        description: "El efectivo recibido no alcanza para cubrir el total.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const saleType = selectedPayment === PaymentMethod.CREDIT ? SaleType.CREDIT : SaleType.REGULAR
+    const payments = [
+      {
+        method: mapFrontPaymentMethodToBackend(selectedPayment),
+        amount: saleType === SaleType.CREDIT ? 0 : getTotal(),
+        receivedAmount: selectedPayment === PaymentMethod.CASH ? cashAmount : undefined
+      }
+    ]
+
+    const items = cart.map((item) => {
+      const taxRate = item.taxRate ?? 19
+      const baseUnitPrice = item.unitPrice ?? (item.price / (1 + taxRate / 100))
+      const normalizedUnitPrice = Math.round((baseUnitPrice + Number.EPSILON) * 100) / 100
+
+      return {
+        productId: item.product.id,
+        productVariantId: item.variant?.id,
+        quantity: item.quantity,
+        unitPrice: normalizedUnitPrice,
+        discountPercent: item.discount > 0 ? item.discount : undefined,
+        notes: item.notes
+      }
+    })
+
+    const salePayload = {
+      customerId: selectedCustomer?.id,
+      type: saleType,
+      items,
+      payments,
+      discountPercent: discount > 0 ? discount : undefined
+    }
+
+    const cartSnapshot = cart.map((item) => ({ ...item }))
+
+    setIsProcessingSale(true)
+    try {
+      const sale = await salesService.createSale(salePayload, token)
+
+      cartSnapshot.forEach((item) => {
         updateStock(item.product.id, -item.quantity, item.variant?.id)
       })
-      
-      // Agregar la venta al registro de caja
+      await fetchProducts(token)
+      await fetchCategories(token)
+
       addSale(sale)
-      
-      // Mostrar recibo
       setLastSale(sale)
       setShowReceipt(true)
-      
-      // Mostrar notificaciÃ³n de Ã©xito
+
       toast({
-        title: "âœ“ Venta completada",
-        description: `Total: ${formatCurrency(sale.total)}`,
+        title: "Venta completada",
+        description: `Total: ${formatCurrency(sale.total)}` ,
         variant: "success" as any
       })
-      
-      // Limpiar y cerrar
+
+      clearCart()
       setShowPaymentModal(false)
       setSelectedPayment(null)
       setCashReceived('')
       setIsMobileCartOpen(false)
-      setGlobalDiscount(0)
+      if (discount > 0) {
+        setGlobalDiscount(0)
+      }
+    } catch (error) {
+      console.error('Error procesando la venta:', error)
+      toast({
+        title: "Error al procesar la venta",
+        description: error instanceof Error ? error.message : 'No fue posible completar la transaccion. Intenta de nuevo.',
+        variant: "destructive"
+      })
+    } finally {
+      setIsProcessingSale(false)
     }
   }
 
@@ -248,7 +339,7 @@ export default function POSView() {
     } else {
       toast({
         title: "Producto no encontrado",
-        description: `No se encontrÃ³ un producto con el cÃ³digo ${barcode}`,
+        description: `No se encontro un producto con el codigo ${barcode}`,
         variant: "destructive"
       })
     }
@@ -256,16 +347,16 @@ export default function POSView() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
-      {/* Panel Izquierdo - CatÃ¡logo de Productos */}
+      {/* Panel Izquierdo - Catálogo de Productos */}
       <div className={`flex-1 flex flex-col ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
-        {/* Header de bÃºsqueda y categorÃ­as */}
+        {/* Header de busqueda y categorias */}
         <div className="bg-white border-b p-4 space-y-4">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 type="text"
-                placeholder="Buscar por nombre, cÃ³digo o cÃ³digo de barras..."
+                placeholder="Buscar por nombre, codigo o codigo de barras..."
                 value={searchQuery}
                 onChange={(e) => searchProducts(e.target.value)}
                 className="pl-10 h-12 text-base"
@@ -283,7 +374,7 @@ export default function POSView() {
             </Button>
           </div>
           
-          {/* Filtros de categorÃ­a */}
+          {/* Filtros de categoria */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             <Button
               variant={selectedCategory === null ? 'default' : 'outline'}
@@ -368,7 +459,7 @@ export default function POSView() {
           </div>
         </div>
 
-        {/* SecciÃ³n de cliente */}
+        {/* Seccion de cliente */}
         {cart.length > 0 && (
           <div className="border-b">
             <Button
@@ -411,7 +502,7 @@ export default function POSView() {
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <ShoppingCart className="w-16 h-16 mb-4" />
-              <p className="text-lg">Carrito vacÃ­o</p>
+              <p className="text-lg">Carrito vacio</p>
               <p className="text-sm">Agrega productos para comenzar</p>
             </div>
           ) : (
@@ -553,7 +644,7 @@ export default function POSView() {
         </div>
       </div>
 
-      {/* BotÃ³n flotante para mÃ³vil */}
+      {/* Boton flotante para movil */}
       <Button
         className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg lg:hidden z-10"
         size="icon"
@@ -621,7 +712,7 @@ export default function POSView() {
                     </div>
                   </div>
 
-                  {/* Botones de descuento rÃ¡pido */}
+                  {/* Botones de descuento rapido */}
                   <div className="grid grid-cols-4 gap-2">
                     {[5, 10, 15, 20].map(value => (
                       <Button
@@ -691,19 +782,19 @@ export default function POSView() {
                     </div>
                   </div>
 
-                  {/* Alerta para venta a crÃ©dito */}
+                  {/* Alerta para venta a credito */}
                   {selectedPayment === PaymentMethod.CREDIT && !selectedCustomer && (
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Debes seleccionar un cliente para ventas a crÃ©dito
+                        Debes seleccionar un cliente para ventas a credito
                       </AlertDescription>
                     </Alert>
                   )}
 
-                  {/* MÃ©todos de pago */}
+                  {/* Metodos de pago */}
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">MÃ©todo de pago</p>
+                    <p className="text-sm font-medium text-gray-600">Metodo de pago</p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         variant={selectedPayment === PaymentMethod.CASH ? 'default' : 'outline'}
@@ -747,7 +838,7 @@ export default function POSView() {
                       </Button>
                     </div>
                     
-                    {/* BotÃ³n para fiado */}
+                    {/* Boton para fiado */}
                     <Button
                       variant={selectedPayment === PaymentMethod.CREDIT ? 'default' : 'outline'}
                       className="w-full h-16"
@@ -755,7 +846,7 @@ export default function POSView() {
                     >
                       <div className="flex flex-col items-center">
                         <UserPlus className="w-6 h-6 mb-1" />
-                        <span className="text-xs">Fiado (CrÃ©dito)</span>
+                        <span className="text-xs">Fiado (Credito)</span>
                       </div>
                     </Button>
                   </div>
@@ -781,7 +872,7 @@ export default function POSView() {
                         </div>
                       </div>
 
-                      {/* Botones de cantidad rÃ¡pida */}
+                      {/* Botones de cantidad rapida */}
                       <div className="grid grid-cols-3 gap-2">
                         {quickAmounts.map(amount => (
                           <Button
@@ -816,10 +907,11 @@ export default function POSView() {
                     </div>
                   )}
 
-                  {/* BotÃ³n de confirmar */}
+                  {/* Boton de confirmar */}
                   <Button
                     className="w-full h-12"
                     disabled={
+                      isProcessingSale ||
                       !selectedPayment || 
                       (selectedPayment === PaymentMethod.CASH && calculateChange() < 0) ||
                       (selectedPayment === PaymentMethod.CREDIT && !selectedCustomer)
@@ -827,7 +919,7 @@ export default function POSView() {
                     onClick={handlePayment}
                   >
                     <ReceiptIcon className="w-5 h-5 mr-2" />
-                    Confirmar Pago
+                    {isProcessingSale ? 'Procesando...' : 'Confirmar Pago'}
                   </Button>
                 </CardContent>
               </Card>
@@ -871,4 +963,3 @@ export default function POSView() {
     </div>
   )
 }
-

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from 'react'
+﻿import React, { lazy, Suspense, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -259,7 +259,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
       
@@ -349,3 +349,4 @@ export default function App() {
     </>
   )
 }
+

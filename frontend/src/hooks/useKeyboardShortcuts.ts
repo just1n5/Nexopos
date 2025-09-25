@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+﻿import { useEffect, useCallback } from 'react'
 
 type KeyboardShortcut = {
   key: string
@@ -50,6 +50,7 @@ export const POSShortcuts = {
   CASH_PAYMENT: { key: '1', alt: true, description: 'Pago en efectivo' },
   CARD_PAYMENT: { key: '2', alt: true, description: 'Pago con tarjeta' },
   CREDIT_SALE: { key: '3', alt: true, description: 'Venta a crédito (Fiar)' },
+  BARCODE_SCANNER: { key: 'b', alt: true, description: 'Alternar lector de barras' },
   ADD_CUSTOMER: { key: 'c', ctrl: true, description: 'Agregar cliente' },
   PRINT_LAST: { key: 'r', ctrl: true, description: 'Reimprimir último recibo' },
   OPEN_DRAWER: { key: 'd', ctrl: true, description: 'Abrir cajón monedero' },
@@ -59,3 +60,4 @@ export const POSShortcuts = {
 }
 
 export default useKeyboardShortcuts
+

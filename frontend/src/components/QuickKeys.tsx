@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package,
   Plus,
-  Edit2,
-  Trash2,
   Settings,
   X,
   Check,
@@ -448,3 +446,6 @@ export default function QuickKeys({
     </>
   )
 }
+
+
+

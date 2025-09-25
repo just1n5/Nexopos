@@ -146,7 +146,7 @@ export const useCashRegisterStore = create<CashRegisterState>()(
           if (!current) return 0
           
           const cashSales = current.sales
-            .filter(sale => sale.paymentMethod === PaymentMethod.CASH)
+            .filter(sale => sale.primaryPaymentMethod === PaymentMethod.CASH)
             .reduce((sum, sale) => sum + sale.total, 0)
           
           const totalExpenses = current.expenses
@@ -164,20 +164,28 @@ export const useCashRegisterStore = create<CashRegisterState>()(
               [PaymentMethod.CARD]: 0,
               [PaymentMethod.NEQUI]: 0,
               [PaymentMethod.DAVIPLATA]: 0,
-              [PaymentMethod.CREDIT]: 0
+              [PaymentMethod.CREDIT]: 0,
+              [PaymentMethod.BANK_TRANSFER]: 0,
+              [PaymentMethod.OTHER]: 0
             }
           }
           
-          const result = {
+          const result: Record<PaymentMethod, number> = {
             [PaymentMethod.CASH]: 0,
             [PaymentMethod.CARD]: 0,
             [PaymentMethod.NEQUI]: 0,
             [PaymentMethod.DAVIPLATA]: 0,
-            [PaymentMethod.CREDIT]: 0
+            [PaymentMethod.CREDIT]: 0,
+            [PaymentMethod.BANK_TRANSFER]: 0,
+            [PaymentMethod.OTHER]: 0
           }
           
-          current.sales.forEach(sale => {
-            result[sale.paymentMethod] += sale.total
+          current.sales.forEach((sale) => {
+            const method = sale.primaryPaymentMethod
+            if (!method) {
+              return
+            }
+            result[method] += sale.total
           })
           
           return result
@@ -200,3 +208,4 @@ export const useCashRegisterStore = create<CashRegisterState>()(
     )
   )
 )
+

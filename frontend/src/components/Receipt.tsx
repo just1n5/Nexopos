@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react'
+﻿import { useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Printer, Download, Share2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
-import { PaymentMethod, type Sale } from '@/types'
+import { PaymentMethod, Sale, SaleType } from '@/types'
 
 interface ReceiptProps {
   sale: Sale
@@ -14,79 +14,61 @@ interface ReceiptProps {
   showActions?: boolean
 }
 
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  [PaymentMethod.CASH]: 'Efectivo',
+  [PaymentMethod.CARD]: 'Tarjeta',
+  [PaymentMethod.NEQUI]: 'Nequi',
+  [PaymentMethod.DAVIPLATA]: 'Daviplata',
+  [PaymentMethod.CREDIT]: 'Crédito (Fiado)',
+  [PaymentMethod.BANK_TRANSFER]: 'Transferencia',
+  [PaymentMethod.OTHER]: 'Otro'
+}
+
 export default function Receipt({ sale, onClose, showActions = true }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { business } = useAuthStore()
-  
-  // Obtener el nombre del mÃ©todo de pago
-  const getPaymentMethodName = (method: PaymentMethod) => {
-    const methods = {
-      [PaymentMethod.CASH]: 'Efectivo',
-      [PaymentMethod.CARD]: 'Tarjeta',
-      [PaymentMethod.NEQUI]: 'Nequi',
-      [PaymentMethod.DAVIPLATA]: 'Daviplata',
-      [PaymentMethod.CREDIT]: 'CrÃ©dito (Fiado)'
-    }
-    return methods[method] || method
-  }
-  
-  // Imprimir recibo
+
+  const payments = sale.payments ?? []
+  const primaryMethod = sale.primaryPaymentMethod ?? sale.paymentMethod
+  const primaryPaymentName = PAYMENT_LABELS[primaryMethod] ?? 'Otro'
+  const fallbackDate = sale.createdAt ?? sale.date
+
+  const cashDetails = useMemo(() => {
+    if (primaryMethod !== PaymentMethod.CASH) return null
+    const received = sale.cashReceived ?? payments[0]?.receivedAmount ?? 0
+    const change = sale.change ?? payments[0]?.changeGiven ?? 0
+    return { received, change }
+  }, [primaryMethod, sale.cashReceived, sale.change, payments])
+
   const handlePrint = () => {
     const printContent = receiptRef.current?.innerHTML
     if (!printContent) return
-    
+
     const printWindow = window.open('', '', 'width=300,height=600')
     if (!printWindow) return
-    
+
     printWindow.document.write(`
       <html>
         <head>
-          <title>Recibo - ${sale.invoiceNumber || sale.id}</title>
+          <title>Recibo - ${sale.saleNumber || sale.invoiceNumber || sale.id}</title>
           <style>
-            @page { 
-              size: 80mm auto;
-              margin: 0;
-            }
-            body { 
-              font-family: monospace; 
+            @page { size: 80mm auto; margin: 0; }
+            body {
+              font-family: monospace;
               font-size: 12px;
               line-height: 1.4;
               margin: 0;
               padding: 10px;
             }
-            .receipt { 
-              width: 100%;
-              max-width: 280px;
-            }
+            .receipt { width: 100%; max-width: 280px; }
             .center { text-align: center; }
             .bold { font-weight: bold; }
-            .divider { 
-              border-top: 1px dashed #000; 
-              margin: 8px 0;
-            }
-            .item { 
-              display: flex; 
-              justify-content: space-between;
-              margin: 4px 0;
-            }
-            .item-name { 
-              flex: 1;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .total { 
-              font-size: 14px; 
-              font-weight: bold;
-              margin-top: 8px;
-            }
-            .footer { 
-              margin-top: 16px;
-              text-align: center;
-              font-size: 10px;
-            }
-            @media print {
-              body { margin: 0; }
-            }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .item { display: flex; justify-content: space-between; margin: 4px 0; }
+            .item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+            .total { font-size: 14px; font-weight: bold; margin-top: 8px; }
+            .footer { margin-top: 16px; text-align: center; font-size: 10px; }
+            @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
@@ -94,45 +76,42 @@ export default function Receipt({ sale, onClose, showActions = true }: ReceiptPr
         </body>
       </html>
     `)
-    
+
     printWindow.document.close()
     printWindow.focus()
-    
+
     setTimeout(() => {
       printWindow.print()
       printWindow.close()
     }, 250)
   }
-  
-  // Compartir por WhatsApp (simulado)
+
   const handleShare = () => {
     const message = `
-*${business?.name}*
-${business?.address}
-Tel: ${business?.phone}
-NIT: ${business?.nit}
+*${business?.name ?? 'NexoPOS'}*
+${business?.address ?? ''}
+Tel: ${business?.phone ?? ''}
+NIT: ${business?.nit ?? ''}
 
 RECIBO DE VENTA
-${sale.invoiceNumber ? `No. ${sale.invoiceNumber}` : ''}
-${formatDateTime(sale.date)}
+${sale.saleNumber ? `No. ${sale.saleNumber}` : ''}
+${formatDateTime(fallbackDate)}
 
 ---PRODUCTOS---
-${sale.items.map(item => 
-  `${item.product.name}\n${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
-).join('\n\n')}
+${sale.items.map((item) => `${item.product.name}\n${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`).join('\n\n')}
 
 ---TOTALES---
 Subtotal: ${formatCurrency(sale.subtotal)}
+Descuento: ${formatCurrency(sale.discount)}
 IVA: ${formatCurrency(sale.tax)}
 TOTAL: ${formatCurrency(sale.total)}
 
-Pago: ${getPaymentMethodName(sale.paymentMethod)}
-${sale.cashReceived ? `Recibido: ${formatCurrency(sale.cashReceived)}\nCambio: ${formatCurrency(sale.change || 0)}` : ''}
+Pago: ${primaryPaymentName}
+${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${formatCurrency(cashDetails.change)}` : ''}
 
-Â¡Gracias por su compra!
+¡Gracias por su compra!
     `.trim()
-    
-    // En producciÃ³n, esto abrirÃ­a WhatsApp
+
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
   }
@@ -154,48 +133,27 @@ ${sale.cashReceived ? `Recibido: ${formatCurrency(sale.cashReceived)}\nCambio: $
             <X className="w-4 h-4" />
           </Button>
         )}
-        
-        {/* Contenido del recibo */}
+
         <div ref={receiptRef} className="receipt p-6">
-          {/* Header */}
-          <div className="center mb-4">
-            <h2 className="bold text-lg">{business?.name || 'NexoPOS'}</h2>
-            <p className="text-xs text-gray-600">
-              {business?.address && `${business.address}\n`}
-              {business?.phone && `Tel: ${business.phone}\n`}
-              {business?.nit && `NIT: ${business.nit}`}
-            </p>
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-semibold">{business?.name ?? 'NexoPOS'}</h2>
+            {business?.address && <p className="text-xs text-gray-500">{business.address}</p>}
+            {business?.phone && <p className="text-xs text-gray-500">Tel: {business.phone}</p>}
+            {business?.nit && <p className="text-xs text-gray-500">NIT: {business.nit}</p>}
           </div>
-          
+
           <Separator className="divider" />
-          
-          {/* InformaciÃ³n de la venta */}
-          <div className="text-xs mb-3">
-            <div className="item">
-              <span>Fecha:</span>
-              <span>{formatDateTime(sale.date)}</span>
-            </div>
-            {sale.invoiceNumber && (
-              <div className="item">
-                <span>No. Factura:</span>
-                <span className="bold">{sale.invoiceNumber}</span>
-              </div>
-            )}
-            {sale.customerId && (
-              <div className="item">
-                <span>Cliente:</span>
-                <span>ID: {sale.customerId}</span>
-              </div>
-            )}
+
+          <div className="space-y-1 text-xs mb-3">
+            <p><span className="font-semibold">Recibo:</span> {sale.saleNumber ?? sale.invoiceNumber ?? sale.id}</p>
+            <p><span className="font-semibold">Fecha:</span> {formatDateTime(fallbackDate)}</p>
+            {sale.customerName && <p><span className="font-semibold">Cliente:</span> {sale.customerName}</p>}
           </div>
-          
-          <Separator className="divider" />
-          
-          {/* Items */}
+
           <div className="mb-3">
             <div className="bold text-xs mb-2">PRODUCTOS</div>
-            {sale.items.map((item, index) => (
-              <div key={index} className="mb-2">
+            {sale.items.map((item) => (
+              <div key={item.id} className="mb-2">
                 <div className="item-name text-xs font-medium">
                   {item.product.name}
                   {item.variant && ` - ${item.variant.name}`}
@@ -204,9 +162,7 @@ ${sale.cashReceived ? `Recibido: ${formatCurrency(sale.cashReceived)}\nCambio: $
                   <span className="text-gray-600">
                     {item.quantity} x {formatCurrency(item.price)}
                   </span>
-                  <span className="font-medium">
-                    {formatCurrency(item.total)}
-                  </span>
+                  <span className="font-medium">{formatCurrency(item.total)}</span>
                 </div>
                 {item.discount > 0 && (
                   <div className="text-xs text-gray-500">
@@ -216,100 +172,104 @@ ${sale.cashReceived ? `Recibido: ${formatCurrency(sale.cashReceived)}\nCambio: $
               </div>
             ))}
           </div>
-          
+
           <Separator className="divider" />
-          
-          {/* Totales */}
-          <div className="mb-3">
-            <div className="item text-xs">
+
+          <div className="mb-3 text-xs space-y-1">
+            <div className="item">
               <span>Subtotal:</span>
               <span>{formatCurrency(sale.subtotal)}</span>
             </div>
             {sale.discount > 0 && (
-              <div className="item text-xs">
+              <div className="item">
                 <span>Descuento:</span>
                 <span>-{formatCurrency(sale.discount)}</span>
               </div>
             )}
-            <div className="item text-xs">
+            <div className="item">
               <span>IVA:</span>
               <span>{formatCurrency(sale.tax)}</span>
             </div>
             <div className="item total text-base">
-              <span>TOTAL:</span>
+              <span>Total:</span>
               <span>{formatCurrency(sale.total)}</span>
             </div>
           </div>
-          
+
           <Separator className="divider" />
-          
-          {/* InformaciÃ³n de pago */}
-          <div className="mb-3">
-            <div className="item text-xs">
+
+          <div className="mb-3 text-xs space-y-1">
+            <div className="item">
               <span>Forma de pago:</span>
-              <span className="font-medium">
-                {getPaymentMethodName(sale.paymentMethod)}
-              </span>
+              <span className="font-medium">{primaryPaymentName}</span>
             </div>
-            {sale.paymentMethod === PaymentMethod.CASH && sale.cashReceived && (
+            {payments.length > 1 && (
+              <div className="text-[10px] text-gray-500 space-y-1">
+                {payments.slice(1).map((payment) => (
+                  <div key={payment.id} className="flex justify-between">
+                    <span>{PAYMENT_LABELS[payment.method] ?? payment.method}:</span>
+                    <span>{formatCurrency(payment.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {cashDetails && (
               <>
-                <div className="item text-xs">
+                <div className="item">
                   <span>Recibido:</span>
-                  <span>{formatCurrency(sale.cashReceived)}</span>
+                  <span>{formatCurrency(cashDetails.received)}</span>
                 </div>
-                <div className="item text-xs font-medium">
+                <div className="item font-medium">
                   <span>Cambio:</span>
-                  <span>{formatCurrency(sale.change || 0)}</span>
+                  <span>{formatCurrency(cashDetails.change)}</span>
                 </div>
               </>
             )}
-            {sale.paymentMethod === PaymentMethod.CREDIT && (
+            {(sale.saleType === SaleType.CREDIT || primaryMethod === PaymentMethod.CREDIT || (sale.creditAmount ?? 0) > 0) && (
               <div className="text-xs text-center mt-2 p-2 bg-yellow-50 rounded">
-                <span className="font-medium">VENTA A CRÃ‰DITO</span>
+                <span className="font-medium">Venta a crédito</span>
+                {sale.creditAmount != null && (
+                  <p>Saldo pendiente: {formatCurrency(sale.creditAmount)}</p>
+                )}
+                {sale.creditDueDate && (
+                  <p>Fecha límite: {formatDateTime(sale.creditDueDate)}</p>
+                )}
               </div>
             )}
           </div>
-          
+
           <Separator className="divider" />
-          
-          {/* Footer */}
+
           <div className="footer">
-            <p className="text-xs mb-2">Â¡Gracias por su compra!</p>
+            <p className="text-xs mb-2">¡Gracias por su compra!</p>
             {business?.dianResolution && (
-              <div className="text-[10px] text-gray-500">
-                <p>ResoluciÃ³n DIAN: {business.dianResolution.resolution}</p>
+              <div className="text-[10px] text-gray-500 space-y-1">
+                <p>Resolución DIAN: {business.dianResolution.resolution}</p>
                 <p>
-                  Autoriza del {business.dianResolution.prefix}{business.dianResolution.startNumber} 
-                  al {business.dianResolution.prefix}{business.dianResolution.endNumber}
+                  Autorizado del {business.dianResolution.prefix}{business.dianResolution.startNumber}
+                  {' '}al {business.dianResolution.prefix}{business.dianResolution.endNumber}
                 </p>
               </div>
             )}
-            <p className="text-[10px] text-gray-400 mt-2">
-              Powered by NexoPOS
-            </p>
+            <p className="text-[10px] text-gray-400 mt-2">Powered by NexoPOS</p>
           </div>
         </div>
-        
-        {/* Acciones */}
+
         {showActions && (
           <>
             <Separator />
             <div className="p-4 flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handlePrint}
-              >
+              <Button variant="outline" className="flex-1" onClick={handlePrint}>
                 <Printer className="w-4 h-4 mr-2" />
                 Imprimir
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleShare}
-              >
+              <Button variant="outline" className="flex-1" onClick={handleShare}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartir
+              </Button>
+              <Button variant="default" className="flex-1" onClick={() => window.print()}>
+                <Download className="w-4 h-4 mr-2" />
+                Guardar PDF
               </Button>
             </div>
           </>

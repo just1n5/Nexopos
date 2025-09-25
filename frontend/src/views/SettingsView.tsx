@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import { useState } from 'react'
 import { 
   Settings, 
   Store, 
@@ -396,3 +396,4 @@ export default function SettingsView() {
     </div>
   )
 }
+
