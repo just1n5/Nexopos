@@ -40,7 +40,7 @@ export class CashRegisterController {
   @ApiResponse({ status: 201, description: 'Cash register opened successfully' })
   @ApiResponse({ status: 409, description: 'Cash register already open' })
   async open(@Body() openDto: OpenCashRegisterDto, @Request() req) {
-    return this.cashRegisterService.openCashRegister(openDto, req.user.userId);
+    return this.cashRegisterService.openCashRegister(openDto, req.user.id);
   }
 
   @Post(':id/close')
@@ -53,7 +53,7 @@ export class CashRegisterController {
     @Body() closeDto: CloseCashRegisterDto,
     @Request() req
   ) {
-    return this.cashRegisterService.closeCashRegister(id, closeDto, req.user.userId);
+    return this.cashRegisterService.closeCashRegister(id, closeDto, req.user.id);
   }
 
   @Get('current')
@@ -61,7 +61,7 @@ export class CashRegisterController {
   @ApiResponse({ status: 200, description: 'Current cash register session' })
   @ApiResponse({ status: 404, description: 'No open cash register found' })
   async getCurrent(@Request() req) {
-    const session = await this.cashRegisterService.getCurrentSession(req.user.userId);
+    const session = await this.cashRegisterService.getCurrentSession(req.user.id);
     if (!session) {
       return { message: 'No open cash register session' };
     }
@@ -75,7 +75,7 @@ export class CashRegisterController {
     @Query('cashRegisterId') cashRegisterId?: string,
     @Request() req?
   ) {
-    return this.cashRegisterService.getSummary(cashRegisterId, req?.user?.userId);
+    return this.cashRegisterService.getSummary(cashRegisterId, req?.user?.id);
   }
 
   @Post('movements')
@@ -83,21 +83,21 @@ export class CashRegisterController {
   @ApiResponse({ status: 201, description: 'Movement added successfully' })
   @ApiResponse({ status: 400, description: 'No open cash register or insufficient funds' })
   async addMovement(@Body() movementDto: CreateMovementDto, @Request() req) {
-    return this.cashRegisterService.addMovement(movementDto, req.user.userId);
+    return this.cashRegisterService.addMovement(movementDto, req.user.id);
   }
 
   @Post('expenses')
   @ApiOperation({ summary: 'Register an expense' })
   @ApiResponse({ status: 201, description: 'Expense registered successfully' })
   async addExpense(@Body() expenseDto: CreateExpenseDto, @Request() req) {
-    return this.cashRegisterService.addExpense(expenseDto, req.user.userId);
+    return this.cashRegisterService.addExpense(expenseDto, req.user.id);
   }
 
   @Post('adjustments')
   @ApiOperation({ summary: 'Make a cash adjustment' })
   @ApiResponse({ status: 201, description: 'Adjustment made successfully' })
   async makeAdjustment(@Body() adjustmentDto: CashAdjustmentDto, @Request() req) {
-    return this.cashRegisterService.makeCashAdjustment(adjustmentDto, req.user.userId);
+    return this.cashRegisterService.makeCashAdjustment(adjustmentDto, req.user.id);
   }
 
   @Get(':id/movements')

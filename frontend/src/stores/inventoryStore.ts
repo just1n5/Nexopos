@@ -1,7 +1,7 @@
 ﻿import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import type { Product } from '@/types'
-import { productsService, categoriesService } from '@/services'
+import { productsService, categoriesService, inventoryService, MovementType } from '@/services'
 
 interface InventoryState {
   products: Product[]
@@ -15,6 +15,7 @@ interface InventoryState {
   fetchProducts: (token?: string) => Promise<void>
   fetchCategories: (token?: string) => Promise<void>
   updateStock: (productId: string, quantity: number, variantId?: string) => void
+  adjustStock: (productId: string, quantity: number, reason: string, token: string) => Promise<void>
   searchProducts: (query: string) => void
   filterByCategory: (category: string | null) => void
 
@@ -156,6 +157,30 @@ export const useInventoryStore = create<InventoryState>()(
           }
 
           return filtered
+        },
+
+        adjustStock: async (productId, quantity, reason, token) => {
+          try {
+            await inventoryService.adjustStock(
+              {
+                productId,
+                quantity,
+                movementType: MovementType.ADJUSTMENT,
+                reason,
+                notes: `Manual adjustment: ${reason}`
+              },
+              token
+            )
+            
+            // Recargar productos para reflejar el cambio
+            await get().fetchProducts(token)
+          } catch (error) {
+            console.error('Error ajustando stock:', error)
+            set({
+              error: error instanceof Error ? error.message : 'No fue posible ajustar el stock'
+            })
+            throw error
+          }
         },
 
         clearError: () => set({ error: null })

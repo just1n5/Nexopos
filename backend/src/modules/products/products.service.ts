@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -6,6 +6,8 @@ import { ProductVariant } from './entities/product-variant.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
+import { InventoryService } from '../inventory/inventory.service';
+import { MovementType } from '../inventory/entities/inventory-movement.entity';
 
 @Injectable()
 export class ProductsService {
@@ -13,7 +15,9 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productsRepository: Repository<Product>,
     @InjectRepository(ProductVariant)
-    private readonly variantsRepository: Repository<ProductVariant>
+    private readonly variantsRepository: Repository<ProductVariant>,
+    @Inject(forwardRef(() => InventoryService))
+    private readonly inventoryService: InventoryService
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -22,7 +26,55 @@ export class ProductsService {
       variants: createProductDto.variants?.map((variant) => this.variantsRepository.create(variant)) ?? []
     });
 
-    return this.productsRepository.save(product);
+    const savedProduct = await this.productsRepository.save(product);
+
+    // Register initial stock in inventory for each variant
+    if (savedProduct.variants && savedProduct.variants.length > 0) {
+      for (const variant of savedProduct.variants) {
+        const stockValue = variant.stock || 0;
+        if (stockValue > 0) {
+          try {
+            await this.inventoryService.adjustStock(
+              savedProduct.id,
+              stockValue,
+              MovementType.ADJUSTMENT,
+              'system', // userId
+              {
+                variantId: variant.id,
+                unitCost: Number(variant.price || savedProduct.basePrice || 0),
+                reason: 'Initial stock',
+                notes: `Initial stock for variant ${variant.name || variant.sku}`
+              }
+            );
+          } catch (error) {
+            console.error(`Failed to register initial stock for variant ${variant.id}:`, error);
+            // Continue with other variants even if one fails
+          }
+        }
+      }
+    } else {
+      // If no variants, register stock for the main product
+      const stockValue = createProductDto.stock || 0;
+      if (stockValue > 0) {
+        try {
+          await this.inventoryService.adjustStock(
+            savedProduct.id,
+            stockValue,
+            MovementType.ADJUSTMENT,
+            'system',
+            {
+              unitCost: Number(savedProduct.basePrice || 0),
+              reason: 'Initial stock',
+              notes: `Initial stock for product ${savedProduct.name}`
+            }
+          );
+        } catch (error) {
+          console.error(`Failed to register initial stock for product ${savedProduct.id}:`, error);
+        }
+      }
+    }
+
+    return savedProduct;
   }
 
   async findAll(): Promise<Product[]> {

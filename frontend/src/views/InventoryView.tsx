@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, RefreshCw, AlertCircle, FileSpreadsheet, Download, X, Save } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, FileSpreadsheet, Download, X, Save, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,8 @@ import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/hooks/useToast';
-import { productsService } from '@/services';
+import { productsService, inventoryService, MovementType } from '@/services';
+import { useInventoryStore } from '@/stores/inventoryStore';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -198,6 +199,15 @@ export default function InventoryView() {
     color: '',
     stock: '',
     priceDelta: ''
+  });
+
+  // Estado para ajustar stock
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedProductForStock, setSelectedProductForStock] = useState<InventoryRow | null>(null);
+  const [stockAdjustment, setStockAdjustment] = useState({
+    quantity: '',
+    reason: '',
+    type: 'add' as 'add' | 'subtract'
   });
 
   const fetchProducts = useCallback(async () => {
@@ -504,6 +514,7 @@ export default function InventoryView() {
                       <th className="text-center p-2 font-medium text-gray-700">Stock Total</th>
                       <th className="text-center p-2 font-medium text-gray-700">Estado</th>
                       <th className="text-center p-2 font-medium text-gray-700">Última Actualización</th>
+                      <th className="text-center p-2 font-medium text-gray-700">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -552,6 +563,20 @@ export default function InventoryView() {
                           </td>
                           <td className="p-2 text-center text-sm text-gray-500">
                             {product.updatedAt.toLocaleDateString('es-CO')}
+                          </td>
+                          <td className="p-2 text-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedProductForStock(product);
+                                setShowStockModal(true);
+                                setStockAdjustment({ quantity: '', reason: '', type: 'add' });
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                              Ajustar Stock
+                            </Button>
                           </td>
                         </tr>
                       );
@@ -709,6 +734,182 @@ export default function InventoryView() {
                     <Button
                       variant="outline"
                       onClick={() => setShowAddModal(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Ajustar Stock */}
+        {showStockModal && selectedProductForStock && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Ajustar Stock</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowStockModal(false);
+                      setSelectedProductForStock(null);
+                    }}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium">{selectedProductForStock.name}</p>
+                    <p className="text-sm text-gray-500">SKU: {selectedProductForStock.sku}</p>
+                    <p className="text-sm text-gray-500">Stock actual: {selectedProductForStock.totalStock}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Tipo de ajuste
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={stockAdjustment.type === 'add' ? 'default' : 'outline'}
+                        onClick={() => setStockAdjustment({ ...stockAdjustment, type: 'add' })}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Agregar
+                      </Button>
+                      <Button
+                        variant={stockAdjustment.type === 'subtract' ? 'default' : 'outline'}
+                        onClick={() => setStockAdjustment({ ...stockAdjustment, type: 'subtract' })}
+                        className="w-full"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Restar
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Cantidad
+                    </label>
+                    <Input
+                      type="number"
+                      value={stockAdjustment.quantity}
+                      onChange={(e) => setStockAdjustment({ ...stockAdjustment, quantity: e.target.value })}
+                      placeholder="Ingrese la cantidad"
+                      min="1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Razón del ajuste
+                    </label>
+                    <Input
+                      value={stockAdjustment.reason}
+                      onChange={(e) => setStockAdjustment({ ...stockAdjustment, reason: e.target.value })}
+                      placeholder="Ej: Inventario físico, pérdida, daño"
+                    />
+                  </div>
+
+                  {stockAdjustment.type === 'subtract' && (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertCircle className="w-4 h-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800">
+                        Se reducirá el stock en {stockAdjustment.quantity || 0} unidades.
+                        Stock resultante: {selectedProductForStock.totalStock - (parseInt(stockAdjustment.quantity) || 0)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {stockAdjustment.type === 'add' && stockAdjustment.quantity && (
+                    <Alert className="bg-green-50 border-green-200">
+                      <AlertCircle className="w-4 h-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        Se aumentará el stock en {stockAdjustment.quantity} unidades.
+                        Stock resultante: {selectedProductForStock.totalStock + (parseInt(stockAdjustment.quantity) || 0)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      onClick={async () => {
+                        if (!stockAdjustment.quantity || !stockAdjustment.reason) {
+                          toast({
+                            title: 'Error',
+                            description: 'Por favor complete todos los campos',
+                            variant: 'destructive'
+                          });
+                          return;
+                        }
+
+                        const quantity = parseInt(stockAdjustment.quantity);
+                        if (isNaN(quantity) || quantity <= 0) {
+                          toast({
+                            title: 'Error',
+                            description: 'Ingrese una cantidad válida',
+                            variant: 'destructive'
+                          });
+                          return;
+                        }
+
+                        const finalQuantity = stockAdjustment.type === 'subtract' ? -quantity : quantity;
+
+                        if (stockAdjustment.type === 'subtract' && selectedProductForStock.totalStock < quantity) {
+                          toast({
+                            title: 'Error',
+                            description: 'No hay suficiente stock para realizar esta operación',
+                            variant: 'destructive'
+                          });
+                          return;
+                        }
+
+                        try {
+                          await inventoryService.adjustStock(
+                            {
+                              productId: selectedProductForStock.id,
+                              quantity: finalQuantity,
+                              movementType: MovementType.ADJUSTMENT,
+                              reason: stockAdjustment.reason,
+                              notes: `Ajuste manual: ${stockAdjustment.reason}`
+                            },
+                            token!
+                          );
+
+                          toast({
+                            title: 'Stock actualizado',
+                            description: `El stock se ha ${stockAdjustment.type === 'add' ? 'aumentado' : 'reducido'} en ${quantity} unidades`
+                          });
+
+                          setShowStockModal(false);
+                          setSelectedProductForStock(null);
+                          await fetchProducts();
+                        } catch (error) {
+                          console.error('Error ajustando stock:', error);
+                          toast({
+                            title: 'Error',
+                            description: error instanceof Error ? error.message : 'No se pudo ajustar el stock',
+                            variant: 'destructive'
+                          });
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      Confirmar Ajuste
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowStockModal(false);
+                        setSelectedProductForStock(null);
+                      }}
                     >
                       Cancelar
                     </Button>

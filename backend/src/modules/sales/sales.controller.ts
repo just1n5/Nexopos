@@ -35,14 +35,14 @@ export class SalesController {
   @ApiResponse({ status: 201, description: 'Sale created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   async create(@Body() createSaleDto: CreateSaleDto, @Request() req) {
-    return this.salesService.create(createSaleDto, req.user.userId);
+    return this.salesService.create(createSaleDto, req.user.id);
   }
 
   @Post('quick')
   @ApiOperation({ summary: 'Create a quick sale (simplified flow)' })
   @ApiResponse({ status: 201, description: 'Quick sale created successfully' })
   async quickSale(@Body() quickSaleDto: QuickSaleDto, @Request() req) {
-    return this.salesService.quickSale(quickSaleDto, req.user.userId);
+    return this.salesService.quickSale(quickSaleDto, req.user.id);
   }
 
   @Post('calculate')
@@ -106,7 +106,7 @@ export class SalesController {
   @ApiResponse({ status: 404, description: 'Sale not found' })
   @ApiResponse({ status: 409, description: 'Sale cannot be cancelled' })
   async cancelSale(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.salesService.cancelSale(id, req.user.userId);
+    return this.salesService.cancelSale(id, req.user.id);
   }
 
   // Reports endpoints

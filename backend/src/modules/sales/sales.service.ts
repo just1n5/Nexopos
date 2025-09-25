@@ -6,6 +6,8 @@ import { SaleItem } from './entities/sale-item.entity';
 import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 import { CreateSaleDto, QuickSaleDto, CalculateSaleDto } from './dto/create-sale.dto';
 import { ProductsService } from '../products/products.service';
+import { InventoryService } from '../inventory/inventory.service';
+import { MovementType } from '../inventory/entities/inventory-movement.entity';
 
 @Injectable()
 export class SalesService {
@@ -18,6 +20,7 @@ export class SalesService {
     private paymentRepository: Repository<Payment>,
     private dataSource: DataSource,
     private productsService: ProductsService,
+    private inventoryService: InventoryService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto, userId: string): Promise<Sale> {
@@ -108,7 +111,11 @@ export class SalesService {
           queryRunner,
           itemDto.productId,
           itemDto.productVariantId,
-          -itemDto.quantity
+          -itemDto.quantity,
+          userId,
+          savedSale.id,
+          savedSale.saleNumber,
+          productInfo.costPrice
         );
       }
 
@@ -256,7 +263,11 @@ export class SalesService {
           queryRunner,
           item.productId,
           item.productVariantId,
-          item.quantity
+          item.quantity,
+          userId,
+          sale.id,
+          sale.saleNumber,
+          item.costPrice
         );
       }
 
@@ -339,7 +350,7 @@ export class SalesService {
     method: string;
     reference?: string;
     notes?: string;
-  }): Promise<Payment[]> {
+  }, userId?: string): Promise<Payment[]> {
     const sale = await this.findOne(saleId);
     
     // Convert string method to PaymentMethod enum
@@ -352,6 +363,7 @@ export class SalesService {
       reference: paymentDto.reference,
       status: PaymentStatus.COMPLETED,
       notes: paymentDto.notes,
+      processedBy: userId,
       processedAt: new Date()
     });
     
@@ -403,12 +415,25 @@ export class SalesService {
         }
       }
 
+      // Ensure costPrice is a number
+      let costPrice = 0;
+      if (variant?.price !== undefined && variant?.price !== null) {
+        costPrice = Number(variant.price);
+      } else if (product.basePrice !== undefined && product.basePrice !== null) {
+        costPrice = Number(product.basePrice);
+      }
+      
+      // Validate that costPrice is a valid number
+      if (isNaN(costPrice) || !isFinite(costPrice)) {
+        costPrice = 0;
+      }
+
       return {
         id: productId,
         name: product.name,
         sku: variant?.sku || product.sku,
         variantName: variant?.name || null,
-        costPrice: variant?.price || product.basePrice || 0,
+        costPrice: costPrice,
         taxRate: 19, // Colombian IVA - this should come from product config
         taxCode: 'IVA',
       };
@@ -440,10 +465,32 @@ export class SalesService {
     queryRunner: QueryRunner,
     productId: string,
     variantId: string | undefined,
-    quantityChange: number
+    quantityChange: number,
+    userId?: string,
+    saleId?: string,
+    saleNumber?: string,
+    costPrice?: number
   ): Promise<void> {
-    // This should update the inventory module
-    // Will be implemented when integrating with inventory module
-    console.log(`Updating inventory for product ${productId}, change: ${quantityChange}`);
+    try {
+      // Use the inventory service to adjust stock
+      // Note: quantityChange is negative for sales (stock reduction)
+      await this.inventoryService.adjustStock(
+        productId,
+        quantityChange,
+        quantityChange < 0 ? MovementType.SALE : MovementType.PURCHASE,
+        userId || 'system',
+        {
+          variantId,
+          referenceType: 'sale',
+          referenceId: saleId,
+          referenceNumber: saleNumber,
+          unitCost: costPrice,
+          notes: quantityChange < 0 ? 'Stock reduced by sale' : 'Stock increased by sale cancellation'
+        }
+      );
+    } catch (error) {
+      console.error(`Error updating inventory for product ${productId}:`, error);
+      throw new BadRequestException(`Failed to update inventory: ${error.message}`);
+    }
   }
 }
