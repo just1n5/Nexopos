@@ -204,14 +204,22 @@ export default function POSView() {
       }
     ]
 
-    const items = cart.map((item) => ({
-      productId: item.product.id,
-      productVariantId: item.variant?.id,
-      quantity: item.quantity,
-      unitPrice: Math.max(0, item.unitPrice || 0),
-      discountPercent: item.discount > 0 ? item.discount : undefined,
-      notes: item.notes
-    }));
+    const items = cart.map((item) => {
+      // Para productos vendidos por peso, calcular unitPrice = subtotal / quantity
+      // para que el backend recalcule correctamente el total
+      const unitPrice = item.isSoldByWeight && item.quantity > 0
+        ? item.subtotal / item.quantity
+        : Math.max(0, item.unitPrice || 0);
+
+      return {
+        productId: item.product.id,
+        productVariantId: item.variant?.id,
+        quantity: item.quantity,
+        unitPrice,
+        discountPercent: item.discount > 0 ? item.discount : undefined,
+        notes: item.notes
+      };
+    });
 
     const salePayload = {
       customerId: selectedCustomer?.id,
