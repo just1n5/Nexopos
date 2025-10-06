@@ -151,15 +151,28 @@ export default function CreditManager() {
       comparison: amount > currentTotalDebt
     })
 
-    // Permitir una pequeña diferencia de centavos por errores de redondeo
-    const TOLERANCE = 0.01
-    if (amount > currentTotalDebt + TOLERANCE) {
-      toast({
-        title: 'Error',
-        description: 'El monto excede el saldo total pendiente',
-        variant: 'destructive'
-      })
-      return
+    // Si el monto es mayor que la deuda, ajustarlo automáticamente
+    // Esto maneja casos donde el usuario redondea hacia arriba (ej: $6804 para pagar $6803.88)
+    let finalAmount = amount
+    if (amount > currentTotalDebt) {
+      const difference = amount - currentTotalDebt
+      // Si la diferencia es pequeña (menos de $1), ajustar al monto exacto
+      if (difference < 1) {
+        finalAmount = currentTotalDebt
+        console.log('[CreditManager] Ajustando monto de pago:', {
+          original: amount,
+          adjusted: finalAmount,
+          difference
+        })
+      } else {
+        // Si la diferencia es mayor a $1, es un error real
+        toast({
+          title: 'Error',
+          description: `El monto excede el saldo total pendiente. Deuda actual: $${currentTotalDebt.toFixed(2)}`,
+          variant: 'destructive'
+        })
+        return
+      }
     }
 
     try {
@@ -168,8 +181,8 @@ export default function CreditManager() {
         .filter(sale => sale.customerId === selectedCustomer.id && sale.status !== 'paid')
         .sort((a, b) => new Date(a.saleDate || a.createdAt).getTime() - new Date(b.saleDate || b.createdAt).getTime())
 
-      // Ajustar el monto total si excede la deuda (prevenir sobrepago)
-      const actualPaymentAmount = Math.min(amount, currentTotalDebt)
+      // Usar el monto final (ya ajustado si es necesario)
+      const actualPaymentAmount = finalAmount
 
       let remainingAmount = actualPaymentAmount
 
