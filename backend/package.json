@@ -15,6 +15,7 @@
     "test:cov": "jest --coverage",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:prod": "node dist/scripts/seed.js",
+    "fix:stock": "ts-node src/scripts/fixes/add-initial-stock.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts"

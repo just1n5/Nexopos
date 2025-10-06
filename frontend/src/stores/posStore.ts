@@ -55,6 +55,7 @@ interface POSState {
   
   // Actions
   addToCart: (product: Product, quantity?: number, variant?: ProductVariant) => void
+  addWeightedToCart: (product: Product, weight: number, total: number) => void
   removeFromCart: (itemId: string) => void
   updateQuantity: (itemId: string, quantity: number) => void
   updateDiscount: (itemId: string, discount: number) => void
@@ -135,6 +136,29 @@ export const usePOSStore = create<POSState>()(
 
             return { cart: [...state.cart, newItem] }
           })
+        },
+
+        addWeightedToCart: (product, weight, total) => {
+          const taxRate = resolveTaxRate(product);
+          const subtotal = roundCurrency(total / (1 + taxRate / 100));
+          const taxAmount = roundCurrency(total - subtotal);
+          const netUnitPrice = toNetUnitPrice(product.pricePerGram || 0, taxRate);
+
+          const newItem: CartItem = {
+            id: generateId(),
+            product,
+            quantity: weight, // Weight in grams
+            price: product.pricePerGram || 0, // Gross price per gram
+            unitPrice: netUnitPrice, // NET price per gram
+            discount: 0,
+            subtotal,
+            tax: taxAmount,
+            taxRate,
+            total,
+            notes: 'Vendido por peso'
+          };
+
+          set((state) => ({ cart: [...state.cart, newItem] }));
         },
 
         // Remove item from cart

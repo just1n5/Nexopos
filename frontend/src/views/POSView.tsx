@@ -31,13 +31,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { usePOSStore } from '@/stores/posStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { useCashRegisterStore } from '@/stores/cashRegisterStore'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatStock } from '@/lib/utils';
 import { salesService, mapFrontPaymentMethodToBackend } from '@/services'
 import { useAuthStore } from '@/stores/authStore'
 import { PaymentMethod, Sale, SaleType } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import CustomerManager from '@/components/CustomerManager'
 import Receipt from '@/components/Receipt'
+import WeightInput from '@/components/WeightInput'
 import { useKeyboardShortcuts, POSShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useToast } from '@/hooks/useToast'
 
@@ -53,11 +54,15 @@ export default function POSView() {
   const [discountValue, setDiscountValue] = useState<string>('')
   const [showDiscountModal, setShowDiscountModal] = useState(false)
   const [isProcessingSale, setIsProcessingSale] = useState(false)
+  const [showWeightModal, setShowWeightModal] = useState(false)
+  const [selectedWeightProduct, setSelectedWeightProduct] = useState<any>(null)
+  const [showCustomerSelectorInPayment, setShowCustomerSelectorInPayment] = useState(false)
   const { toast } = useToast()
   
   const {
     cart,
     addToCart,
+    addWeightedToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -83,7 +88,7 @@ export default function POSView() {
     updateStock
   } = useInventoryStore()
   
-  const { addSale } = useCashRegisterStore()
+
 
   const { token } = useAuthStore()
 
@@ -201,20 +206,14 @@ export default function POSView() {
       }
     ]
 
-    const items = cart.map((item) => {
-      const taxRate = item.taxRate ?? 19
-      const baseUnitPrice = item.unitPrice ?? (item.price / (1 + taxRate / 100))
-      const normalizedUnitPrice = Math.round((baseUnitPrice + Number.EPSILON) * 100) / 100
-
-      return {
-        productId: item.product.id,
-        productVariantId: item.variant?.id,
-        quantity: item.quantity,
-        unitPrice: normalizedUnitPrice,
-        discountPercent: item.discount > 0 ? item.discount : undefined,
-        notes: item.notes
-      }
-    })
+    const items = cart.map((item) => ({
+      productId: item.product.id,
+      productVariantId: item.variant?.id,
+      quantity: item.quantity,
+      unitPrice: Math.max(0, item.unitPrice || 0),
+      discountPercent: item.discount > 0 ? item.discount : undefined,
+      notes: item.notes
+    }));
 
     const salePayload = {
       customerId: selectedCustomer?.id,
@@ -236,13 +235,20 @@ export default function POSView() {
       await fetchProducts(token)
       await fetchCategories(token)
 
-      addSale(sale)
+      // Forzar la actualización del resumen de caja después de una venta exitosa
+      useCashRegisterStore.getState().refreshSummary(token!)
+
       setLastSale(sale)
       setShowReceipt(true)
 
+      const saleTitle = saleType === SaleType.CREDIT ? "Venta a crédito registrada" : "Venta completada"
+      const saleDescription = saleType === SaleType.CREDIT
+        ? `Total a crédito: ${formatCurrency(sale.total)}${selectedCustomer ? ` para ${selectedCustomer.name}` : ''}`
+        : `Total: ${formatCurrency(sale.total)}`
+
       toast({
-        title: "Venta completada",
-        description: `Total: ${formatCurrency(sale.total)}` ,
+        title: saleTitle,
+        description: saleDescription,
         variant: "success" as any
       })
 
@@ -256,10 +262,35 @@ export default function POSView() {
       }
     } catch (error) {
       console.error('Error procesando la venta:', error)
+      
+      // Extract more specific error information
+      let errorMessage = 'No fue posible completar la transaccion. Intenta de nuevo.'
+      let errorTitle = "Error al procesar la venta"
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+        
+        // Check for specific error types
+        if (error.message.includes('Insufficient stock')) {
+          errorTitle = "Stock insuficiente"
+          // Extract product info if available
+          const match = error.message.match(/Available: (\d+), Requested: (\d+)/)
+          if (match) {
+            errorMessage = `No hay suficiente inventario. Disponible: ${match[1]} unidades, Solicitado: ${match[2]} unidades. Actualiza el inventario del producto.`
+          } else {
+            errorMessage = 'Uno o más productos no tienen suficiente stock disponible. Por favor, verifica el inventario.'
+          }
+        } else if (error.message.includes('Product') && error.message.includes('not found')) {
+          errorTitle = "Producto no encontrado"
+          errorMessage = 'Uno de los productos ya no existe en el sistema.'
+        }
+      }
+      
       toast({
-        title: "Error al procesar la venta",
-        description: error instanceof Error ? error.message : 'No fue posible completar la transaccion. Intenta de nuevo.',
-        variant: "destructive"
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+        duration: 6000 // Show for longer so user can read the message
       })
     } finally {
       setIsProcessingSale(false)
@@ -345,6 +376,36 @@ export default function POSView() {
     }
   }
 
+  const handleProductClick = (product: any) => {
+    if (product.saleType === 'WEIGHT') {
+      if (!product.pricePerGram || product.pricePerGram <= 0) {
+        toast({
+          title: 'Error de configuración',
+          description: `El producto '${product.name}' está configurado para venderse por peso pero no tiene un precio por gramo válido.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      setSelectedWeightProduct(product);
+      setShowWeightModal(true);
+    } else {
+      addToCart(product);
+    }
+  };
+
+  const handleWeightConfirm = (weight: number, total: number) => {
+    if (selectedWeightProduct) {
+      addWeightedToCart(selectedWeightProduct, weight, total);
+      toast({
+        title: 'Producto agregado',
+        description: `${selectedWeightProduct.name} (${weight}g) agregado al carrito.`,
+        variant: 'success' as any,
+      });
+    }
+    setShowWeightModal(false);
+    setSelectedWeightProduct(null);
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
       {/* Panel Izquierdo - Catálogo de Productos */}
@@ -410,7 +471,7 @@ export default function POSView() {
                 >
                   <Card 
                     className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 active:scale-95"
-                    onClick={() => addToCart(product)}
+                    onClick={() => handleProductClick(product)}
                   >
                     <CardContent className="p-4">
                       <div className="aspect-square bg-gray-100 rounded-md mb-3 flex items-center justify-center">
@@ -422,7 +483,7 @@ export default function POSView() {
                           {formatCurrency(product.price)}
                         </span>
                         <Badge variant={product.stock < 10 ? 'destructive' : 'default'} className="text-xs">
-                          {product.stock}
+                          {formatStock(product.stock, product.saleType)}
                         </Badge>
                       </div>
                     </CardContent>
@@ -786,10 +847,40 @@ export default function POSView() {
                   {selectedPayment === PaymentMethod.CREDIT && !selectedCustomer && (
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Debes seleccionar un cliente para ventas a credito
+                      <AlertDescription className="flex items-center justify-between">
+                        <span>Debes seleccionar un cliente para ventas a credito</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCustomerSelectorInPayment(true)}
+                          className="ml-2"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Seleccionar
+                        </Button>
                       </AlertDescription>
                     </Alert>
+                  )}
+
+                  {/* Mostrar cliente seleccionado en modal de pago */}
+                  {selectedPayment === PaymentMethod.CREDIT && selectedCustomer && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-green-900">Cliente: {selectedCustomer.name}</p>
+                          <p className="text-xs text-green-700">
+                            Crédito disponible: {formatCurrency((selectedCustomer.creditLimit ?? 0) - (selectedCustomer.currentDebt ?? 0))}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCustomer(null)}
+                        >
+                          Cambiar
+                        </Button>
+                      </div>
+                    </div>
                   )}
 
                   {/* Metodos de pago */}
@@ -960,6 +1051,78 @@ export default function POSView() {
           onClose={() => setShowBarcodeScanner(false)}
         />
       )}
+
+      {/* Modal de Peso */}
+      <AnimatePresence>
+        {showWeightModal && selectedWeightProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowWeightModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <WeightInput
+                productName={selectedWeightProduct.name}
+                pricePerGram={selectedWeightProduct.pricePerGram || 0}
+                onConfirm={handleWeightConfirm}
+                onCancel={() => {
+                  setShowWeightModal(false);
+                  setSelectedWeightProduct(null);
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Selector de Cliente en Pago */}
+      <AnimatePresence>
+        {showCustomerSelectorInPayment && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+            onClick={() => setShowCustomerSelectorInPayment(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold">Seleccionar Cliente</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowCustomerSelectorInPayment(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                <CustomerManager
+                  onSelectCustomer={(customer) => {
+                    setCustomer(customer)
+                    setShowCustomerSelectorInPayment(false)
+                  }}
+                  selectedCustomer={selectedCustomer}
+                  showCreditInfo={true}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

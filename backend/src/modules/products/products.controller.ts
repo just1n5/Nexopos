@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
 
 @ApiTags('products')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class ProductsController {
 
   @Get()
   @ApiOkResponse({ description: 'Returns all products.' })
-  findAll() {
+  findAll(): Promise<ProductResponseDto[]> {
     return this.productsService.findAll();
   }
 

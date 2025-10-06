@@ -111,14 +111,14 @@ export class CustomerCredit {
   }
 
   updateBalance(): void {
-    this.balance = Math.max(0, this.amount - this.paidAmount);
-    
+    this.balance = Math.max(0, Number(this.amount) - Number(this.paidAmount || 0));
+
     if (this.balance === 0) {
       this.status = CreditStatus.PAID;
       if (!this.paidDate) {
         this.paidDate = new Date();
       }
-    } else if (this.paidAmount > 0) {
+    } else if (Number(this.paidAmount || 0) > 0) {
       this.status = CreditStatus.PARTIAL;
     }
 

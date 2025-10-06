@@ -1,8 +1,9 @@
-﻿import { useMemo, useRef } from 'react'
+﻿import { useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Printer, Download, Share2, X } from 'lucide-react'
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
@@ -27,6 +28,8 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 export default function Receipt({ sale, onClose, showActions = true }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { business } = useAuthStore()
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   const payments = sale.payments ?? []
   const primaryMethod = sale.primaryPaymentMethod ?? sale.paymentMethod
@@ -87,6 +90,10 @@ export default function Receipt({ sale, onClose, showActions = true }: ReceiptPr
   }
 
   const handleShare = () => {
+    setShowWhatsappModal(true);
+  };
+
+  const handleSendWhatsapp = () => {
     const message = `
 *${business?.name ?? 'NexoPOS'}*
 ${business?.address ?? ''}
@@ -112,8 +119,18 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
 ¡Gracias por su compra!
     `.trim()
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
+    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    if (cleanNumber.length < 10) {
+      alert('Por favor, ingrese un número de WhatsApp válido.');
+      return;
+    }
+    const fullNumber = cleanNumber.length === 10 ? `57${cleanNumber}` : cleanNumber;
+
+    const whatsappUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    setShowWhatsappModal(false);
+    setWhatsappNumber('');
   }
 
   return (
@@ -258,23 +275,61 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
         {showActions && (
           <>
             <Separator />
-            <div className="p-4 flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={handlePrint}>
-                <Printer className="w-4 h-4 mr-2" />
-                Imprimir
+            <div className="p-4 flex justify-around gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrint}>
+                <Printer className="w-4 h-4" />
               </Button>
-              <Button variant="outline" className="flex-1" onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Compartir
+              <Button variant="outline" size="icon" onClick={handleShare}>
+                <Share2 className="w-4 h-4" />
               </Button>
-              <Button variant="default" className="flex-1" onClick={() => window.print()}>
-                <Download className="w-4 h-4 mr-2" />
-                Guardar PDF
+              <Button variant="default" size="icon" onClick={() => window.print()}>
+                <Download className="w-4 h-4" />
               </Button>
             </div>
           </>
         )}
       </Card>
+
+      {/* Modal de WhatsApp */}
+      {showWhatsappModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Compartir por WhatsApp
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setShowWhatsappModal(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label htmlFor="whatsapp-number" className="block text-sm font-medium mb-1">
+                  Número de WhatsApp
+                </label>
+                <Input
+                  id="whatsapp-number"
+                  type="tel"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="Ej: 3001234567"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Incluye el indicativo si no es de Colombia.
+                </p>
+              </div>
+              <Button onClick={handleSendWhatsapp} className="w-full">
+                Enviar Recibo
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </motion.div>
   )
 }

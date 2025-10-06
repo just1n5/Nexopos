@@ -43,8 +43,24 @@ export class CashRegisterController {
     return this.cashRegisterService.openCashRegister(openDto, req.user.id);
   }
 
+  @Post('close')
+  @ApiOperation({ summary: 'Close current cash register session' })
+  @ApiResponse({ status: 200, description: 'Cash register closed successfully' })
+  @ApiResponse({ status: 404, description: 'No open cash register found' })
+  @ApiResponse({ status: 409, description: 'Cash register is not open' })
+  async closeCurrent(
+    @Body() closeDto: CloseCashRegisterDto,
+    @Request() req
+  ) {
+    const currentSession = await this.cashRegisterService.getCurrentSession(req.user.id);
+    if (!currentSession) {
+      return { message: 'No open cash register session found' };
+    }
+    return this.cashRegisterService.closeCashRegister(currentSession.id, closeDto, req.user.id);
+  }
+
   @Post(':id/close')
-  @ApiOperation({ summary: 'Close a cash register session' })
+  @ApiOperation({ summary: 'Close a cash register session by ID' })
   @ApiResponse({ status: 200, description: 'Cash register closed successfully' })
   @ApiResponse({ status: 404, description: 'Cash register not found' })
   @ApiResponse({ status: 409, description: 'Cash register is not open' })
@@ -63,9 +79,17 @@ export class CashRegisterController {
   async getCurrent(@Request() req) {
     const session = await this.cashRegisterService.getCurrentSession(req.user.id);
     if (!session) {
-      return { message: 'No open cash register session' };
+      return null; // Return null instead of message object
     }
     return session;
+  }
+
+  @Post('force-close-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Force close all open cash register sessions (ADMIN ONLY - for development)' })
+  @ApiResponse({ status: 200, description: 'All sessions closed' })
+  async forceCloseAll(@Request() req) {
+    return this.cashRegisterService.forceCloseAllSessions();
   }
 
   @Get('summary')
@@ -73,9 +97,14 @@ export class CashRegisterController {
   @ApiQuery({ name: 'cashRegisterId', required: false })
   async getSummary(
     @Query('cashRegisterId') cashRegisterId?: string,
-    @Request() req?
+    @Request() req?: any
   ) {
-    return this.cashRegisterService.getSummary(cashRegisterId, req?.user?.id);
+    const userId = req?.user?.id;
+    if (!cashRegisterId && !userId) {
+      return null;
+    }
+    const summary = await this.cashRegisterService.getSummary(cashRegisterId, userId);
+    return summary || null;
   }
 
   @Post('movements')
@@ -91,6 +120,13 @@ export class CashRegisterController {
   @ApiResponse({ status: 201, description: 'Expense registered successfully' })
   async addExpense(@Body() expenseDto: CreateExpenseDto, @Request() req) {
     return this.cashRegisterService.addExpense(expenseDto, req.user.id);
+  }
+
+  @Get('expenses/today')
+  @ApiOperation({ summary: 'Get today\'s expenses' })
+  @ApiResponse({ status: 200, description: 'Returns today\'s expenses' })
+  async getTodayExpenses(@Request() req) {
+    return this.cashRegisterService.getTodayExpenses(req.user.id);
   }
 
   @Post('adjustments')

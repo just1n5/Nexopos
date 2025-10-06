@@ -96,7 +96,7 @@ export class InventoryMovement {
   reason: string; // For adjustments
 
   // User tracking
-  @Column()
+  @Column({ nullable: true })
   userId: string;
 
   @ManyToOne('User')

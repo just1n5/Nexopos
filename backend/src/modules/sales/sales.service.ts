@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { Sale, SaleStatus, SaleType } from './entities/sale.entity';
@@ -7,7 +7,12 @@ import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity
 import { CreateSaleDto, QuickSaleDto, CalculateSaleDto } from './dto/create-sale.dto';
 import { ProductsService } from '../products/products.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { CashRegisterService } from '../cash-register/cash-register.service';
+import { CustomersService } from '../customers/customers.service';
 import { MovementType } from '../inventory/entities/inventory-movement.entity';
+import { toDecimal } from '../../common/utils';
+import { poundsToGrams } from '../../common/utils/weight.utils';
+
 
 @Injectable()
 export class SalesService {
@@ -21,6 +26,10 @@ export class SalesService {
     private dataSource: DataSource,
     private productsService: ProductsService,
     private inventoryService: InventoryService,
+    @Inject(forwardRef(() => CashRegisterService))
+    private cashRegisterService: CashRegisterService,
+    @Inject(forwardRef(() => CustomersService))
+    private customersService: CustomersService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto, userId: string): Promise<Sale> {
@@ -28,12 +37,23 @@ export class SalesService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    // Declare variables outside try-catch for post-transaction access
+    let savedSale: Sale;
+    let inventoryUpdates: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+      costPrice: number;
+    }> = [];
+    let finalTotal: number;
+    let roundedTotalPayment: number;
+
     try {
       // Validate and calculate totals
       const calculations = await this.calculateTotals(createSaleDto.items);
-      
+
       // Apply overall discount if provided
-      let finalTotal = calculations.total;
+      finalTotal = calculations.total;
       let finalDiscountAmount = calculations.discountAmount;
       
       if (createSaleDto.discountPercent > 0) {
@@ -44,11 +64,19 @@ export class SalesService {
         finalTotal = calculations.subtotal - finalDiscountAmount + calculations.taxAmount;
       }
 
+      // Always round final totals after all calculations
+      finalDiscountAmount = toDecimal(finalDiscountAmount);
+      finalTotal = toDecimal(finalTotal);
+
       // Validate payment amounts
       const totalPayment = createSaleDto.payments.reduce((sum, p) => sum + p.amount, 0);
-      
-      if (createSaleDto.type === SaleType.REGULAR && totalPayment < finalTotal) {
-        throw new BadRequestException(`Payment amount (${totalPayment}) is less than sale total (${finalTotal})`);
+
+      // Round values to 2 decimal places for safe comparison
+      roundedTotalPayment = toDecimal(totalPayment);
+      const roundedFinalTotal = toDecimal(finalTotal);
+
+      if (createSaleDto.type === SaleType.REGULAR && roundedTotalPayment < roundedFinalTotal) {
+        throw new BadRequestException(`Payment amount (${roundedTotalPayment}) is less than sale total (${roundedFinalTotal})`);
       }
 
       // Generate sale number
@@ -66,24 +94,25 @@ export class SalesService {
         discountPercent: createSaleDto.discountPercent || 0,
         taxAmount: calculations.taxAmount,
         total: finalTotal,
-        paidAmount: totalPayment,
-        changeAmount: Math.max(0, totalPayment - finalTotal),
-        creditAmount: createSaleDto.type === SaleType.CREDIT ? (finalTotal - totalPayment) : 0,
+        paidAmount: roundedTotalPayment,
+        changeAmount: toDecimal(Math.max(0, roundedTotalPayment - finalTotal)),
+        creditAmount: createSaleDto.type === SaleType.CREDIT ? toDecimal(finalTotal - roundedTotalPayment) : 0,
         creditDueDate: createSaleDto.creditDueDate,
         notes: createSaleDto.notes,
       });
 
-      const savedSale = await queryRunner.manager.save(sale);
+      savedSale = await queryRunner.manager.save(sale);
 
       // Create sale items
       for (const itemDto of createSaleDto.items) {
         const productInfo = await this.getProductInfo(itemDto.productId, itemDto.productVariantId);
-        
-        const subtotal = itemDto.quantity * itemDto.unitPrice;
-        const itemDiscountAmount = itemDto.discountAmount || (subtotal * (itemDto.discountPercent || 0) / 100);
-        const taxableAmount = subtotal - itemDiscountAmount;
-        const taxAmount = taxableAmount * (productInfo.taxRate / 100);
-        
+
+        const subtotal = toDecimal(itemDto.quantity * itemDto.unitPrice);
+        const itemDiscountAmount = toDecimal(itemDto.discountAmount || (subtotal * (itemDto.discountPercent || 0) / 100));
+        const taxableAmount = toDecimal(subtotal - itemDiscountAmount);
+        const taxAmount = toDecimal(taxableAmount * (productInfo.taxRate / 100));
+        const total = toDecimal(subtotal - itemDiscountAmount + taxAmount);
+
         const saleItem = queryRunner.manager.create(SaleItem, {
           saleId: savedSale.id,
           productId: itemDto.productId,
@@ -100,35 +129,35 @@ export class SalesService {
           taxAmount: taxAmount,
           taxCode: productInfo.taxCode,
           subtotal: subtotal,
-          total: subtotal - itemDiscountAmount + taxAmount,
+          total: total,
           notes: itemDto.notes,
         });
 
         await queryRunner.manager.save(saleItem);
 
-        // Update inventory
-        await this.updateInventory(
-          queryRunner,
-          itemDto.productId,
-          itemDto.productVariantId,
-          -itemDto.quantity,
-          userId,
-          savedSale.id,
-          savedSale.saleNumber,
-          productInfo.costPrice
-        );
+        // Store for later inventory update (after transaction commit)
+        inventoryUpdates.push({
+          productId: itemDto.productId,
+          variantId: itemDto.productVariantId,
+          quantity: itemDto.quantity,
+          costPrice: productInfo.costPrice
+        });
       }
 
       // Create payments
       for (const paymentDto of createSaleDto.payments) {
+        const amount = toDecimal(paymentDto.amount);
+        const receivedAmount = toDecimal(paymentDto.receivedAmount || paymentDto.amount);
+        const changeGiven = paymentDto.method === 'CASH' ? 
+            toDecimal(Math.max(0, receivedAmount - amount)) : 0;
+
         const payment = queryRunner.manager.create(Payment, {
           saleId: savedSale.id,
           method: paymentDto.method,
           status: PaymentStatus.COMPLETED,
-          amount: paymentDto.amount,
-          receivedAmount: paymentDto.receivedAmount,
-          changeGiven: paymentDto.method === 'CASH' ? 
-            Math.max(0, (paymentDto.receivedAmount || paymentDto.amount) - paymentDto.amount) : 0,
+          amount: amount,
+          receivedAmount: receivedAmount,
+          changeGiven: changeGiven,
           transactionRef: paymentDto.transactionRef,
           notes: paymentDto.notes,
           processedBy: userId,
@@ -142,13 +171,93 @@ export class SalesService {
       await queryRunner.manager.save(savedSale);
 
       await queryRunner.commitTransaction();
-      
+      await queryRunner.release();
+
+    } catch (error) {
+      // Only rollback if transaction is still active
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      await queryRunner.release();
+      throw error;
+    }
+
+    // Post-transaction operations (these happen AFTER the main transaction is committed)
+    try {
+      // Update inventory AFTER committing the transaction to avoid nested transaction conflicts
+      for (const update of inventoryUpdates) {
+        await this.inventoryService.adjustStock(
+          update.productId,
+          -update.quantity, // Negative for sales (stock reduction)
+          MovementType.SALE,
+          userId || 'system',
+          {
+            variantId: update.variantId,
+            referenceType: 'sale',
+            referenceId: savedSale.id,
+            referenceNumber: savedSale.saleNumber,
+            unitCost: update.costPrice,
+            notes: 'Stock reduced by sale'
+          }
+        );
+      }
+
+      // If it's a credit sale, create CustomerCredit record using CustomersService
+      // This must be done AFTER committing the transaction to avoid deadlocks
+      if (createSaleDto.type === SaleType.CREDIT && createSaleDto.customerId) {
+        const creditAmount = toDecimal(finalTotal - roundedTotalPayment);
+
+        console.log('[SalesService] Creating credit record:', {
+          customerId: createSaleDto.customerId,
+          creditAmount,
+          saleId: savedSale.id,
+          saleNumber: savedSale.saleNumber
+        });
+
+        await this.customersService.addCredit(
+          createSaleDto.customerId,
+          creditAmount,
+          savedSale.id,
+          createSaleDto.creditDueDate ? new Date(createSaleDto.creditDueDate) : undefined,
+          `Venta a crédito #${savedSale.saleNumber}`
+        );
+
+        console.log('[SalesService] Credit record created successfully');
+      }
+
+      // Register sale in cash register (after successful transaction)
+      try {
+        console.log('[SalesService] Attempting to register sale in cash register:', {
+          saleId: savedSale.id,
+          saleNumber: savedSale.saleNumber,
+          total: savedSale.total,
+          payments: createSaleDto.payments,
+          userId
+        });
+        await this.cashRegisterService.registerSalePayment(
+          null, // Will use current session
+          {
+            id: savedSale.id,
+            saleNumber: savedSale.saleNumber,
+            total: savedSale.total,
+            payments: createSaleDto.payments,
+            userId
+          }
+        );
+        console.log('[SalesService] Sale registered in cash register successfully');
+      } catch (error) {
+        console.error('[SalesService] Error registering sale in cash register:', error);
+        console.error('[SalesService] Error stack:', error.stack);
+        // Don't fail the sale if cash register registration fails
+      }
+
       return this.findOne(savedSale.id);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+      // If post-transaction operations fail, log but don't rollback (transaction already committed)
+      console.error('[SalesService] Error in post-transaction operations:', error);
+      console.error('[SalesService] Sale was created but some operations failed');
+      // Return the sale anyway since it was successfully created
+      return this.findOne(savedSale.id);
     }
   }
 
@@ -195,10 +304,10 @@ export class SalesService {
     const total = subtotal - discountAmount + taxAmount;
 
     return {
-      subtotal,
-      discountAmount,
-      taxAmount,
-      total,
+      subtotal: toDecimal(subtotal),
+      discountAmount: toDecimal(discountAmount),
+      taxAmount: toDecimal(taxAmount),
+      total: toDecimal(total),
     };
   }
 
@@ -250,25 +359,13 @@ export class SalesService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    let sale: Sale;
+
     try {
-      const sale = await this.findOne(id);
+      sale = await this.findOne(id);
 
       if (sale.status !== SaleStatus.COMPLETED) {
         throw new ConflictException('Only completed sales can be cancelled');
-      }
-
-      // Reverse inventory changes
-      for (const item of sale.items) {
-        await this.updateInventory(
-          queryRunner,
-          item.productId,
-          item.productVariantId,
-          item.quantity,
-          userId,
-          sale.id,
-          sale.saleNumber,
-          item.costPrice
-        );
       }
 
       // Update sale status
@@ -282,12 +379,42 @@ export class SalesService {
       }
 
       await queryRunner.commitTransaction();
+      await queryRunner.release();
+
+    } catch (error) {
+      // Only rollback if transaction is still active
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      await queryRunner.release();
+      throw error;
+    }
+
+    // Post-transaction operations (reverse inventory AFTER committing the transaction)
+    try {
+      for (const item of sale.items) {
+        await this.inventoryService.adjustStock(
+          item.productId,
+          item.quantity, // Positive to add stock back
+          MovementType.PURCHASE,
+          userId || 'system',
+          {
+            variantId: item.productVariantId,
+            referenceType: 'sale',
+            referenceId: sale.id,
+            referenceNumber: sale.saleNumber,
+            unitCost: item.costPrice,
+            notes: 'Stock increased by sale cancellation'
+          }
+        );
+      }
+
       return sale;
     } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+      // If inventory reversal fails, log but don't fail the cancellation
+      console.error('[SalesService] Error reversing inventory for cancelled sale:', error);
+      console.error('[SalesService] Sale was cancelled but inventory was not updated');
+      return sale;
     }
   }
 
@@ -351,34 +478,56 @@ export class SalesService {
     reference?: string;
     notes?: string;
   }, userId?: string): Promise<Payment[]> {
-    const sale = await this.findOne(saleId);
-    
+    // Load sale WITHOUT payments to avoid cascade update issues
+    const sale = await this.saleRepository.findOne({
+      where: { id: saleId },
+      relations: ['items', 'customer', 'user']
+    });
+
+    if (!sale) {
+      throw new NotFoundException(`Sale ${saleId} not found`);
+    }
+
     // Convert string method to PaymentMethod enum
     const paymentMethod = PaymentMethod[paymentDto.method.toUpperCase() as keyof typeof PaymentMethod] || PaymentMethod.OTHER;
-    
-    const payment = this.paymentRepository.create({
+
+    // Build payment data without undefined values
+    const paymentData: any = {
       saleId,
       amount: paymentDto.amount,
       method: paymentMethod,
-      reference: paymentDto.reference,
       status: PaymentStatus.COMPLETED,
-      notes: paymentDto.notes,
-      processedBy: userId,
       processedAt: new Date()
-    });
-    
-    const savedPayment = await this.paymentRepository.save(payment);
-    
-    // Update sale paid amount
-    sale.paidAmount = (sale.paidAmount || 0) + paymentDto.amount;
-    
+    };
+
+    if (paymentDto.reference) paymentData.reference = paymentDto.reference;
+    if (paymentDto.notes) paymentData.notes = paymentDto.notes;
+    if (userId) paymentData.processedBy = userId;
+
+    // Use insert to force INSERT operation
+    const insertResult = await this.paymentRepository
+      .createQueryBuilder()
+      .insert()
+      .into(Payment)
+      .values(paymentData)
+      .returning('*')
+      .execute();
+
+    const savedPayment = insertResult.raw[0] as Payment;
+
+    // Update sale paid amount directly to avoid cascade issues
+    const newPaidAmount = Number(sale.paidAmount || 0) + Number(paymentDto.amount);
+    const updateData: any = {
+      paidAmount: newPaidAmount
+    };
+
     // Update credit amount if it's a credit sale
     if (sale.type === SaleType.CREDIT) {
-      sale.creditAmount = Math.max(0, sale.total - sale.paidAmount);
+      updateData.creditAmount = Math.max(0, Number(sale.total) - newPaidAmount);
     }
-    
-    await this.saleRepository.save(sale);
-    
+
+    await this.saleRepository.update(saleId, updateData);
+
     return [savedPayment];
   }
 
@@ -415,12 +564,15 @@ export class SalesService {
         }
       }
 
-      // Ensure costPrice is a number
+      // Calculate the actual price for the variant
       let costPrice = 0;
-      if (variant?.price !== undefined && variant?.price !== null) {
-        costPrice = Number(variant.price);
-      } else if (product.basePrice !== undefined && product.basePrice !== null) {
+      if (product.basePrice !== undefined && product.basePrice !== null) {
         costPrice = Number(product.basePrice);
+        
+        // Add priceDelta if this is a variant
+        if (variant && variant.priceDelta !== undefined && variant.priceDelta !== null) {
+          costPrice += Number(variant.priceDelta);
+        }
       }
       
       // Validate that costPrice is a valid number
@@ -436,6 +588,8 @@ export class SalesService {
         costPrice: costPrice,
         taxRate: 19, // Colombian IVA - this should come from product config
         taxCode: 'IVA',
+        saleType: product.saleType,
+        pricePerGram: product.pricePerGram
       };
     } catch (error) {
       console.error('Error getting product info:', error);
@@ -448,6 +602,8 @@ export class SalesService {
         costPrice: 0,
         taxRate: 19,
         taxCode: 'IVA',
+        saleType: 'UNIT',
+        pricePerGram: null
       };
     }
   }
@@ -459,38 +615,5 @@ export class SalesService {
       id: 'product-id',
       price: 10000,
     };
-  }
-
-  private async updateInventory(
-    queryRunner: QueryRunner,
-    productId: string,
-    variantId: string | undefined,
-    quantityChange: number,
-    userId?: string,
-    saleId?: string,
-    saleNumber?: string,
-    costPrice?: number
-  ): Promise<void> {
-    try {
-      // Use the inventory service to adjust stock
-      // Note: quantityChange is negative for sales (stock reduction)
-      await this.inventoryService.adjustStock(
-        productId,
-        quantityChange,
-        quantityChange < 0 ? MovementType.SALE : MovementType.PURCHASE,
-        userId || 'system',
-        {
-          variantId,
-          referenceType: 'sale',
-          referenceId: saleId,
-          referenceNumber: saleNumber,
-          unitCost: costPrice,
-          notes: quantityChange < 0 ? 'Stock reduced by sale' : 'Stock increased by sale cancellation'
-        }
-      );
-    } catch (error) {
-      console.error(`Error updating inventory for product ${productId}:`, error);
-      throw new BadRequestException(`Failed to update inventory: ${error.message}`);
-    }
   }
 }

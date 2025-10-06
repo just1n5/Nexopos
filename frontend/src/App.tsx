@@ -1,5 +1,5 @@
-﻿import React, { lazy, Suspense, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom'
+﻿import React, { lazy, Suspense, useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingCart,
@@ -23,6 +23,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { useAuthStore } from '@/stores/authStore'
 import { usePOSStore } from '@/stores/posStore'
 import POSView from '@/views/POSView'
+import RequireCashRegister from '@/components/RequireCashRegister'
 
 // Lazy load de otros componentes
 const LoginView = lazy(() => import('@/views/LoginView'))
@@ -58,15 +59,48 @@ const navItems = [
 function MainLayout({ children }: { children: React.ReactNode }) {
   const { business, user, logout } = useAuthStore()
   const { cart } = usePOSStore()
+  const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [notifications] = useState(3) // Mock de notificaciones
-  
+
   // Toggle dark mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
     document.documentElement.classList.toggle('dark')
   }
+
+  // Manejar atajos de teclado de navegación
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Solo activar si no hay inputs, textareas o modales activos
+      const isInputActive =
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.getAttribute('contenteditable') === 'true'
+
+      if (isInputActive) return
+
+      // Mapeo de teclas F a rutas
+      const keyMap: { [key: string]: string } = {
+        'F1': '/',
+        'F2': '/inventory',
+        'F3': '/credit',
+        'F4': '/cash-register',
+        'F5': '/dashboard',
+        'F6': '/settings'
+      }
+
+      const route = keyMap[e.key]
+      if (route) {
+        e.preventDefault()
+        navigate(route)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [navigate])
   
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -294,25 +328,31 @@ export default function App() {
             {/* Rutas protegidas */}
             <Route path="/" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <POSView />
-                </MainLayout>
+                <RequireCashRegister>
+                  <MainLayout>
+                    <POSView />
+                  </MainLayout>
+                </RequireCashRegister>
               )
             } />
 
             <Route path="/inventory" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <InventoryView />
-                </MainLayout>
+                <RequireCashRegister>
+                  <MainLayout>
+                    <InventoryView />
+                  </MainLayout>
+                </RequireCashRegister>
               )
             } />
 
             <Route path="/credit" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <CreditView />
-                </MainLayout>
+                <RequireCashRegister>
+                  <MainLayout>
+                    <CreditView />
+                  </MainLayout>
+                </RequireCashRegister>
               )
             } />
 
@@ -326,9 +366,11 @@ export default function App() {
 
             <Route path="/dashboard" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <DashboardView />
-                </MainLayout>
+                <RequireCashRegister>
+                  <MainLayout>
+                    <DashboardView />
+                  </MainLayout>
+                </RequireCashRegister>
               )
             } />
 

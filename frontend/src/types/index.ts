@@ -10,6 +10,8 @@ export interface Product {
   category: string
   image?: string
   tax: number // Porcentaje de impuesto (ej: 19 para 19%)
+  saleType: ProductSaleType
+  pricePerGram?: number
   variants?: ProductVariant[]
   barcode?: string
   isActive: boolean
@@ -98,6 +100,11 @@ export enum PaymentMethod {
   OTHER = 'other'
 }
 
+export enum ProductSaleType {
+  UNIT = 'UNIT',
+  WEIGHT = 'WEIGHT'
+}
+
 export enum SaleType {
   REGULAR = 'REGULAR',
   CREDIT = 'CREDIT',
@@ -171,8 +178,8 @@ export interface CashRegister {
 }
 
 export enum RegisterStatus {
-  OPEN = 'open',
-  CLOSED = 'closed'
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED'
 }
 
 export interface Expense {

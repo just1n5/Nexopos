@@ -86,7 +86,7 @@ export class InventoryController {
       required: ['productId', 'quantity', 'movementType'],
       properties: {
         productId: { type: 'string', format: 'uuid' },
-        quantity: { type: 'number', description: 'Positive for addition, negative for reduction' },
+        quantity: { type: 'number', description: 'Positive for addition, negative for reduction. For weight-based products, this value must be in GRAMS.' },
         movementType: { 
           type: 'string', 
           enum: ['PURCHASE', 'SALE', 'ADJUSTMENT', 'RETURN', 'TRANSFER', 'DAMAGE', 'PRODUCTION'],

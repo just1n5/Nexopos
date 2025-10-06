@@ -8,6 +8,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { InventoryService } from '../inventory/inventory.service';
 import { MovementType } from '../inventory/entities/inventory-movement.entity';
+import { ProductResponseDto } from './dto/product-response.dto';
+import { ProductVariantResponseDto } from './dto/product-variant-response.dto';
 
 @Injectable()
 export class ProductsService {
@@ -38,10 +40,10 @@ export class ProductsService {
               savedProduct.id,
               stockValue,
               MovementType.ADJUSTMENT,
-              'system', // userId
+              null, // System-generated, no specific user
               {
                 variantId: variant.id,
-                unitCost: Number(variant.price || savedProduct.basePrice || 0),
+                unitCost: Number(savedProduct.basePrice + (variant.priceDelta || 0)),
                 reason: 'Initial stock',
                 notes: `Initial stock for variant ${variant.name || variant.sku}`
               }
@@ -61,7 +63,7 @@ export class ProductsService {
             savedProduct.id,
             stockValue,
             MovementType.ADJUSTMENT,
-            'system',
+            null, // System-generated, no specific user
             {
               unitCost: Number(savedProduct.basePrice || 0),
               reason: 'Initial stock',
@@ -77,8 +79,55 @@ export class ProductsService {
     return savedProduct;
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productsRepository.find({ order: { name: 'ASC' } });
+  async findAll(): Promise<ProductResponseDto[]> {
+    const products = await this.productsRepository.find({
+      relations: ['variants'],
+      order: { name: 'ASC' },
+    });
+
+    const enrichedProducts = await Promise.all(
+      products.map(async (product) => {
+        if (product.variants && product.variants.length > 0) {
+          let totalStock = 0;
+          await Promise.all(
+            product.variants.map(async (variant) => {
+              const stockInfo = await this.inventoryService.getStock(
+                product.id,
+                variant.id,
+              );
+              variant.stock = stockInfo.quantity;
+              totalStock += stockInfo.quantity;
+            }),
+          );
+          // Assign total stock to product when it has variants
+          (product as any).stock = totalStock;
+        } else {
+          const stockInfo = await this.inventoryService.getStock(product.id);
+          (product as any).stock = stockInfo.quantity;
+        }
+        return product;
+      }),
+    );
+
+    // Map to DTOs for serialization
+    return enrichedProducts.map(product => {
+      const productDto = new ProductResponseDto();
+      Object.assign(productDto, product);
+
+      if (product.variants && product.variants.length > 0) {
+        productDto.variants = product.variants.map(variant => {
+          const variantDto = new ProductVariantResponseDto();
+          Object.assign(variantDto, variant);
+          variantDto.stock = variant.stock; // Explicitly copy stock
+          return variantDto;
+        });
+        // Always assign total stock (sum of all variants)
+        productDto.stock = (product as any).stock;
+      } else {
+        productDto.stock = (product as any).stock;
+      }
+      return productDto;
+    });
   }
 
   async findOne(id: string): Promise<Product> {

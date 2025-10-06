@@ -149,10 +149,10 @@ export class Sale {
 
   // Virtual properties
   get isPaid(): boolean {
-    return this.paidAmount >= this.total;
+    return Number(this.paidAmount || 0) >= Number(this.total || 0);
   }
 
   get pendingAmount(): number {
-    return Math.max(0, this.total - this.paidAmount);
+    return Math.max(0, Number(this.total || 0) - Number(this.paidAmount || 0));
   }
 }

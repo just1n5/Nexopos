@@ -15,6 +15,11 @@ export enum ProductStatus {
   ARCHIVED = 'ARCHIVED'
 }
 
+export enum ProductSaleType {
+  UNIT = 'UNIT',
+  WEIGHT = 'WEIGHT'
+}
+
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')
@@ -35,6 +40,24 @@ export class Product {
 
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.ACTIVE })
   status: ProductStatus;
+
+  // Tipo de venta: por unidad o por peso
+  @Column({ 
+    name: 'sale_type',
+    type: 'enum', 
+    enum: ProductSaleType, 
+    default: ProductSaleType.UNIT 
+  })
+  saleType: ProductSaleType;
+
+  // Precio por gramo (solo para productos vendidos por peso)
+  @Column('decimal', { 
+    name: 'price_per_gram',
+    precision: 12, 
+    scale: 4, 
+    nullable: true 
+  })
+  pricePerGram?: number;
 
   @OneToMany(() => ProductVariant, (variant) => variant.product, {
     cascade: true,

@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CustomerCredit, CreditStatus, CreditType } from '../customers/entities/customer-credit.entity';
@@ -7,6 +7,8 @@ import { Sale } from '../sales/entities/sale.entity';
 import { Payment, PaymentMethod } from '../sales/entities/payment.entity';
 import { CustomersService } from '../customers/customers.service';
 import { SalesService } from '../sales/sales.service';
+import { CashRegisterService } from '../cash-register/cash-register.service';
+import { MovementType } from '../cash-register/entities/cash-movement.entity';
 import { CreateCreditPaymentDto, CreditPaymentMethodDto } from './dto/create-credit-payment.dto';
 
 type CreditStatusResponse = 'pending' | 'paid' | 'overdue';
@@ -24,6 +26,8 @@ type CreditPaymentResponse = {
 type CreditSaleResponse = {
   id: string;
   saleId?: string;
+  saleNumber?: string;
+  saleDate?: Date;
   customerId: string;
   customer?: Customer;
   totalAmount: number;
@@ -57,6 +61,8 @@ export class CreditsService {
     private readonly paymentRepository: Repository<Payment>,
     private readonly customersService: CustomersService,
     private readonly salesService: SalesService,
+    @Inject(forwardRef(() => CashRegisterService))
+    private readonly cashRegisterService: CashRegisterService,
   ) {}
 
   async findAll(filters: CreditFilters = {}): Promise<CreditSaleResponse[]> {
@@ -127,7 +133,7 @@ export class CreditsService {
     return this.getPaymentsForCredit(credit);
   }
 
-  async addPayment(creditId: string, dto: CreateCreditPaymentDto, _userId: string): Promise<CreditPaymentResponse> {
+  async addPayment(creditId: string, dto: CreateCreditPaymentDto, userId: string): Promise<CreditPaymentResponse> {
     const credit = await this.creditRepository.findOne({
       where: { id: creditId },
       relations: ['customer'],
@@ -147,7 +153,53 @@ export class CreditsService {
       notes: dto.notes,
     });
 
+    // Si el pago es en efectivo, registrarlo en la caja actual
+    if (dto.paymentMethod === CreditPaymentMethodDto.CASH) {
+      console.log(`[CreditsService] Iniciando registro de abono a crédito en efectivo. ID de crédito: ${creditId}, Monto: ${dto.amount}, Usuario: ${userId}`);
+      
+      const customerName = `${credit.customer?.firstName || ''} ${credit.customer?.lastName || ''}`.trim();
+      const movementDescription = `Abono a crédito de cliente: ${customerName || 'N/A'}`.trim();
+
+      console.log('[CreditsService] Preparando datos para registrar movimiento en caja...', {
+        type: 'DEPOSIT',
+        amount: dto.amount,
+        description: movementDescription,
+        paymentMethod: 'CASH'
+      });
+
+      // La siguiente operación fallará si no hay una caja abierta para el usuario,
+      // lo cual es el comportamiento deseado para garantizar la consistencia de los datos.
+      await this.cashRegisterService.addMovement({
+        type: MovementType.DEPOSIT,
+        amount: dto.amount,
+        description: movementDescription,
+        notes: dto.notes,
+        paymentMethod: 'CASH',
+      }, userId);
+
+      console.log(`[CreditsService] Abono en efectivo registrado exitosamente en la caja para el usuario ${userId}.`);
+    }
+
+    // Update customer credit balance
     await this.customersService.reduceCredit(credit.customerId, dto.amount, payment.id);
+
+    // Update customer_credits record
+    const newPaidAmount = Number(credit.paidAmount || 0) + dto.amount;
+    const newBalance = Math.max(0, Number(credit.amount || 0) - newPaidAmount);
+
+    let newStatus = credit.status;
+    if (newBalance === 0) {
+      newStatus = CreditStatus.PAID;
+    } else if (newPaidAmount > 0 && newBalance > 0) {
+      newStatus = CreditStatus.PARTIAL;
+    }
+
+    await this.creditRepository.update(creditId, {
+      paidAmount: newPaidAmount,
+      balance: newBalance,
+      status: newStatus,
+      paidDate: newBalance === 0 ? new Date() : null,
+    });
 
     return this.mapPayment(payment, creditId);
   }
@@ -160,8 +212,11 @@ export class CreditsService {
     const pendingCredits = credits.filter((credit) => this.mapCreditStatus(credit.status) === 'pending');
     const overdueCredits = credits.filter((credit) => this.mapCreditStatus(credit.status) === 'overdue');
 
+    // Calculate total amount of all credits (not just pending balance, but original amounts)
+    const totalCreditsAmount = credits.reduce((sum, credit) => sum + Number(credit.amount || 0), 0);
+
     return {
-      totalCredits: credits.length,
+      totalCredits: totalCreditsAmount,
       totalPending: pendingCredits.reduce((sum, credit) => sum + Number(credit.balance || 0), 0),
       totalOverdue: overdueCredits.reduce((sum, credit) => sum + Number(credit.balance || 0), 0),
       creditsCount: credits.length,
@@ -186,11 +241,19 @@ export class CreditsService {
   }
 
   private mapCreditSale(credit: CustomerCredit, sale?: Sale, payments: CreditPaymentResponse[] = []): CreditSaleResponse {
+    // Map customer with computed name field
+    const customer = credit.customer ? {
+      ...credit.customer,
+      name: credit.customer.firstName + (credit.customer.lastName ? ` ${credit.customer.lastName}` : '')
+    } : undefined;
+
     return {
       id: credit.id,
       saleId: credit.referenceId,
+      saleNumber: sale?.saleNumber,
+      saleDate: sale?.createdAt || credit.createdAt,
       customerId: credit.customerId,
-      customer: credit.customer,
+      customer: customer as any,
       totalAmount: Number(credit.amount || 0),
       paidAmount: Number(credit.paidAmount || 0),
       remainingBalance: Number(credit.balance || 0),
@@ -291,3 +354,4 @@ export class CreditsService {
     }
   }
 }
+

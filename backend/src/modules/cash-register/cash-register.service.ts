@@ -98,7 +98,13 @@ export class CashRegisterService {
 
       // Calculate expected balance
       const expectedBalance = await this.calculateExpectedBalance(id);
-      const difference = dto.totalCounted - expectedBalance;
+
+      // Support both totalCounted and actualAmount
+      const totalCounted = dto.totalCounted ?? dto.actualAmount ?? 0;
+      const difference = totalCounted - expectedBalance;
+
+      // Support both closingNotes and notes
+      const closingNotes = dto.closingNotes ?? dto.notes;
 
       // Update cash register
       cashRegister.status = CashRegisterStatus.CLOSED;
@@ -106,11 +112,11 @@ export class CashRegisterService {
       cashRegister.closedBy = userId;
       cashRegister.closingBalance = expectedBalance;
       cashRegister.expectedBalance = expectedBalance;
-      cashRegister.actualBalance = dto.totalCounted;
+      cashRegister.actualBalance = totalCounted;
       cashRegister.difference = difference;
       cashRegister.cashCount = dto.cashCount;
-      cashRegister.totalCounted = dto.totalCounted;
-      cashRegister.closingNotes = dto.closingNotes;
+      cashRegister.totalCounted = totalCounted;
+      cashRegister.closingNotes = closingNotes;
       cashRegister.discrepancyReason = dto.discrepancyReason;
 
       // Create closing movement
@@ -121,7 +127,7 @@ export class CashRegisterService {
         balanceBefore: expectedBalance,
         balanceAfter: 0,
         description: 'Cash register closing',
-        notes: dto.closingNotes,
+        notes: closingNotes,
         userId
       });
 
@@ -133,7 +139,7 @@ export class CashRegisterService {
           category: difference > 0 ? MovementCategory.CASH_IN : MovementCategory.CASH_OUT,
           amount: Math.abs(difference),
           balanceBefore: expectedBalance,
-          balanceAfter: dto.totalCounted,
+          balanceAfter: totalCounted,
           description: `Cash ${difference > 0 ? 'surplus' : 'shortage'} on closing`,
           notes: dto.discrepancyReason,
           userId
@@ -204,9 +210,27 @@ export class CashRegisterService {
   }
 
   async addExpense(dto: CreateExpenseDto, userId: string): Promise<CashMovement> {
+    // Map category string to enum value
+    let category: MovementCategory = MovementCategory.OTHER_EXPENSE;
+
+    if (dto.category) {
+      const categoryMapping: Record<string, MovementCategory> = {
+        'supplier': MovementCategory.SUPPLIER_PAYMENT,
+        'rent': MovementCategory.RENT,
+        'utilities': MovementCategory.UTILITIES,
+        'salaries': MovementCategory.SALARIES,
+        'maintenance': MovementCategory.MAINTENANCE,
+        'supplies': MovementCategory.SUPPLIES,
+        'transport': MovementCategory.TRANSPORT,
+        'other': MovementCategory.OTHER_EXPENSE
+      };
+
+      category = categoryMapping[dto.category.toLowerCase()] || MovementCategory.OTHER_EXPENSE;
+    }
+
     const movementDto: CreateMovementDto = {
       type: MovementType.EXPENSE,
-      category: dto.category,
+      category,
       amount: dto.amount,
       description: dto.description,
       notes: dto.notes,
@@ -253,7 +277,7 @@ export class CashRegisterService {
     return this.addMovement(movementDto, userId);
   }
 
-  async getSummary(cashRegisterId?: string, userId?: string): Promise<CashRegisterSummaryDto> {
+  async getSummary(cashRegisterId?: string, userId?: string): Promise<CashRegisterSummaryDto | null> {
     let cashRegister: CashRegister;
 
     if (cashRegisterId) {
@@ -261,7 +285,7 @@ export class CashRegisterService {
     } else if (userId) {
       cashRegister = await this.getCurrentSession(userId);
       if (!cashRegister) {
-        throw new NotFoundException('No open cash register session found');
+        return null; // Return null instead of throwing exception
       }
     } else {
       throw new BadRequestException('Either cashRegisterId or userId must be provided');
@@ -272,6 +296,14 @@ export class CashRegisterService {
       where: { cashRegisterId: cashRegister.id }
     });
 
+    // Build sales by payment method
+    const salesByPaymentMethod: Record<string, number> = {
+      cash: cashRegister.totalCashSales || 0,
+      card: cashRegister.totalCardSales || 0,
+      digital: cashRegister.totalDigitalSales || 0,
+      credit: cashRegister.totalCreditSales || 0
+    };
+
     return {
       cashRegisterId: cashRegister.id,
       sessionNumber: cashRegister.sessionNumber,
@@ -280,19 +312,42 @@ export class CashRegisterService {
       closedAt: cashRegister.closedAt,
       openingBalance: cashRegister.openingBalance,
       currentBalance,
-      totalSales: cashRegister.totalSales,
-      totalExpenses: cashRegister.totalExpenses,
-      totalCashSales: cashRegister.totalCashSales,
-      totalCardSales: cashRegister.totalCardSales,
-      totalDigitalSales: cashRegister.totalDigitalSales,
-      totalCreditSales: cashRegister.totalCreditSales,
-      movements
+      totalSales: cashRegister.totalSales || 0,
+      totalExpenses: cashRegister.totalExpenses || 0,
+      totalCashSales: cashRegister.totalCashSales || 0,
+      totalCardSales: cashRegister.totalCardSales || 0,
+      totalDigitalSales: cashRegister.totalDigitalSales || 0,
+      totalCreditSales: cashRegister.totalCreditSales || 0,
+      movements,
+      salesByPaymentMethod
     };
   }
 
   async getMovements(cashRegisterId: string): Promise<CashMovement[]> {
     return this.cashMovementRepository.find({
       where: { cashRegisterId },
+      order: { createdAt: 'DESC' }
+    });
+  }
+
+  async getTodayExpenses(userId: string): Promise<CashMovement[]> {
+    const currentSession = await this.getCurrentSession(userId);
+
+    if (!currentSession) {
+      return [];
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.cashMovementRepository.find({
+      where: {
+        cashRegisterId: currentSession.id,
+        type: MovementType.EXPENSE,
+      },
       order: { createdAt: 'DESC' }
     });
   }
@@ -354,27 +409,42 @@ export class CashRegisterService {
       where: { cashRegisterId }
     });
 
-    let balance = cashRegister.openingBalance;
+    // Convert to number to avoid string concatenation issues
+    let balance = Number(cashRegister.openingBalance || 0);
 
     for (const movement of movements) {
       if (movement.type === MovementType.OPENING || movement.type === MovementType.CLOSING) {
         continue;
       }
 
+      // Only count cash movements for the balance
+      // Card, digital payments, etc. don't affect the physical cash in the register
+      const isCashMovement = !movement.paymentMethod ||
+                            movement.paymentMethod === 'cash' ||
+                            movement.paymentMethod === 'CASH';
+
+      if (!isCashMovement) {
+        continue;
+      }
+
+      const amount = Number(movement.amount || 0);
+
       switch (movement.type) {
-        case MovementType.SALE:
         case MovementType.DEPOSIT:
+          balance += amount;
+          break;
+        case MovementType.SALE:
         case MovementType.ADJUSTMENT:
           if (movement.category === MovementCategory.CASH_IN) {
-            balance += movement.amount;
+            balance += amount;
           } else if (movement.category === MovementCategory.CASH_OUT) {
-            balance -= movement.amount;
+            balance -= amount;
           }
           break;
         case MovementType.EXPENSE:
         case MovementType.REFUND:
         case MovementType.WITHDRAWAL:
-          balance -= movement.amount;
+          balance -= amount;
           break;
       }
     }
@@ -391,21 +461,21 @@ export class CashRegisterService {
 
     switch (type) {
       case MovementType.SALE:
-        cashRegister.totalSales += amount;
-        cashRegister.totalCashSales += amount; // Assuming cash for now
-        cashRegister.totalTransactions++;
+        cashRegister.totalSales = Number(cashRegister.totalSales ?? 0) + Number(amount);
+        cashRegister.totalCashSales = Number(cashRegister.totalCashSales ?? 0) + Number(amount); // Assuming cash for now
+        cashRegister.totalTransactions = Number(cashRegister.totalTransactions ?? 0) + 1;
         break;
       case MovementType.EXPENSE:
-        cashRegister.totalExpenses += amount;
+        cashRegister.totalExpenses = Number(cashRegister.totalExpenses ?? 0) + Number(amount);
         break;
       case MovementType.REFUND:
-        cashRegister.totalRefunds += amount;
+        cashRegister.totalRefunds = Number(cashRegister.totalRefunds ?? 0) + Number(amount);
         break;
       case MovementType.DEPOSIT:
-        cashRegister.totalDeposits += amount;
+        cashRegister.totalDeposits = Number(cashRegister.totalDeposits ?? 0) + Number(amount);
         break;
       case MovementType.WITHDRAWAL:
-        cashRegister.totalWithdrawals += amount;
+        cashRegister.totalWithdrawals = Number(cashRegister.totalWithdrawals ?? 0) + Number(amount);
         break;
     }
 
@@ -430,13 +500,65 @@ export class CashRegisterService {
   }
 
   /**
+   * Force close all open sessions (ADMIN/DEBUG ONLY)
+   */
+  async forceCloseAllSessions(): Promise<any> {
+    const openSessions = await this.cashRegisterRepository.find({
+      where: {
+        status: CashRegisterStatus.OPEN
+      }
+    });
+
+    const results = [];
+    for (const session of openSessions) {
+      const expectedBalance = await this.calculateExpectedBalance(session.id);
+
+      session.status = CashRegisterStatus.CLOSED;
+      session.closedAt = new Date();
+      session.closedBy = 'system';
+      session.closingBalance = expectedBalance;
+      session.expectedBalance = expectedBalance;
+      session.actualBalance = expectedBalance;
+      session.difference = 0;
+      session.closingNotes = 'Force closed by system';
+
+      await this.cashRegisterRepository.save(session);
+      results.push({
+        id: session.id,
+        sessionNumber: session.sessionNumber,
+        closedAt: session.closedAt
+      });
+    }
+
+    return {
+      message: `Closed ${results.length} session(s)`,
+      sessions: results
+    };
+  }
+
+  /**
    * Register sale payment in cash register
    */
-  async registerSalePayment(sessionId: string, sale: any): Promise<void> {
-    const cashRegister = await this.findOne(sessionId);
-    
+  async registerSalePayment(sessionId: string | null, sale: any): Promise<void> {
+    console.log('[CashRegisterService] registerSalePayment called with:', { sessionId, sale });
+    let cashRegister: CashRegister;
+
+    if (sessionId) {
+      cashRegister = await this.findOne(sessionId);
+    } else {
+      // Use current open session for the user
+      console.log('[CashRegisterService] Looking for current session for user:', sale.userId);
+      cashRegister = await this.getCurrentSession(sale.userId);
+      if (!cashRegister) {
+        // No open session, skip registration
+        console.log('[CashRegisterService] No open cash register session, skipping sale registration');
+        return;
+      }
+      console.log('[CashRegisterService] Found cash register session:', cashRegister.id);
+    }
+
     if (cashRegister.status !== CashRegisterStatus.OPEN) {
-      throw new BadRequestException(`Cash register ${sessionId} is not open`);
+      throw new BadRequestException(`Cash register ${cashRegister.id} is not open`);
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -445,9 +567,11 @@ export class CashRegisterService {
 
     try {
       // Create movements for each payment
+      console.log('[CashRegisterService] Processing payments:', sale.payments);
       for (const payment of sale.payments || []) {
+        console.log('[CashRegisterService] Creating movement for payment:', payment);
         const movement = queryRunner.manager.create(CashMovement, {
-          cashRegisterId: sessionId,
+          cashRegisterId: cashRegister.id,
           type: MovementType.SALE,
           category: MovementCategory.CASH_IN,
           amount: payment.amount,
@@ -461,25 +585,34 @@ export class CashRegisterService {
           balanceAfter: 0, // Will be calculated
           createdAt: new Date()
         });
-        
+
+        console.log('[CashRegisterService] Saving movement:', movement);
         await queryRunner.manager.save(movement);
-        
+        console.log('[CashRegisterService] Movement saved successfully');
+
         // Update session totals
-        if (payment.method === 'cash') {
-          cashRegister.totalCashSales = (cashRegister.totalCashSales || 0) + payment.amount;
-        } else if (payment.method === 'card') {
-          cashRegister.totalCardSales = (cashRegister.totalCardSales || 0) + payment.amount;
+        if (payment.method === 'cash' || payment.method === 'CASH') {
+          cashRegister.totalCashSales = Number(cashRegister.totalCashSales || 0) + Number(payment.amount);
+        } else if (payment.method === 'card' || payment.method === 'CARD') {
+          cashRegister.totalCardSales = Number(cashRegister.totalCardSales || 0) + Number(payment.amount);
         } else {
-          cashRegister.totalOtherSales = (cashRegister.totalOtherSales || 0) + payment.amount;
+          cashRegister.totalOtherSales = Number(cashRegister.totalOtherSales || 0) + Number(payment.amount);
         }
       }
-      
-      cashRegister.totalSales = (cashRegister.totalSales || 0) + sale.total;
-      cashRegister.totalTransactions = (cashRegister.totalTransactions || 0) + 1;
-      
+
+      cashRegister.totalSales = Number(cashRegister.totalSales || 0) + Number(sale.total);
+      cashRegister.totalTransactions = Number(cashRegister.totalTransactions || 0) + 1;
+
+      console.log('[CashRegisterService] Saving updated cash register:', {
+        id: cashRegister.id,
+        totalSales: cashRegister.totalSales,
+        totalTransactions: cashRegister.totalTransactions
+      });
       await queryRunner.manager.save(cashRegister);
       await queryRunner.commitTransaction();
+      console.log('[CashRegisterService] Transaction committed successfully');
     } catch (error) {
+      console.error('[CashRegisterService] Error in registerSalePayment:', error);
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
@@ -589,22 +722,23 @@ export class CashRegisterService {
     movements.forEach(movement => {
       const method = movement.paymentMethod || 'cash';
       const methodKey = ['cash', 'card'].includes(method) ? method : 'other';
-      
+      const amount = Number(movement.amount || 0);
+
       switch (movement.type) {
         case MovementType.SALE:
-          salesByMethod[methodKey] += movement.amount;
+          salesByMethod[methodKey] += amount;
           break;
         case MovementType.REFUND:
-          refundsByMethod[methodKey] += movement.amount;
+          refundsByMethod[methodKey] += amount;
           break;
         case MovementType.EXPENSE:
-          totalExpenses += movement.amount;
+          totalExpenses += amount;
           break;
         case MovementType.DEPOSIT:
-          totalDeposits += movement.amount;
+          totalDeposits += amount;
           break;
         case MovementType.WITHDRAWAL:
-          totalWithdrawals += movement.amount;
+          totalWithdrawals += amount;
           break;
       }
     });
@@ -612,12 +746,12 @@ export class CashRegisterService {
     const totalSales = Object.values(salesByMethod).reduce((a, b) => a + b, 0);
     const totalRefunds = Object.values(refundsByMethod).reduce((a, b) => a + b, 0);
     const netSales = totalSales - totalRefunds;
-    
-    const expectedCash = cashRegister.openingBalance + 
-                        salesByMethod.cash - 
-                        refundsByMethod.cash - 
-                        totalExpenses - 
-                        totalWithdrawals + 
+
+    const expectedCash = Number(cashRegister.openingBalance || 0) +
+                        salesByMethod.cash -
+                        refundsByMethod.cash -
+                        totalExpenses -
+                        totalWithdrawals +
                         totalDeposits;
 
     return {

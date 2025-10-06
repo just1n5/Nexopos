@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { Calculator, DollarSign, CreditCard, Lock, Unlock, AlertTriangle, Banknote, Plus, Minus } from 'lucide-react'
+import { Calculator, DollarSign, CreditCard, Lock, Unlock, AlertTriangle, Banknote, Plus, Minus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,171 +9,104 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
-import { cashRegisterService } from '@/services/cashRegisterService'
-import type { CashRegister, Expense } from '@/types'
+import { useCashRegisterStore } from '@/stores/cashRegisterStore'
 import { RegisterStatus } from '@/types'
 
 export default function CashRegisterView() {
   const { token } = useAuthStore()
   const { toast } = useToast()
+
+  // Local state for form inputs only
   const [actualCash, setActualCash] = useState('')
   const [openingAmount, setOpeningAmount] = useState('')
   const [notes, setNotes] = useState('')
-  const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null)
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
-  const [registerSummary, setRegisterSummary] = useState<any>(null)
-  
-  // Estados para gastos
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expenseDescription, setExpenseDescription] = useState('')
   const [expenseCategory, setExpenseCategory] = useState('other')
 
+  // State from the global store
+  const {
+    summary,
+    currentRegister,
+    expenses,
+    loading,
+    error,
+    fetchCurrentData,
+    openRegister,
+    closeRegister,
+    addExpense
+  } = useCashRegisterStore()
+
   useEffect(() => {
     if (token) {
-      loadRegisterData()
+      fetchCurrentData(token)
     }
-  }, [token])
+  }, [token, fetchCurrentData])
 
-  const loadRegisterData = async () => {
-    try {
-      setLoading(true)
-      const register = await cashRegisterService.getCurrentRegister(token!)
-      setCurrentRegister(register)
-      
-      if (register) {
-        const todayExpenses = await cashRegisterService.getTodayExpenses(token!)
-        setExpenses(todayExpenses)
-        
-        const summary = await cashRegisterService.getRegisterSummary(token!)
-        setRegisterSummary(summary)
-      }
-    } catch (error) {
-      console.error('Error loading register data:', error)
+  // Display errors from the store
+  useEffect(() => {
+    if (error) {
       toast({
         title: 'Error',
-        description: 'No se pudo cargar el estado de la caja',
+        description: error,
         variant: 'destructive'
       })
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [error, toast])
 
   const handleOpenRegister = async () => {
     if (!openingAmount || parseFloat(openingAmount) < 0) {
-      toast({
-        title: 'Error',
-        description: 'Por favor ingrese un monto válido',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Por favor ingrese un monto válido', variant: 'destructive' })
       return
     }
-
     try {
-      const register = await cashRegisterService.openRegister(
-        {
-          openingAmount: parseFloat(openingAmount),
-          notes
-        },
-        token!
-      )
-      setCurrentRegister(register)
+      await openRegister({ openingAmount: parseFloat(openingAmount), notes }, token!)
       setOpeningAmount('')
       setNotes('')
-      toast({
-        title: 'Caja Abierta',
-        description: 'La caja ha sido abierta exitosamente',
-      })
-      loadRegisterData()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo abrir la caja',
-        variant: 'destructive'
-      })
+      toast({ title: 'Caja Abierta', description: 'La caja ha sido abierta exitosamente' })
+    } catch (e: any) {
+      // Error is already set in the store, but we can show a toast too
+      toast({ title: 'Error al Abrir Caja', description: e.message, variant: 'destructive' })
     }
   }
 
   const handleCloseRegister = async () => {
     if (!actualCash || parseFloat(actualCash) < 0) {
-      toast({
-        title: 'Error',
-        description: 'Por favor ingrese el monto real en caja',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Por favor ingrese el monto real en caja', variant: 'destructive' })
       return
     }
-
     try {
-      await cashRegisterService.closeRegister(
-        {
-          actualAmount: parseFloat(actualCash),
-          notes
-        },
-        token!
-      )
-      setCurrentRegister(null)
+      await closeRegister({ actualAmount: parseFloat(actualCash), notes }, token!)
       setActualCash('')
       setNotes('')
-      toast({
-        title: 'Caja Cerrada',
-        description: 'La caja ha sido cerrada exitosamente',
-      })
-      loadRegisterData()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo cerrar la caja',
-        variant: 'destructive'
-      })
+      toast({ title: 'Caja Cerrada', description: 'La caja ha sido cerrada exitosamente' })
+    } catch (e: any) {
+      toast({ title: 'Error al Cerrar Caja', description: e.message, variant: 'destructive' })
     }
   }
 
   const handleAddExpense = async () => {
     if (!expenseAmount || !expenseDescription) {
-      toast({
-        title: 'Error',
-        description: 'Complete todos los campos del gasto',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Complete todos los campos del gasto', variant: 'destructive' })
       return
     }
-
     try {
-      const expense = await cashRegisterService.addExpense(
-        {
-          amount: parseFloat(expenseAmount),
-          description: expenseDescription,
-          category: expenseCategory,
-          notes: ''
-        },
-        token!
-      )
-      setExpenses([...expenses, expense])
+      await addExpense({ amount: parseFloat(expenseAmount), description: expenseDescription, category: expenseCategory, notes: '' }, token!)
       setExpenseAmount('')
       setExpenseDescription('')
       setExpenseCategory('other')
       setShowExpenseForm(false)
-      toast({
-        title: 'Gasto Registrado',
-        description: 'El gasto ha sido registrado exitosamente',
-      })
-      loadRegisterData()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo registrar el gasto',
-        variant: 'destructive'
-      })
+      toast({ title: 'Gasto Registrado', description: 'El gasto ha sido registrado exitosamente' })
+    } catch (e: any) {
+      toast({ title: 'Error al Registrar Gasto', description: e.message, variant: 'destructive' })
     }
   }
 
   const calculateDifference = () => {
-    if (!registerSummary || !actualCash) return 0
+    if (!summary || !actualCash) return 0
     const actual = parseFloat(actualCash) || 0
-    return actual - registerSummary.expectedAmount
+    return actual - (summary.expectedAmount || 0)
   }
 
   const isRegisterOpen = currentRegister?.status === RegisterStatus.OPEN
@@ -266,7 +199,7 @@ export default function CashRegisterView() {
         ) : (
           <>
             {/* Resumen de Ventas */}
-            {registerSummary && (
+            {summary && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card>
                   <CardContent className="p-4">
@@ -275,7 +208,7 @@ export default function CashRegisterView() {
                       <Banknote className="w-4 h-4 text-gray-400" />
                     </div>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(registerSummary.openingAmount)}
+                      {formatCurrency(summary.openingAmount)}
                     </div>
                   </CardContent>
                 </Card>
@@ -287,7 +220,7 @@ export default function CashRegisterView() {
                       <DollarSign className="w-4 h-4 text-green-500" />
                     </div>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(registerSummary.totalSales)}
+                      {formatCurrency(summary.totalSales)}
                     </div>
                   </CardContent>
                 </Card>
@@ -299,7 +232,7 @@ export default function CashRegisterView() {
                       <Minus className="w-4 h-4 text-red-500" />
                     </div>
                     <div className="text-2xl font-bold text-red-600">
-                      {formatCurrency(registerSummary.totalExpenses || 0)}
+                      {formatCurrency(summary.totalExpenses || 0)}
                     </div>
                   </CardContent>
                 </Card>
@@ -311,7 +244,7 @@ export default function CashRegisterView() {
                       <Calculator className="w-4 h-4 text-blue-500" />
                     </div>
                     <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(registerSummary.expectedAmount)}
+                      {formatCurrency(summary.expectedAmount)}
                     </div>
                   </CardContent>
                 </Card>
@@ -319,7 +252,7 @@ export default function CashRegisterView() {
             )}
 
             {/* Desglose por Método de Pago */}
-            {registerSummary && registerSummary.salesByPaymentMethod && (
+            {summary && summary.salesByPaymentMethod && (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -329,7 +262,7 @@ export default function CashRegisterView() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {Object.entries(registerSummary.salesByPaymentMethod).map(([method, amount]) => (
+                    {Object.entries(summary.salesByPaymentMethod).map(([method, amount]) => (
                       <div key={method} className="text-center p-3 bg-gray-50 rounded-lg">
                         <div className="text-sm text-gray-600 mb-1 capitalize">
                           {method === 'cash' ? 'Efectivo' : 
@@ -457,7 +390,7 @@ export default function CashRegisterView() {
                       Efectivo Esperado
                     </label>
                     <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(registerSummary?.expectedAmount || 0)}
+                      {formatCurrency(summary?.expectedAmount || 0)}
                     </div>
                   </div>
                   
@@ -483,15 +416,16 @@ export default function CashRegisterView() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Diferencia</span>
                       <span className={`text-xl font-bold ${
-                        calculateDifference() >= 0 ? 'text-green-600' : 'text-red-600'
+                        Math.abs(calculateDifference()) < 0.01 ? 'text-gray-600' :
+                        calculateDifference() > 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {calculateDifference() >= 0 ? '+' : ''}
+                        {calculateDifference() > 0 ? '+' : ''}
                         {formatCurrency(calculateDifference())}
                       </span>
                     </div>
-                    {calculateDifference() !== 0 && (
+                    {Math.abs(calculateDifference()) >= 0.01 && (
                       <p className="text-sm text-gray-600 mt-2">
-                        {calculateDifference() > 0 
+                        {calculateDifference() > 0
                           ? 'Hay un sobrante en caja'
                           : 'Hay un faltante en caja'}
                       </p>

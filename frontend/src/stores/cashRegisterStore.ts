@@ -1,211 +1,130 @@
-﻿import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
-import { RegisterStatus, PaymentMethod, type CashRegister, type Sale, type Expense } from '@/types'
-import { generateId } from '@/lib/utils'
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { cashRegisterService, type RegisterSummary, type AddExpenseDto, type OpenRegisterDto, type CloseRegisterDto } from '@/services/cashRegisterService';
+import type { CashRegister, Expense } from '@/types';
 
 interface CashRegisterState {
-  currentRegister: CashRegister | null
-  registers: CashRegister[]
-  expenses: Expense[]
-  
+  summary: RegisterSummary | null;
+  currentRegister: CashRegister | null;
+  expenses: Expense[];
+  loading: boolean;
+  error: string | null;
+
   // Actions
-  openRegister: (openingAmount: number, userId: string) => void
-  closeRegister: (actualAmount: number, userId: string) => void
-  addSale: (sale: Sale) => void
-  addExpense: (expense: Omit<Expense, 'id'>) => void
-  
-  // Calculations
-  getTodaySales: () => Sale[]
-  getTodayExpenses: () => Expense[]
-  getExpectedCash: () => number
-  getSalesByPaymentMethod: () => Record<PaymentMethod, number>
-  getDifference: (actualAmount: number) => number
+  fetchCurrentData: (token: string) => Promise<void>;
+  openRegister: (data: OpenRegisterDto, token: string) => Promise<void>;
+  closeRegister: (data: CloseRegisterDto, token: string) => Promise<void>;
+  addExpense: (data: AddExpenseDto, token: string) => Promise<void>;
+  refreshSummary: (token: string) => Promise<void>;
 }
 
 export const useCashRegisterStore = create<CashRegisterState>()(
   devtools(
-    persist(
-      (set, get) => ({
-        currentRegister: null,
-        registers: [],
-        expenses: [],
-        
-        // Open register
-        openRegister: (openingAmount, userId) => {
-          const newRegister: CashRegister = {
-            id: generateId(),
-            openingDate: new Date(),
-            openingAmount,
-            sales: [],
-            expenses: [],
-            status: RegisterStatus.OPEN,
-            openedBy: userId
-          }
-          
-          set((state) => ({
-            currentRegister: newRegister,
-            registers: [...state.registers, newRegister]
-          }))
-        },
-        
-        // Close register
-        closeRegister: (actualAmount, userId) => {
-          const current = get().currentRegister
-          if (!current) return
-          
-          const expectedAmount = get().getExpectedCash()
-          const difference = actualAmount - expectedAmount
-          
-          const closedRegister: CashRegister = {
-            ...current,
-            closingDate: new Date(),
-            expectedAmount,
-            actualAmount,
-            difference,
-            status: RegisterStatus.CLOSED,
-            closedBy: userId
-          }
-          
-          set((state) => ({
-            currentRegister: null,
-            registers: state.registers.map(reg =>
-              reg.id === closedRegister.id ? closedRegister : reg
-            )
-          }))
-        },
-        
-        // Add sale to current register
-        addSale: (sale) => {
-          const current = get().currentRegister
-          if (!current) return
-          
-          set((state) => ({
-            currentRegister: state.currentRegister
-              ? {
-                  ...state.currentRegister,
-                  sales: [...state.currentRegister.sales, sale]
-                }
-              : null
-          }))
-        },
-        
-        // Add expense
-        addExpense: (expenseData) => {
-          const expense: Expense = {
-            ...expenseData,
-            id: generateId()
-          }
-          
-          const current = get().currentRegister
-          if (current) {
-            set((state) => ({
-              currentRegister: state.currentRegister
-                ? {
-                    ...state.currentRegister,
-                    expenses: [...state.currentRegister.expenses, expense]
-                  }
-                : null,
-              expenses: [...state.expenses, expense]
-            }))
-          }
-        },
-        
-        // Get today's sales
-        getTodaySales: () => {
-          const current = get().currentRegister
-          if (!current) return []
-          
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          
-          return current.sales.filter(sale => {
-            const saleDate = new Date(sale.date)
-            saleDate.setHours(0, 0, 0, 0)
-            return saleDate.getTime() === today.getTime()
-          })
-        },
-        
-        // Get today's expenses
-        getTodayExpenses: () => {
-          const current = get().currentRegister
-          if (!current) return []
-          
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          
-          return current.expenses.filter(expense => {
-            const expenseDate = new Date(expense.date)
-            expenseDate.setHours(0, 0, 0, 0)
-            return expenseDate.getTime() === today.getTime()
-          })
-        },
-        
-        // Calculate expected cash
-        getExpectedCash: () => {
-          const current = get().currentRegister
-          if (!current) return 0
-          
-          const cashSales = current.sales
-            .filter(sale => sale.primaryPaymentMethod === PaymentMethod.CASH)
-            .reduce((sum, sale) => sum + sale.total, 0)
-          
-          const totalExpenses = current.expenses
-            .reduce((sum, expense) => sum + expense.amount, 0)
-          
-          return current.openingAmount + cashSales - totalExpenses
-        },
-        
-        // Get sales by payment method
-        getSalesByPaymentMethod: () => {
-          const current = get().currentRegister
-          if (!current) {
-            return {
-              [PaymentMethod.CASH]: 0,
-              [PaymentMethod.CARD]: 0,
-              [PaymentMethod.NEQUI]: 0,
-              [PaymentMethod.DAVIPLATA]: 0,
-              [PaymentMethod.CREDIT]: 0,
-              [PaymentMethod.BANK_TRANSFER]: 0,
-              [PaymentMethod.OTHER]: 0
-            }
-          }
-          
-          const result: Record<PaymentMethod, number> = {
-            [PaymentMethod.CASH]: 0,
-            [PaymentMethod.CARD]: 0,
-            [PaymentMethod.NEQUI]: 0,
-            [PaymentMethod.DAVIPLATA]: 0,
-            [PaymentMethod.CREDIT]: 0,
-            [PaymentMethod.BANK_TRANSFER]: 0,
-            [PaymentMethod.OTHER]: 0
-          }
-          
-          current.sales.forEach((sale) => {
-            const method = sale.primaryPaymentMethod
-            if (!method) {
-              return
-            }
-            result[method] += sale.total
-          })
-          
-          return result
-        },
-        
-        // Calculate difference
-        getDifference: (actualAmount) => {
-          const expectedAmount = get().getExpectedCash()
-          return actualAmount - expectedAmount
-        }
-      }),
-      {
-        name: 'cash-register-storage',
-        partialize: (state) => ({
-          currentRegister: state.currentRegister,
-          registers: state.registers.slice(-30), // Keep last 30 registers
-          expenses: state.expenses.slice(-100) // Keep last 100 expenses
-        })
-      }
-    )
-  )
-)
+    (set, get) => ({
+      summary: null,
+      currentRegister: null,
+      expenses: [],
+      loading: true,
+      error: null,
 
+      // Fetches all essential data for the cash register view
+      fetchCurrentData: async (token: string) => {
+        try {
+          set({ loading: true, error: null });
+          console.log('[CashRegisterStore] Fetching current data...');
+
+          const register = await cashRegisterService.getCurrentRegister(token);
+          set({ currentRegister: register });
+          console.log('[CashRegisterStore] Current register fetched:', register);
+
+          if (register) {
+            const [summary, expenses] = await Promise.all([
+              cashRegisterService.getRegisterSummary(token),
+              cashRegisterService.getTodayExpenses(token),
+            ]);
+            set({ summary, expenses });
+            console.log('[CashRegisterStore] Summary and expenses fetched:', { summary, expenses });
+          } else {
+            // If there is no open register, clear the summary and expenses
+            set({ summary: null, expenses: [] });
+          }
+        } catch (e: any) {
+          const errorMessage = e.message || 'Error al cargar los datos de la caja';
+          set({ error: errorMessage });
+          console.error('[CashRegisterStore] Error fetching data:', errorMessage);
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      // Refreshes only the summary
+      refreshSummary: async (token: string) => {
+        try {
+          console.log('[CashRegisterStore] Refreshing summary...');
+          const summary = await cashRegisterService.getRegisterSummary(token);
+          set({ summary });
+          console.log('[CashRegisterStore] Summary refreshed:', summary);
+        } catch (e: any) {
+          const errorMessage = e.message || 'Error al refrescar el resumen de caja';
+          set({ error: errorMessage });
+          console.error('[CashRegisterStore] Error refreshing summary:', errorMessage);
+        }
+      },
+
+      // Opens a new register
+      openRegister: async (data: OpenRegisterDto, token: string) => {
+        try {
+          set({ loading: true, error: null });
+          await cashRegisterService.openRegister(data, token);
+          console.log('[CashRegisterStore] Register opened successfully.');
+          // After opening, fetch all data
+          await get().fetchCurrentData(token);
+        } catch (e: any) {
+          const errorMessage = e.message || 'No se pudo abrir la caja';
+          set({ error: errorMessage, loading: false });
+          console.error('[CashRegisterStore] Error opening register:', errorMessage);
+          throw new Error(errorMessage); // Re-throw to be caught in the component
+        }
+      },
+
+      // Closes the current register
+      closeRegister: async (data: CloseRegisterDto, token: string) => {
+        try {
+          set({ loading: true, error: null });
+          await cashRegisterService.closeRegister(data, token);
+          console.log('[CashRegisterStore] Register closed successfully.');
+          // After closing, clear the state
+          set({ currentRegister: null, summary: null, expenses: [], loading: false });
+        } catch (e: any) {
+          const errorMessage = e.message || 'No se pudo cerrar la caja';
+          set({ error: errorMessage, loading: false });
+          console.error('[CashRegisterStore] Error closing register:', errorMessage);
+          throw new Error(errorMessage); // Re-throw to be caught in the component
+        }
+      },
+
+      // Adds a new expense
+      addExpense: async (data: AddExpenseDto, token: string) => {
+        try {
+          // Don't set loading for this, it's a quick action
+          await cashRegisterService.addExpense(data, token);
+          console.log('[CashRegisterStore] Expense added successfully.');
+          // After adding, refresh summary and expenses
+          const [summary, expenses] = await Promise.all([
+            cashRegisterService.getRegisterSummary(token),
+            cashRegisterService.getTodayExpenses(token),
+          ]);
+          set({ summary, expenses });
+        } catch (e: any) {
+          const errorMessage = e.message || 'No se pudo registrar el gasto';
+          set({ error: errorMessage });
+          console.error('[CashRegisterStore] Error adding expense:', errorMessage);
+          throw new Error(errorMessage); // Re-throw to be caught in the component
+        }
+      },
+    }),
+    {
+      name: 'cash-register-storage',
+    }
+  )
+);

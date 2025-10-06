@@ -9,7 +9,7 @@ import {
   Min,
   ValidateNested
 } from 'class-validator';
-import { ProductStatus } from '../entities/product.entity';
+import { ProductStatus, ProductSaleType } from '../entities/product.entity';
 import { CreateProductVariantDto } from './create-product-variant.dto';
 
 export class CreateProductDto {
@@ -42,6 +42,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  @IsOptional()
+  @IsEnum(ProductSaleType)
+  saleType?: ProductSaleType;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  pricePerGram?: number;
 
   @IsOptional()
   @ValidateNested({ each: true })

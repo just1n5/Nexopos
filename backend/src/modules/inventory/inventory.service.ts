@@ -63,19 +63,25 @@ export class InventoryService {
     try {
       // Get or create stock record
       let stock = await this.getStock(productId, metadata?.variantId, metadata?.warehouseId);
+      this.logger.log(`DEBUG: adjustStock - Initial stock state for product ${productId}: ${JSON.stringify(stock)}`);
       
       if (!stock.id) {
+        this.logger.log(`DEBUG: adjustStock - Creating new stock record for product ${productId}`);
         stock = await queryRunner.manager.save(InventoryStock, stock);
+        this.logger.log(`DEBUG: adjustStock - New stock record created: ${JSON.stringify(stock)}`);
       } else {
         stock = await queryRunner.manager.findOne(InventoryStock, { where: { id: stock.id } });
+        this.logger.log(`DEBUG: adjustStock - Found existing stock record: ${JSON.stringify(stock)}`);
       }
 
-      const quantityBefore = stock.quantity;
-      const quantityAfter = quantityBefore + quantity;
+      // Ensure all values are numbers
+      const quantityBefore = Number(stock.quantity) || 0;
+      const quantityChange = Number(quantity) || 0;
+      const quantityAfter = quantityBefore + quantityChange;
 
       // Validate sufficient stock for outgoing movements
-      if (quantity < 0 && quantityAfter < 0) {
-        throw new BadRequestException(`Insufficient stock. Available: ${quantityBefore}, Requested: ${Math.abs(quantity)}`);
+      if (quantityChange < 0 && quantityAfter < 0) {
+        throw new BadRequestException(`Insufficient stock. Available: ${quantityBefore}, Requested: ${Math.abs(quantityChange)}`);
       }
 
       // Create movement record
@@ -83,11 +89,11 @@ export class InventoryService {
         productId,
         productVariantId: metadata?.variantId,
         movementType,
-        quantity,
+        quantity: quantityChange,
         quantityBefore,
         quantityAfter,
         unitCost: metadata?.unitCost,
-        totalCost: metadata?.unitCost ? metadata.unitCost * Math.abs(quantity) : null,
+        totalCost: metadata?.unitCost ? metadata.unitCost * Math.abs(quantityChange) : null,
         referenceType: metadata?.referenceType,
         referenceId: metadata?.referenceId,
         referenceNumber: metadata?.referenceNumber,
@@ -101,33 +107,40 @@ export class InventoryService {
 
       const savedMovement = await queryRunner.manager.save(movement);
 
-      // Update stock
+      // Update stock quantity
       stock.quantity = quantityAfter;
-      stock.availableQuantity = quantityAfter - stock.reservedQuantity;
+      stock.availableQuantity = quantityAfter - (Number(stock.reservedQuantity) || 0);
       stock.lastMovementId = savedMovement.id;
       stock.lastMovementDate = new Date();
 
       // Update status
+      const minStock = Number(stock.minStockLevel) || 0;
       if (stock.quantity <= 0) {
         stock.status = StockStatus.OUT_OF_STOCK;
-      } else if (stock.quantity <= stock.minStockLevel) {
+      } else if (stock.quantity <= minStock) {
         stock.status = StockStatus.LOW_STOCK;
       } else {
         stock.status = StockStatus.IN_STOCK;
       }
 
       // Update average cost for incoming movements
-      if (quantity > 0 && metadata?.unitCost) {
-        const totalCurrentValue = stock.quantity * stock.averageCost;
-        const totalNewValue = quantity * metadata.unitCost;
-        stock.averageCost = (totalCurrentValue + totalNewValue) / (stock.quantity + quantity);
+      if (quantityChange > 0 && metadata?.unitCost) {
+        // Use quantityBefore for correct calculation
+        const currentAverageCost = Number(stock.averageCost) || 0;
+        const totalCurrentValue = quantityBefore * currentAverageCost;
+        const totalNewValue = Math.abs(quantityChange) * metadata.unitCost;
+        // quantityAfter is the new total quantity
+        stock.averageCost = quantityAfter > 0 ? (totalCurrentValue + totalNewValue) / quantityAfter : metadata.unitCost;
         stock.lastCost = metadata.unitCost;
       }
 
-      stock.totalValue = stock.quantity * stock.averageCost;
+      stock.totalValue = stock.quantity * (Number(stock.averageCost) || 0);
 
+      this.logger.log(`DEBUG: adjustStock - Stock state before final save: ${JSON.stringify(stock)}`);
       await queryRunner.manager.save(stock);
+      this.logger.log(`DEBUG: adjustStock - Stock saved. Committing transaction.`);
       await queryRunner.commitTransaction();
+      this.logger.log(`DEBUG: adjustStock - Transaction committed successfully.`);
 
       this.logger.log(`Stock adjusted for product ${productId}: ${quantityBefore} -> ${quantityAfter}`);
 
@@ -138,6 +151,7 @@ export class InventoryService {
 
       return savedMovement;
     } catch (error) {
+      this.logger.error(`DEBUG: adjustStock - Transaction rolled back due to error: ${error.message}`, error.stack);
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
@@ -269,7 +283,8 @@ export class InventoryService {
       throw new NotFoundException(`Stock record not found for product ${productId}`);
     }
 
-    const difference = actualQuantity - stock.quantity;
+    const currentQuantity = Number(stock.quantity) || 0;
+    const difference = Number(actualQuantity) - currentQuantity;
     
     if (difference === 0) {
       this.logger.log(`Stock count matches for product ${productId}`);
@@ -285,7 +300,7 @@ export class InventoryService {
       {
         ...metadata,
         reason: 'Stock count adjustment',
-        notes: `Stock count: Expected ${stock.quantity}, Actual ${actualQuantity}, Difference ${difference}. ${metadata?.notes || ''}`
+        notes: `Stock count: Expected ${currentQuantity}, Actual ${actualQuantity}, Difference ${difference}. ${metadata?.notes || ''}`
       }
     );
 

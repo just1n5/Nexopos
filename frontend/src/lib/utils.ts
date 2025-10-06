@@ -32,3 +32,15 @@ export function calculateTax(subtotal: number, taxRate: number = 19): number {
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
+
+export function formatStock(stockValue: number, saleType?: string): string {
+  if (typeof stockValue !== 'number' || !Number.isFinite(stockValue)) {
+    return '0';
+  }
+  if (saleType === 'WEIGHT') {
+    // convert grams to pounds for display and append suffix
+    const pounds = parseFloat((stockValue / 453.592).toFixed(3));
+    return `${pounds} lb`;
+  }
+  return Math.floor(stockValue).toString();
+}

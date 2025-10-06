@@ -18,6 +18,9 @@ type ApiProduct = {
   sku: string
   basePrice?: number | string
   status?: string
+  saleType?: 'UNIT' | 'WEIGHT'
+  pricePerGram?: number
+  stock?: number
   barcode?: string | null
   categoryId?: string | null
   categoryName?: string | null
@@ -59,10 +62,16 @@ const mapProduct = (item: ApiProduct): Product => {
   const variants = Array.isArray(item.variants)
     ? item.variants.map((variant) => mapVariant(variant, item.id, basePrice))
     : []
-  const stock = variants.reduce((sum, variant) => sum + (variant.stock ?? 0), 0)
+  
+  const stock =
+    variants.length > 0
+      ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0)
+      : Number(item.stock ?? 0);
 
   return {
     id: item.id,
+    saleType: item.saleType ?? 'UNIT',
+    pricePerGram: item.pricePerGram,
     sku: item.sku,
     name: item.name,
     description: item.description ?? undefined,
@@ -103,7 +112,8 @@ class ProductsService {
     const response = await apiFetch('/products', {
       method: 'GET',
       token,
-      skipContentType: true
+      skipContentType: true,
+      cache: 'no-store' // Bypass browser cache
     })
 
     const payload = await parseResponse<ApiProduct[]>(response, 'Error al obtener los productos')

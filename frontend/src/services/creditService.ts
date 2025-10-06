@@ -4,6 +4,8 @@ import type { Sale, Customer } from '@/types'
 export interface CreditSale {
   id: string
   saleId: string
+  saleNumber?: string
+  saleDate?: Date
   customerId: string
   customer?: Customer
   totalAmount: number

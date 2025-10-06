@@ -32,21 +32,33 @@ export class CashCountDto {
 }
 
 export class CloseCashRegisterDto {
-  @ApiProperty({ description: 'Actual cash counted', type: CashCountDto })
+  @ApiPropertyOptional({ description: 'Actual cash counted', type: CashCountDto })
+  @IsOptional()
   @ValidateNested()
   @Type(() => CashCountDto)
-  cashCount: CashCountDto;
+  cashCount?: CashCountDto;
 
-  @ApiProperty({ description: 'Total amount counted' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ description: 'Total amount counted' })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  totalCounted: number;
+  totalCounted?: number;
+
+  @ApiPropertyOptional({ description: 'Actual amount counted (alternative to totalCounted)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  actualAmount?: number;
 
   @ApiPropertyOptional({ description: 'Closing notes' })
   @IsOptional()
   @IsString()
   closingNotes?: string;
+
+  @ApiPropertyOptional({ description: 'Notes (alternative to closingNotes)' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @ApiPropertyOptional({ description: 'Reason for discrepancy if any' })
   @IsOptional()
@@ -109,10 +121,10 @@ export class CreateMovementDto {
 }
 
 export class CreateExpenseDto {
-  @ApiProperty({ enum: MovementCategory, description: 'Expense category' })
-  @IsNotEmpty()
-  @IsEnum(MovementCategory)
-  category: MovementCategory;
+  @ApiPropertyOptional({ description: 'Expense category (string or enum)' })
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @ApiProperty({ description: 'Expense amount' })
   @IsNotEmpty()
@@ -178,4 +190,5 @@ export class CashRegisterSummaryDto {
   totalDigitalSales: number;
   totalCreditSales: number;
   movements: number;
+  salesByPaymentMethod?: Record<string, number>;
 }

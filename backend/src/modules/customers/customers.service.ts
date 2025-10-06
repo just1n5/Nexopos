@@ -151,15 +151,16 @@ export class CustomersService {
 
       const savedCredit = await queryRunner.manager.save(credit);
 
-      // Update customer balances
-      customer.creditUsed = newCreditUsed;
-      customer.creditAvailable = customer.creditLimit - newCreditUsed;
-      customer.balance += amount;
-      customer.totalPurchases += amount;
-      customer.purchaseCount += 1;
-      customer.lastPurchaseDate = new Date();
+      // Update customer balances using increment/decrement to avoid affecting relations
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'creditUsed', amount);
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'creditAvailable', amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'balance', amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'totalPurchases', amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'purchaseCount', 1);
+      await queryRunner.manager.update(Customer, customerId, {
+        lastPurchaseDate: new Date()
+      });
 
-      await queryRunner.manager.save(customer);
       await queryRunner.commitTransaction();
 
       return savedCredit;
@@ -208,13 +209,13 @@ export class CustomersService {
       for (const credit of pendingCredits) {
         if (remainingAmount <= 0) break;
 
-        const paymentAmount = Math.min(remainingAmount, credit.balance);
-        
-        credit.paidAmount += paymentAmount;
+        const paymentAmount = Math.min(remainingAmount, Number(credit.balance));
+
+        credit.paidAmount = Number(credit.paidAmount || 0) + paymentAmount;
         credit.updateBalance();
-        
+
         await queryRunner.manager.save(credit);
-        
+
         remainingAmount -= paymentAmount;
       }
 
@@ -231,14 +232,15 @@ export class CustomersService {
 
       await queryRunner.manager.save(paymentCredit);
 
-      // Update customer balances
-      customer.creditUsed = Math.max(0, customer.creditUsed - amount);
-      customer.creditAvailable = customer.creditLimit - customer.creditUsed;
-      customer.balance = Math.max(0, customer.balance - amount);
-      customer.totalPayments += amount;
-      customer.lastPaymentDate = new Date();
+      // Update customer balances using increment/decrement to avoid affecting relations
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'creditUsed', amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'creditAvailable', amount);
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'balance', amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'totalPayments', amount);
+      await queryRunner.manager.update(Customer, customerId, {
+        lastPaymentDate: new Date()
+      });
 
-      await queryRunner.manager.save(customer);
       await queryRunner.commitTransaction();
 
     } catch (error) {
@@ -276,20 +278,17 @@ export class CustomersService {
         );
       }
 
-      const customer = await this.findOne(customerId);
-
-      // Update customer balances
-      customer.creditUsed -= credit.amount;
-      customer.creditAvailable = customer.creditLimit - customer.creditUsed;
-      customer.balance -= credit.amount;
-      customer.totalPurchases -= credit.amount;
-      customer.purchaseCount = Math.max(0, customer.purchaseCount - 1);
+      // Update customer balances using increment/decrement to avoid affecting relations
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'creditUsed', credit.amount);
+      await queryRunner.manager.increment(Customer, { id: customerId }, 'creditAvailable', credit.amount);
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'balance', credit.amount);
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'totalPurchases', credit.amount);
+      await queryRunner.manager.decrement(Customer, { id: customerId }, 'purchaseCount', 1);
 
       // Cancel the credit
       credit.status = CreditStatus.CANCELLED;
-      
+
       await queryRunner.manager.save(credit);
-      await queryRunner.manager.save(customer);
       await queryRunner.commitTransaction();
 
     } catch (error) {
