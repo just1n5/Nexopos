@@ -32,7 +32,9 @@ type ApiCustomer = {
   mobile?: string | null
   address?: string | null
   city?: string | null
+  creditEnabled?: boolean | null
   creditLimit?: number | string | null
+  creditAvailable?: number | string | null
   creditUsed?: number | string | null
   balance?: number | string | null
   createdAt?: string | null
@@ -69,7 +71,10 @@ const mapCustomer = (payload: ApiCustomer): Customer => ({
   phone: payload.mobile ?? payload.phone ?? '',
   email: payload.email ?? undefined,
   address: payload.address ?? undefined,
+  creditEnabled: payload.creditEnabled ?? false,
   creditLimit: toNumber(payload.creditLimit),
+  creditAvailable: toNumber(payload.creditAvailable),
+  creditUsed: toNumber(payload.creditUsed),
   currentDebt: toNumber(payload.balance ?? payload.creditUsed),
   createdAt: toDate(payload.createdAt),
   updatedAt: toDate(payload.updatedAt)
