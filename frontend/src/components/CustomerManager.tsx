@@ -284,8 +284,18 @@ export default function CustomerManager({
       creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined
     }
 
+    console.log('[CustomerManager] Updating customer:', {
+      id: editingCustomer.id,
+      creditEnabled: editForm.creditEnabled,
+      payload
+    })
+
     try {
       const updated = await customersService.updateCustomer(editingCustomer.id, payload, token)
+      console.log('[CustomerManager] Customer updated:', {
+        id: updated.id,
+        creditEnabled: updated.creditEnabled
+      })
       setCustomers((prev) => prev.map(c => c.id === updated.id ? updated : c))
       setEditingCustomer(null)
       setEditForm(INITIAL_FORM)

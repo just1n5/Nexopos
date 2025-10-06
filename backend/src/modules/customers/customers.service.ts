@@ -94,16 +94,30 @@ export class CustomersService {
    */
   async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
     const customer = await this.findOne(id);
-    
+
+    console.log('[CustomersService] Updating customer:', {
+      id,
+      currentCreditEnabled: customer.creditEnabled,
+      newCreditEnabled: updateCustomerDto.creditEnabled,
+      dto: updateCustomerDto
+    });
+
     // If credit limit changes, update available credit
     if (updateCustomerDto.creditLimit !== undefined) {
-      updateCustomerDto['creditAvailable'] = 
+      updateCustomerDto['creditAvailable'] =
         updateCustomerDto.creditLimit - customer.creditUsed;
     }
 
     await this.customerRepository.update(id, updateCustomerDto);
-    
-    return this.findOne(id);
+
+    const updated = await this.findOne(id);
+    console.log('[CustomersService] Customer updated:', {
+      id,
+      creditEnabled: updated.creditEnabled,
+      creditLimit: updated.creditLimit
+    });
+
+    return updated;
   }
 
   /**
