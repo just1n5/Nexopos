@@ -169,6 +169,16 @@ export default function POSView() {
     }
 
     if (selectedPayment === PaymentMethod.CREDIT && selectedCustomer) {
+      // Validar que el cliente tenga crédito habilitado
+      if (!selectedCustomer.creditEnabled) {
+        toast({
+          title: "Crédito no habilitado",
+          description: "Este cliente no tiene crédito habilitado. Ve a Configuración → Clientes para habilitarlo.",
+          variant: "destructive"
+        })
+        return
+      }
+
       const creditLimit = selectedCustomer.creditLimit ?? 0
       const currentDebt = selectedCustomer.currentDebt ?? 0
       const availableCredit = creditLimit - currentDebt
@@ -667,7 +677,8 @@ export default function POSView() {
                 setSelectedPayment(PaymentMethod.CREDIT)
                 setShowPaymentModal(true)
               }}
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || (selectedCustomer && !selectedCustomer.creditEnabled)}
+              title={selectedCustomer && !selectedCustomer.creditEnabled ? "Este cliente no tiene crédito habilitado" : ""}
             >
               <UserPlus className="w-5 h-5 mr-2" />
               Fiar
@@ -940,6 +951,8 @@ export default function POSView() {
                       variant={selectedPayment === PaymentMethod.CREDIT ? 'default' : 'outline'}
                       className="w-full h-16"
                       onClick={() => setSelectedPayment(PaymentMethod.CREDIT)}
+                      disabled={selectedCustomer && !selectedCustomer.creditEnabled}
+                      title={selectedCustomer && !selectedCustomer.creditEnabled ? "Este cliente no tiene crédito habilitado" : ""}
                     >
                       <div className="flex flex-col items-center">
                         <UserPlus className="w-6 h-6 mb-1" />

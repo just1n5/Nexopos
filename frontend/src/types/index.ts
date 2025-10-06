@@ -127,7 +127,10 @@ export interface Customer {
   phone?: string
   email?: string
   address?: string
+  creditEnabled?: boolean
   creditLimit?: number
+  creditAvailable?: number
+  creditUsed?: number
   currentDebt?: number
   createdAt: Date
   updatedAt: Date

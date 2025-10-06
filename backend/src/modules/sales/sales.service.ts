@@ -79,6 +79,22 @@ export class SalesService {
         throw new BadRequestException(`Payment amount (${roundedTotalPayment}) is less than sale total (${roundedFinalTotal})`);
       }
 
+      // Validar crédito ANTES de crear la venta
+      if (createSaleDto.type === SaleType.CREDIT && createSaleDto.customerId) {
+        const customer = await this.customersService.findOne(createSaleDto.customerId);
+
+        if (!customer.creditEnabled) {
+          throw new BadRequestException('Credit is not enabled for this customer');
+        }
+
+        const creditAmount = toDecimal(finalTotal - roundedTotalPayment);
+        if (customer.creditAvailable < creditAmount) {
+          throw new BadRequestException(
+            `Insufficient credit. Available: ${customer.creditAvailable}, Required: ${creditAmount}`
+          );
+        }
+      }
+
       // Generate sale number
       const saleNumber = await this.generateSaleNumber();
 
