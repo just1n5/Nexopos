@@ -13,6 +13,7 @@ export interface CreateCustomerDto {
   mobile?: string
   address?: string
   city?: string
+  creditEnabled?: boolean
   creditLimit?: number
   creditDays?: number
   notes?: string

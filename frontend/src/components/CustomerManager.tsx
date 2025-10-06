@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { customersService, type CreateCustomerDto } from '@/services'
@@ -35,6 +36,7 @@ type CustomerFormState = {
   phone: string
   email: string
   address: string
+  creditEnabled: boolean
   creditLimit: string
 }
 
@@ -44,6 +46,7 @@ const INITIAL_FORM: CustomerFormState = {
   phone: '',
   email: '',
   address: '',
+  creditEnabled: false,
   creditLimit: ''
 }
 
@@ -158,8 +161,8 @@ export default function CustomerManager({
       email: newCustomer.email.trim() || undefined,
       mobile: newCustomer.phone.trim(),
       address: newCustomer.address.trim() || undefined,
+      creditEnabled: newCustomer.creditEnabled,
       creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined
-      // creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
     }
 
     try {
@@ -215,6 +218,7 @@ export default function CustomerManager({
       phone: customer.phone || '',
       email: customer.email || '',
       address: customer.address || '',
+      creditEnabled: customer.creditEnabled || false,
       creditLimit: customer.creditLimit?.toString() || ''
     })
     setShowPaymentSection(false)
@@ -276,8 +280,8 @@ export default function CustomerManager({
       email: editForm.email.trim() || undefined,
       mobile: editForm.phone.trim(),
       address: editForm.address.trim() || undefined,
+      creditEnabled: editForm.creditEnabled,
       creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined
-      // creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
     }
 
     try {
@@ -554,15 +558,32 @@ export default function CustomerManager({
                           onChange={(event) => setNewCustomer((prev) => ({ ...prev, email: event.target.value }))}
                         />
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Crédito máximo</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={newCustomer.creditLimit}
-                          onChange={(event) => setNewCustomer((prev) => ({ ...prev, creditLimit: event.target.value }))}
-                        />
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="new-credit-enabled"
+                            checked={newCustomer.creditEnabled}
+                            onCheckedChange={(checked: boolean) => setNewCustomer((prev) => ({ ...prev, creditEnabled: checked === true }))}
+                          />
+                          <label
+                            htmlFor="new-credit-enabled"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Habilitar Crédito
+                          </label>
+                        </div>
+                        {newCustomer.creditEnabled && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Límite de Crédito</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={newCustomer.creditLimit}
+                              onChange={(event) => setNewCustomer((prev) => ({ ...prev, creditLimit: event.target.value }))}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -655,15 +676,32 @@ export default function CustomerManager({
                           onChange={(event) => setEditForm((prev) => ({ ...prev, email: event.target.value }))}
                         />
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Crédito máximo</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={editForm.creditLimit}
-                          onChange={(event) => setEditForm((prev) => ({ ...prev, creditLimit: event.target.value }))}
-                        />
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-credit-enabled"
+                            checked={editForm.creditEnabled}
+                            onCheckedChange={(checked: boolean) => setEditForm((prev) => ({ ...prev, creditEnabled: checked === true }))}
+                          />
+                          <label
+                            htmlFor="edit-credit-enabled"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Habilitar Crédito
+                          </label>
+                        </div>
+                        {editForm.creditEnabled && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">Límite de Crédito</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={editForm.creditLimit}
+                              onChange={(event) => setEditForm((prev) => ({ ...prev, creditLimit: event.target.value }))}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
