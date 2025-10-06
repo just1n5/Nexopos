@@ -13,7 +13,10 @@
       "Bash(taskkill:*)",
       "Bash(npx rimraf:*)",
       "Bash(npm run build:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(echo $APPDATA)",
+      "Read(//c/Users/justi/AppData/Roaming/Claude/**)",
+      "Bash(npx @anthropic-ai/mcp-client-cli call render services:*)"
     ],
     "deny": [],
     "ask": []

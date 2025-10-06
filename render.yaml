@@ -1,0 +1,83 @@
+services:
+  # Backend API (NestJS)
+  - type: web
+    name: nexopos-backend
+    runtime: node
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: nexopos-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: nexopos-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: nexopos-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: nexopos-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: nexopos-db
+          property: password
+      - key: DB_SCHEMA
+        value: public
+      - key: DB_LOGGING
+        value: false
+      - key: DB_SYNC
+        value: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 86400s
+      - key: BCRYPT_SALT_ROUNDS
+        value: 12
+
+  # Frontend (React + Vite)
+  - type: web
+    name: nexopos-frontend
+    runtime: static
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://nexopos-aaj2.onrender.com/api
+      - key: VITE_ENV
+        value: production
+      - key: VITE_DIAN_TEST_MODE
+        value: true
+      - key: VITE_APP_VERSION
+        value: 1.0.0
+      - key: VITE_FEATURE_ECOMMERCE
+        value: false
+      - key: VITE_FEATURE_MULTI_BRANCH
+        value: false
+      - key: VITE_FEATURE_ANALYTICS
+        value: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: nexopos-db
+    databaseName: nexopos
+    user: nexopos
+    region: oregon
+    plan: free
