@@ -43,6 +43,7 @@ export interface CartItem {
   taxRate?: number
   total: number
   notes?: string
+  isSoldByWeight?: boolean // Flag para productos vendidos por peso
 }
 
 export interface Sale {

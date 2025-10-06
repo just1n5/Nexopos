@@ -155,7 +155,8 @@ export const usePOSStore = create<POSState>()(
             tax: taxAmount,
             taxRate,
             total,
-            notes: 'Vendido por peso'
+            notes: 'Vendido por peso',
+            isSoldByWeight: true // Flag para evitar recalculos
           };
 
           set((state) => ({ cart: [...state.cart, newItem] }));
@@ -181,6 +182,11 @@ export const usePOSStore = create<POSState>()(
                 return item
               }
 
+              // No recalcular productos vendidos por peso (ya tienen sus totales calculados)
+              if (item.isSoldByWeight) {
+                return item
+              }
+
               const taxRate = item.taxRate ?? resolveTaxRate(item.product)
               const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, quantity, item.discount, taxRate)
 
@@ -203,6 +209,11 @@ export const usePOSStore = create<POSState>()(
             cart: state.cart.map(item => {
               if (item.id !== itemId) {
                 return item
+              }
+
+              // No recalcular productos vendidos por peso
+              if (item.isSoldByWeight) {
+                return { ...item, discount: 0 } // Productos por peso no soportan descuento individual
               }
 
               const taxRate = item.taxRate ?? resolveTaxRate(item.product)
@@ -235,6 +246,11 @@ export const usePOSStore = create<POSState>()(
         setGlobalDiscount: (discount) => {
           set((state) => {
             const updatedCart = state.cart.map(item => {
+              // No recalcular productos vendidos por peso
+              if (item.isSoldByWeight) {
+                return item
+              }
+
               const taxRate = item.taxRate ?? resolveTaxRate(item.product)
               const { unitPrice, subtotal, taxAmount, total } = calculateLineTotals(item.price, item.quantity, discount, taxRate)
 
