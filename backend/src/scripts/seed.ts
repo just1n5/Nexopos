@@ -32,6 +32,7 @@ export async function runSeeds() {
     schema: configService.get<string>('DB_SCHEMA', 'public'),
     entities: ['src/**/*.entity{.ts,.js}'],
     synchronize: false,
+    ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : false,
   });
 
   await dataSource.initialize();
