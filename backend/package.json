@@ -9,6 +9,7 @@
     "start:prod": "node dist/main",
     "start:debug": "nest start --debug --watch",
     "build": "nest build",
+    "render:build": "npm install && npm run build",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
