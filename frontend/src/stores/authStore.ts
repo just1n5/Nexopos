@@ -210,14 +210,14 @@ export const useAuthStore = create<AuthState>()(
 
         updateDianResolution: (resolutionData) => {
           const currentBusiness = get().business;
-          if (currentBusiness) {
+          if (currentBusiness && currentBusiness.dianResolution) {
             set({
               business: {
                 ...currentBusiness,
                 dianResolution: {
                   ...currentBusiness.dianResolution,
                   ...resolutionData,
-                },
+                } as DianResolution,
                 updatedAt: new Date(),
               },
             });

@@ -158,8 +158,8 @@ export default function CustomerManager({
       email: newCustomer.email.trim() || undefined,
       mobile: newCustomer.phone.trim(),
       address: newCustomer.address.trim() || undefined,
-      creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined,
-      creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
+      creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined
+      // creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
     }
 
     try {
@@ -276,8 +276,8 @@ export default function CustomerManager({
       email: editForm.email.trim() || undefined,
       mobile: editForm.phone.trim(),
       address: editForm.address.trim() || undefined,
-      creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined,
-      creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
+      creditLimit: creditLimitValue > 0 ? creditLimitValue : undefined
+      // creditEnabled: creditLimitValue > 0 // Habilitar crédito automáticamente si hay límite
     }
 
     try {

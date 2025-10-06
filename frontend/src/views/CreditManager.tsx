@@ -6,14 +6,12 @@ import {
   TrendingUp,
   Search,
   Filter,
-  MessageCircle,
   X,
   Check,
   History,
   CreditCard,
   Clock,
   User,
-  UserPlus,
   Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -229,21 +227,21 @@ export default function CreditManager() {
     }
   }
 
-  const handleSendReminder = async (creditSale: CreditSale) => {
-    try {
-      await creditService.sendPaymentReminder(creditSale.id, 'whatsapp', token!)
-      toast({
-        title: 'Recordatorio Enviado',
-        description: 'Se ha enviado un recordatorio por WhatsApp',
-      })
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo enviar el recordatorio',
-        variant: 'destructive'
-      })
-    }
-  }
+  // const handleSendReminder = async (creditSale: CreditSale) => {
+  //   try {
+  //     await creditService.sendPaymentReminder(creditSale.id, 'whatsapp', token!)
+  //     toast({
+  //       title: 'Recordatorio Enviado',
+  //       description: 'Se ha enviado un recordatorio por WhatsApp',
+  //     })
+  //   } catch (error: any) {
+  //     toast({
+  //       title: 'Error',
+  //       description: error.message || 'No se pudo enviar el recordatorio',
+  //       variant: 'destructive'
+  //     })
+  //   }
+  // }
 
   const getStatusBadge = (status: string) => {
     switch (status) {

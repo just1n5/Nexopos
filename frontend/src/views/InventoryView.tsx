@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, RefreshCw, AlertCircle, FileSpreadsheet, Download, X, Save, Edit } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -105,7 +105,7 @@ export default function InventoryView() {
   const [products, setProducts] = useState<InventoryRow[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
+  // const [showImportModal, setShowImportModal] = useState(false);
   
   const [newProduct, setNewProduct] = useState<NewProductFormState>({
     name: '',

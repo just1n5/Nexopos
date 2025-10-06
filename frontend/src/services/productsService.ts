@@ -70,7 +70,7 @@ const mapProduct = (item: ApiProduct): Product => {
 
   return {
     id: item.id,
-    saleType: item.saleType ?? 'UNIT',
+    saleType: (item.saleType ?? 'UNIT') as ProductSaleType,
     pricePerGram: item.pricePerGram,
     sku: item.sku,
     name: item.name,

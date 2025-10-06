@@ -242,7 +242,7 @@ const mapBackendSale = (sale: BackendSale): Sale => {
     })()
 
     const grossUnitPrice = resolvedUnitPrice * (1 + (taxRate / 100))
-    const grossUnitAfterDiscount = grossUnitPrice * discountFactor
+    // const grossUnitAfterDiscount = grossUnitPrice * discountFactor
 
     const subtotal = (() => {
       const value = toNumber(item.subtotal)
@@ -273,6 +273,7 @@ const mapBackendSale = (sale: BackendSale): Sale => {
       category: '',
       image: undefined,
       tax: taxRate,
+      saleType: ProductSaleType.UNIT,
       variants: undefined,
       barcode: undefined,
       isActive: true,

@@ -15,11 +15,9 @@ import {
   Package,
   ArrowLeft,
   Receipt as ReceiptIcon,
-  Calculator,
   User,
   ChevronDown,
   ChevronUp,
-  History,
   AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,7 +32,7 @@ import { useCashRegisterStore } from '@/stores/cashRegisterStore'
 import { formatCurrency, formatStock } from '@/lib/utils';
 import { salesService, mapFrontPaymentMethodToBackend } from '@/services'
 import { useAuthStore } from '@/stores/authStore'
-import { PaymentMethod, Sale, SaleType } from '@/types'
+import { PaymentMethod, SaleType } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import CustomerManager from '@/components/CustomerManager'
 import Receipt from '@/components/Receipt'

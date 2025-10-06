@@ -15,6 +15,7 @@ export interface Product {
   variants?: ProductVariant[]
   barcode?: string
   isActive: boolean
+  salesCount?: number
   createdAt: Date
   updatedAt: Date
 }
@@ -175,6 +176,7 @@ export interface CashRegister {
   status: RegisterStatus
   openedBy: string
   closedBy?: string
+  notes?: string
 }
 
 export enum RegisterStatus {
@@ -189,6 +191,7 @@ export interface Expense {
   category: string
   date: Date
   createdBy: string
+  notes?: string
 }
 
 export interface User {
