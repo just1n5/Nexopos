@@ -26,8 +26,6 @@ async function bootstrap() {
     'http://localhost:5173', // Desarrollo local
     'http://localhost:3000',
     'https://nexopos-1.onrender.com', // Frontend en Render
-    'https://overbridgenet.com', // Dominio personalizado
-    'https://www.overbridgenet.com',
   ];
 
   app.enableCors({
