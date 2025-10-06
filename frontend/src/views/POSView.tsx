@@ -677,7 +677,7 @@ export default function POSView() {
                 setSelectedPayment(PaymentMethod.CREDIT)
                 setShowPaymentModal(true)
               }}
-              disabled={cart.length === 0 || (selectedCustomer && !selectedCustomer.creditEnabled)}
+              disabled={cart.length === 0 || Boolean(selectedCustomer && !selectedCustomer.creditEnabled)}
               title={selectedCustomer && !selectedCustomer.creditEnabled ? "Este cliente no tiene crédito habilitado" : ""}
             >
               <UserPlus className="w-5 h-5 mr-2" />
@@ -951,7 +951,7 @@ export default function POSView() {
                       variant={selectedPayment === PaymentMethod.CREDIT ? 'default' : 'outline'}
                       className="w-full h-16"
                       onClick={() => setSelectedPayment(PaymentMethod.CREDIT)}
-                      disabled={selectedCustomer && !selectedCustomer.creditEnabled}
+                      disabled={Boolean(selectedCustomer && !selectedCustomer.creditEnabled)}
                       title={selectedCustomer && !selectedCustomer.creditEnabled ? "Este cliente no tiene crédito habilitado" : ""}
                     >
                       <div className="flex flex-col items-center">
