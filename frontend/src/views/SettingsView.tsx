@@ -1,11 +1,11 @@
-﻿import { useState } from 'react'
-import { 
-  Settings, 
-  Store, 
-  CreditCard, 
-  Printer, 
-  Bell, 
-  Shield, 
+﻿import { useState, useRef } from 'react'
+import {
+  Settings,
+  Store,
+  CreditCard,
+  Printer,
+  Bell,
+  Shield,
   Users,
   Save,
   Upload,
@@ -22,20 +22,26 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
+import { useBusinessStore } from '@/stores/businessStore'
+import { useToast } from '@/hooks/useToast'
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = useState('business')
   const [saved, setSaved] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
-  // Datos de ejemplo
-  const businessData = {
-    name: 'Tienda Demo',
-    nit: '900.123.456-7',
-    address: 'Calle 123 #45-67, Bogotá',
-    phone: '(1) 234-5678',
-    email: 'tienda@demo.com',
-    regime: 'Responsable de IVA'
-  }
+  const { config, updateConfig, setLogo } = useBusinessStore()
+
+  // Estado local para el formulario
+  const [formData, setFormData] = useState({
+    name: config.name,
+    nit: config.nit,
+    address: config.address,
+    phone: config.phone,
+    email: config.email,
+    regime: config.regime
+  })
 
   const dianData = {
     resolution: '18764567890',
@@ -49,8 +55,52 @@ export default function SettingsView() {
   }
 
   const handleSave = () => {
+    updateConfig(formData)
     setSaved(true)
+    toast({
+      title: 'Configuración guardada',
+      description: 'Los cambios se han guardado correctamente',
+      variant: 'success'
+    })
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validar que sea PNG
+    if (!file.type.startsWith('image/png')) {
+      toast({
+        title: 'Error',
+        description: 'El logo debe ser una imagen PNG',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // Validar tamaño (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'El logo no debe superar 2MB',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // Convertir a base64
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64String = reader.result as string
+      setLogo(base64String)
+      toast({
+        title: 'Logo cargado',
+        description: 'El logo se ha cargado correctamente',
+        variant: 'success'
+      })
+    }
+    reader.readAsDataURL(file)
   }
 
   const tabs = [
@@ -149,38 +199,84 @@ export default function SettingsView() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-2">Nombre del Negocio</label>
-                        <Input defaultValue={businessData.name} />
+                        <Input
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          placeholder="Ej: Mi Tienda"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">NIT</label>
-                        <Input defaultValue={businessData.nit} />
+                        <Input
+                          value={formData.nit}
+                          onChange={(e) => setFormData({...formData, nit: e.target.value})}
+                          placeholder="900.123.456-7"
+                        />
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium mb-2">Dirección</label>
-                        <Input defaultValue={businessData.address} />
+                        <Input
+                          value={formData.address}
+                          onChange={(e) => setFormData({...formData, address: e.target.value})}
+                          placeholder="Calle 123 #45-67"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">Teléfono</label>
-                        <Input defaultValue={businessData.phone} />
+                        <Input
+                          value={formData.phone}
+                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                          placeholder="(1) 234-5678"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">Email</label>
-                        <Input type="email" defaultValue={businessData.email} />
+                        <Input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          placeholder="correo@ejemplo.com"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">Régimen Tributario</label>
-                        <select className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                        <select
+                          className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                          value={formData.regime}
+                          onChange={(e) => setFormData({...formData, regime: e.target.value})}
+                        >
                           <option>Responsable de IVA</option>
                           <option>No Responsable de IVA</option>
                           <option>Régimen Simple</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">Logo del Negocio</label>
-                        <Button variant="outline" className="w-full">
+                        <label className="block text-sm font-medium mb-2">Logo del Negocio (PNG)</label>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/png"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
                           <Upload className="w-4 h-4 mr-2" />
-                          Subir Logo
+                          {config.logo ? 'Cambiar Logo' : 'Subir Logo'}
                         </Button>
+                        {config.logo && (
+                          <div className="mt-2 text-center">
+                            <img
+                              src={config.logo}
+                              alt="Logo"
+                              className="h-12 mx-auto object-contain"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 

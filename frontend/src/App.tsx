@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/toaster'
 import { useAuthStore } from '@/stores/authStore'
 import { usePOSStore } from '@/stores/posStore'
+import { useBusinessStore } from '@/stores/businessStore'
 import POSView from '@/views/POSView'
 import RequireCashRegister from '@/components/RequireCashRegister'
 
@@ -59,6 +60,7 @@ const navItems = [
 function MainLayout({ children }: { children: React.ReactNode }) {
   const { business, user, logout } = useAuthStore()
   const { cart } = usePOSStore()
+  const { config: businessConfig } = useBusinessStore()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -119,11 +121,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             </Button>
             
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-white" />
-              </div>
+              {businessConfig.logo ? (
+                <img src={businessConfig.logo} alt="Logo" className="h-8 w-8 object-contain" />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <Store className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">NexoPOS</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {businessConfig.name || 'NexoPOS'}
+                </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                   {business?.name || 'Sistema de Punto de Venta'}
                 </p>
@@ -227,11 +235,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             <div className="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl">
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-6">
-                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <Store className="w-6 h-6 text-white" />
-                  </div>
+                  {businessConfig.logo ? (
+                    <img src={businessConfig.logo} alt="Logo" className="h-10 w-10 object-contain" />
+                  ) : (
+                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                      <Store className="w-6 h-6 text-white" />
+                    </div>
+                  )}
                   <div>
-                    <h2 className="font-bold text-gray-900 dark:text-white">NexoPOS</h2>
+                    <h2 className="font-bold text-gray-900 dark:text-white">
+                      {businessConfig.name || 'NexoPOS'}
+                    </h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {business?.name || 'Punto de Venta'}
                     </p>
