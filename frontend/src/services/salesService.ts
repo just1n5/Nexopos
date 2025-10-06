@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'
-import { PaymentMethod, SaleStatus, SaleType, type Sale, type CartItem, type Product, type ProductVariant, type SalePayment } from '@/types'
+import { PaymentMethod, ProductSaleType, SaleStatus, SaleType, type Sale, type CartItem, type Product, type ProductVariant, type SalePayment } from '@/types'
 
 export type BackendPaymentMethod =
   | 'CASH'

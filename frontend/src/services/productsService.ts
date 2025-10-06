@@ -1,5 +1,6 @@
 ﻿import { apiFetch } from '@/lib/api'
 import type { Product, ProductVariant } from '@/types'
+import { ProductSaleType } from '@/types'
 
 type ApiProductVariant = {
   id: string
