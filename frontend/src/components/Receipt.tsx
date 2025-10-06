@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
+import { useBusinessStore } from '@/stores/businessStore'
 import { PaymentMethod, Sale, SaleType } from '@/types'
 
 interface ReceiptProps {
@@ -28,6 +29,7 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 export default function Receipt({ sale, onClose, showActions = true }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { business } = useAuthStore()
+  const { config: businessConfig } = useBusinessStore()
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
 
@@ -94,10 +96,14 @@ export default function Receipt({ sale, onClose, showActions = true }: ReceiptPr
   };
 
   const handleSendWhatsapp = () => {
+    const businessName = businessConfig.name || business?.name || 'NexoPOS'
+    const businessAddress = businessConfig.address || business?.address || ''
+    const businessPhone = businessConfig.phone || business?.phone || ''
+
     const message = `
-*${business?.name ?? 'NexoPOS'}*
-${business?.address ?? ''}
-Tel: ${business?.phone ?? ''}
+*${businessName}*
+${businessAddress}
+Tel: ${businessPhone}
 NIT: ${business?.nit ?? ''}
 
 RECIBO DE VENTA
@@ -153,10 +159,25 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
 
         <div ref={receiptRef} className="receipt p-6">
           <div className="text-center mb-4">
-            <h2 className="text-lg font-semibold">{business?.name ?? 'NexoPOS'}</h2>
-            {business?.address && <p className="text-xs text-gray-500">{business.address}</p>}
-            {business?.phone && <p className="text-xs text-gray-500">Tel: {business.phone}</p>}
-            {business?.nit && <p className="text-xs text-gray-500">NIT: {business.nit}</p>}
+            {businessConfig.logo && (
+              <img
+                src={businessConfig.logo}
+                alt="Logo"
+                className="h-16 mx-auto mb-2 object-contain"
+              />
+            )}
+            <h2 className="text-lg font-semibold">
+              {businessConfig.name || business?.name || 'NexoPOS'}
+            </h2>
+            {(businessConfig.address || business?.address) && (
+              <p className="text-xs text-gray-500">{businessConfig.address || business?.address}</p>
+            )}
+            {(businessConfig.phone || business?.phone) && (
+              <p className="text-xs text-gray-500">Tel: {businessConfig.phone || business?.phone}</p>
+            )}
+            {(businessConfig.nit || business?.nit) && (
+              <p className="text-xs text-gray-500">NIT: {businessConfig.nit || business?.nit}</p>
+            )}
           </div>
 
           <Separator className="divider" />
