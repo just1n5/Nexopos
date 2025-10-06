@@ -21,10 +21,30 @@ async function bootstrap() {
     })
   );
 
-  // CORS
+  // CORS - Permitir múltiples orígenes
+  const allowedOrigins = [
+    'http://localhost:5173', // Desarrollo local
+    'http://localhost:3000',
+    'https://nexopos-1.onrender.com', // Frontend en Render
+    'https://overbridgenet.com', // Dominio personalizado
+    'https://www.overbridgenet.com',
+  ];
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Permitir requests sin origin (mobile apps, Postman, etc)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
+        callback(null, false);
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   // Swagger Documentation
