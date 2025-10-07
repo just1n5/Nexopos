@@ -73,6 +73,52 @@ export interface InventoryReport {
   leastSoldProducts: ProductReport[]
 }
 
+export interface CashRegisterArqueo {
+  sessionId: string
+  sessionNumber: string
+  openedAt: Date
+  closedAt: Date
+  openedBy: string
+  closedBy: string
+
+  // Balances
+  openingBalance: number
+  expectedBalance: number
+  actualBalance: number
+  difference: number
+
+  // Ventas por método
+  totalCashSales: number
+  totalCardSales: number
+  totalDigitalSales: number
+  totalCreditSales: number
+
+  // Totales
+  totalSales: number
+  totalExpenses: number
+  totalTransactions: number
+
+  // Notas
+  openingNotes?: string
+  closingNotes?: string
+  discrepancyReason?: string
+
+  // Estado
+  status: string
+}
+
+export interface CashRegisterReport {
+  summary: {
+    totalSessions: number
+    totalSales: number
+    totalExpenses: number
+    totalDiscrepancies: number
+    sessionsWithDiscrepancies: number
+    discrepancyRate: number
+  }
+  arqueos: CashRegisterArqueo[]
+}
+
 class ReportsService {
   async getSalesReport(token: string, filters?: ReportFilters): Promise<SalesReport> {
     const params = this.buildQueryParams(filters)
@@ -162,11 +208,11 @@ class ReportsService {
       token,
       skipContentType: true
     })
-    
+
     if (!response.ok) {
       throw new Error('Error al obtener el reporte de inventario')
     }
-    
+
     const data = await response.json()
     return {
       totalProducts: data.totalProducts || 0,
@@ -175,6 +221,54 @@ class ReportsService {
       outOfStockProducts: data.outOfStockProducts || [],
       mostSoldProducts: data.mostSoldProducts || [],
       leastSoldProducts: data.leastSoldProducts || []
+    }
+  }
+
+  async getCashRegisterReport(token: string, filters?: ReportFilters): Promise<CashRegisterReport> {
+    const params = this.buildQueryParams(filters)
+    const response = await apiFetch(`/reports/cash-register?${params}`, {
+      method: 'GET',
+      token,
+      skipContentType: true
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al obtener el reporte de arqueos')
+    }
+
+    const data = await response.json()
+    return {
+      summary: {
+        totalSessions: data.summary?.totalSessions || 0,
+        totalSales: Number(data.summary?.totalSales || 0),
+        totalExpenses: Number(data.summary?.totalExpenses || 0),
+        totalDiscrepancies: Number(data.summary?.totalDiscrepancies || 0),
+        sessionsWithDiscrepancies: data.summary?.sessionsWithDiscrepancies || 0,
+        discrepancyRate: Number(data.summary?.discrepancyRate || 0)
+      },
+      arqueos: (data.arqueos || []).map((arq: any) => ({
+        sessionId: arq.sessionId,
+        sessionNumber: arq.sessionNumber,
+        openedAt: new Date(arq.openedAt),
+        closedAt: new Date(arq.closedAt),
+        openedBy: arq.openedBy,
+        closedBy: arq.closedBy,
+        openingBalance: Number(arq.openingBalance || 0),
+        expectedBalance: Number(arq.expectedBalance || 0),
+        actualBalance: Number(arq.actualBalance || 0),
+        difference: Number(arq.difference || 0),
+        totalCashSales: Number(arq.totalCashSales || 0),
+        totalCardSales: Number(arq.totalCardSales || 0),
+        totalDigitalSales: Number(arq.totalDigitalSales || 0),
+        totalCreditSales: Number(arq.totalCreditSales || 0),
+        totalSales: Number(arq.totalSales || 0),
+        totalExpenses: Number(arq.totalExpenses || 0),
+        totalTransactions: Number(arq.totalTransactions || 0),
+        openingNotes: arq.openingNotes,
+        closingNotes: arq.closingNotes,
+        discrepancyReason: arq.discrepancyReason,
+        status: arq.status
+      }))
     }
   }
 

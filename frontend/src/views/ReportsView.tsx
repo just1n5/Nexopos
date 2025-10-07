@@ -11,7 +11,8 @@ import {
   Download,
   AlertCircle,
   Clock,
-  CreditCard
+  CreditCard,
+  Calculator
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +24,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 import { reportsService } from '@/services/reportsService'
-import type { ProductReport, SalesReport, CustomerReport, InventoryReport } from '@/services/reportsService'
+import type { ProductReport, SalesReport, CustomerReport, InventoryReport, CashRegisterReport } from '@/services/reportsService'
 import {
   getTodayRangeColombia,
   getWeekRangeColombia,
@@ -41,6 +42,7 @@ export default function ReportsView() {
   const [productReports, setProductReports] = useState<ProductReport[]>([])
   const [customerReports, setCustomerReports] = useState<CustomerReport[]>([])
   const [inventoryReport, setInventoryReport] = useState<InventoryReport | null>(null)
+  const [cashRegisterReport, setCashRegisterReport] = useState<CashRegisterReport | null>(null)
   
   useEffect(() => {
     if (token) {
@@ -73,19 +75,21 @@ export default function ReportsView() {
       }
 
       const filters = dateRangeFilters
-      
+
       // Cargar todos los reportes en paralelo
-      const [sales, products, customers, inventory] = await Promise.all([
+      const [sales, products, customers, inventory, cashRegister] = await Promise.all([
         reportsService.getSalesReport(token!, filters),
         reportsService.getProductsReport(token!, filters),
         reportsService.getCustomersReport(token!, filters),
-        reportsService.getInventoryReport(token!)
+        reportsService.getInventoryReport(token!),
+        reportsService.getCashRegisterReport(token!, filters)
       ])
-      
+
       setSalesReport(sales)
       setProductReports(products)
       setCustomerReports(customers)
       setInventoryReport(inventory)
+      setCashRegisterReport(cashRegister)
     } catch (error) {
       console.error('Error loading reports:', error)
       toast({
@@ -346,6 +350,10 @@ export default function ReportsView() {
             <TabsTrigger value="inventory">
               <Package className="w-4 h-4 mr-2" />
               Inventario
+            </TabsTrigger>
+            <TabsTrigger value="cash-register">
+              <Calculator className="w-4 h-4 mr-2" />
+              Arqueos de Caja
             </TabsTrigger>
           </TabsList>
           
@@ -761,6 +769,158 @@ export default function ReportsView() {
                     </CardContent>
                   </Card>
                 )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* Tab de Arqueos de Caja */}
+          <TabsContent value="cash-register" className="space-y-4">
+            {cashRegisterReport && (
+              <>
+                {/* Resumen de Arqueos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Total Sesiones
+                      </CardTitle>
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {cashRegisterReport.summary.totalSessions}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Ventas Totales
+                      </CardTitle>
+                      <DollarSign className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(cashRegisterReport.summary.totalSales)}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Gastos Totales
+                      </CardTitle>
+                      <TrendingDown className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-red-600">
+                        {formatCurrency(cashRegisterReport.summary.totalExpenses)}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Tasa de Discrepancias
+                      </CardTitle>
+                      <AlertCircle className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {cashRegisterReport.summary.discrepancyRate.toFixed(1)}%
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {cashRegisterReport.summary.sessionsWithDiscrepancies} de {cashRegisterReport.summary.totalSessions} sesiones
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tabla de Arqueos */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Historial de Arqueos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2 font-medium text-gray-600">Sesión</th>
+                            <th className="text-left p-2 font-medium text-gray-600">Fecha</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Apertura</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Esperado</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Contado</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Diferencia</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Ventas</th>
+                            <th className="text-left p-2 font-medium text-gray-600">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cashRegisterReport.arqueos.map((arqueo) => (
+                            <tr key={arqueo.sessionId} className="border-b hover:bg-gray-50">
+                              <td className="p-2">
+                                <div className="font-medium">{arqueo.sessionNumber}</div>
+                                <div className="text-xs text-gray-500">
+                                  {arqueo.totalTransactions} transacciones
+                                </div>
+                              </td>
+                              <td className="p-2">
+                                <div className="text-sm">
+                                  {new Date(arqueo.closedAt).toLocaleDateString('es-CO', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(arqueo.closedAt).toLocaleTimeString('es-CO', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              </td>
+                              <td className="p-2 text-right">
+                                {formatCurrency(arqueo.openingBalance)}
+                              </td>
+                              <td className="p-2 text-right">
+                                {formatCurrency(arqueo.expectedBalance)}
+                              </td>
+                              <td className="p-2 text-right font-medium">
+                                {formatCurrency(arqueo.actualBalance)}
+                              </td>
+                              <td className={`p-2 text-right font-medium ${
+                                Math.abs(arqueo.difference) > 0
+                                  ? arqueo.difference > 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                                  : 'text-gray-600'
+                              }`}>
+                                {arqueo.difference > 0 && '+'}
+                                {formatCurrency(arqueo.difference)}
+                              </td>
+                              <td className="p-2 text-right">
+                                {formatCurrency(arqueo.totalSales)}
+                              </td>
+                              <td className="p-2">
+                                <Badge className={
+                                  Math.abs(arqueo.difference) > 1000
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }>
+                                  {Math.abs(arqueo.difference) > 1000 ? 'Con diferencia' : 'Cuadrado'}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
           </TabsContent>

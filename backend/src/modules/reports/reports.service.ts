@@ -1,9 +1,11 @@
 ﻿import { Injectable } from '@nestjs/common';
 import { SalesService } from '../sales/sales.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { CashRegisterService } from '../cash-register/cash-register.service';
 import { Sale, SaleType } from '../sales/entities/sale.entity';
 import { PaymentMethod } from '../sales/entities/payment.entity';
 import { InventoryStock, StockStatus } from '../inventory/entities/inventory-stock.entity';
+import { CashRegisterStatus } from '../cash-register/entities/cash-register.entity';
 
 interface ReportFilters {
   startDate?: Date;
@@ -21,6 +23,7 @@ export class ReportsService {
   constructor(
     private readonly salesService: SalesService,
     private readonly inventoryService: InventoryService,
+    private readonly cashRegisterService: CashRegisterService,
   ) {}
 
   async getSalesReport(filters: ReportFilters) {
@@ -250,6 +253,67 @@ export class ReportsService {
       outOfStockProducts,
       mostSoldProducts: [],
       leastSoldProducts: [],
+    };
+  }
+
+  async getCashRegisterReport(filters: ReportFilters) {
+    const sessions = await this.cashRegisterService.findAll({
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      status: CashRegisterStatus.CLOSED, // Solo sesiones cerradas
+    });
+
+    const arqueos = sessions.map((session) => ({
+      sessionId: session.id,
+      sessionNumber: session.sessionNumber,
+      openedAt: session.openedAt,
+      closedAt: session.closedAt,
+      openedBy: session.openedBy,
+      closedBy: session.closedBy,
+
+      // Balances
+      openingBalance: Number(session.openingBalance || 0),
+      expectedBalance: Number(session.expectedBalance || 0),
+      actualBalance: Number(session.actualBalance || 0),
+      difference: Number(session.difference || 0),
+
+      // Ventas por método
+      totalCashSales: Number(session.totalCashSales || 0),
+      totalCardSales: Number(session.totalCardSales || 0),
+      totalDigitalSales: Number(session.totalDigitalSales || 0),
+      totalCreditSales: Number(session.totalCreditSales || 0),
+
+      // Totales
+      totalSales: Number(session.totalSales || 0),
+      totalExpenses: Number(session.totalExpenses || 0),
+      totalTransactions: Number(session.totalTransactions || 0),
+
+      // Notas
+      openingNotes: session.openingNotes,
+      closingNotes: session.closingNotes,
+      discrepancyReason: session.discrepancyReason,
+
+      // Estado
+      status: session.status,
+    }));
+
+    // Calcular totales generales
+    const totalSessions = arqueos.length;
+    const totalSales = arqueos.reduce((sum, arq) => sum + arq.totalSales, 0);
+    const totalExpenses = arqueos.reduce((sum, arq) => sum + arq.totalExpenses, 0);
+    const totalDiscrepancies = arqueos.reduce((sum, arq) => sum + Math.abs(arq.difference), 0);
+    const sessionsWithDiscrepancies = arqueos.filter(arq => Math.abs(arq.difference) > 0).length;
+
+    return {
+      summary: {
+        totalSessions,
+        totalSales,
+        totalExpenses,
+        totalDiscrepancies,
+        sessionsWithDiscrepancies,
+        discrepancyRate: totalSessions > 0 ? (sessionsWithDiscrepancies / totalSessions) * 100 : 0,
+      },
+      arqueos,
     };
   }
 

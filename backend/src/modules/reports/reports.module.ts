@@ -4,9 +4,10 @@ import { ReportsService } from './reports.service';
 import { SalesModule } from '../sales/sales.module';
 import { CustomersModule } from '../customers/customers.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { CashRegisterModule } from '../cash-register/cash-register.module';
 
 @Module({
-  imports: [SalesModule, InventoryModule],
+  imports: [SalesModule, InventoryModule, CashRegisterModule],
   controllers: [ReportsController],
   providers: [ReportsService],
   exports: [ReportsService],

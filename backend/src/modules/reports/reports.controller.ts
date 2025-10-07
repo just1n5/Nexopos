@@ -57,6 +57,17 @@ export class ReportsController {
     return this.reportsService.getInventoryReport();
   }
 
+  @Get('cash-register')
+  @ApiOperation({ summary: 'Get cash register arqueos report' })
+  @ApiQuery({ name: 'startDate', required: false, type: Date })
+  @ApiQuery({ name: 'endDate', required: false, type: Date })
+  getCashRegisterReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportsService.getCashRegisterReport(this.toFilters(startDate, endDate));
+  }
+
   @Get(':type/download')
   @ApiOperation({ summary: 'Download report as CSV' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
