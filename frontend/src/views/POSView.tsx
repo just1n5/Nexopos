@@ -502,7 +502,7 @@ export default function POSView() {
                           {formatCurrency(product.price)}
                         </span>
                         <Badge variant={product.stock < 10 ? 'destructive' : 'default'} className="text-xs">
-                          {formatStock(product.stock, product.saleType)}
+                          {formatStock(product.stock, product.saleType, weightUnit)}
                         </Badge>
                       </div>
                     </CardContent>
