@@ -239,18 +239,35 @@ export class SalesService {
           customerId: createSaleDto.customerId,
           creditAmount,
           saleId: savedSale.id,
-          saleNumber: savedSale.saleNumber
+          saleNumber: savedSale.saleNumber,
+          type: createSaleDto.type
         });
 
-        await this.customersService.addCredit(
-          createSaleDto.customerId,
-          creditAmount,
-          savedSale.id,
-          createSaleDto.creditDueDate ? new Date(createSaleDto.creditDueDate) : undefined,
-          `Venta a crédito #${savedSale.saleNumber}`
-        );
+        try {
+          const creditRecord = await this.customersService.addCredit(
+            createSaleDto.customerId,
+            creditAmount,
+            savedSale.id,
+            createSaleDto.creditDueDate ? new Date(createSaleDto.creditDueDate) : undefined,
+            `Venta a crédito #${savedSale.saleNumber}`
+          );
 
-        console.log('[SalesService] Credit record created successfully');
+          console.log('[SalesService] Credit record created successfully:', {
+            creditId: creditRecord.id,
+            amount: creditRecord.amount,
+            balance: creditRecord.balance
+          });
+        } catch (error) {
+          console.error('[SalesService] ERROR creating credit record:', error);
+          console.error('[SalesService] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            customerId: createSaleDto.customerId,
+            creditAmount
+          });
+          // Re-throw to prevent sale from completing if credit creation fails
+          throw new BadRequestException(`Failed to create credit record: ${error.message}`);
+        }
       }
 
       // Register sale in cash register (after successful transaction)
@@ -614,6 +631,7 @@ export class SalesService {
         sku: variant?.sku || product.sku,
         variantName: variant?.name || null,
         costPrice: costPrice,
+        stock: variant?.stock || product.stock || 0,
         taxRate: 19, // Colombian IVA - this should come from product config
         taxCode: 'IVA',
         saleType: product.saleType,
