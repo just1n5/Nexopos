@@ -34,13 +34,13 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
-      className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-4",
-        className
-      )}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       {...props}
     >
-      <div className="relative w-full max-w-lg mx-auto bg-white border shadow-lg rounded-lg p-6 max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200">
+      <div className={cn(
+        "relative w-full max-w-lg mx-auto bg-white border shadow-lg rounded-lg p-6 max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200",
+        className
+      )}>
         {children}
       </div>
     </DialogPrimitive.Content>
