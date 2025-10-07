@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { formatCurrency, formatStock } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useBusinessStore } from '@/stores/businessStore';
 import { useToast } from '@/hooks/useToast';
 import { productsService, inventoryService, MovementType } from '@/services';
 
@@ -99,6 +100,7 @@ const cleanDescription = (description?: string): string | undefined => {
 
 export default function InventoryView() {
   const { token, logout } = useAuthStore();
+  const weightUnit = useBusinessStore((state) => state.config.weightUnit);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -359,13 +361,13 @@ export default function InventoryView() {
                           </td>
                           <td className="p-2 text-center">
                             {isOutOfStock ? (
-                              <Badge variant="destructive">{`${formatStock(product.totalStock, product.saleType)}`} (Agotado)</Badge>
+                              <Badge variant="destructive">{`${formatStock(product.totalStock, product.saleType, weightUnit)}`} (Agotado)</Badge>
                             ) : isLowStock ? (
                               <Badge className="bg-yellow-100 text-yellow-800">
-                                {`${formatStock(product.totalStock, product.saleType)}`} (Bajo)
+                                {`${formatStock(product.totalStock, product.saleType, weightUnit)}`} (Bajo)
                               </Badge>
                             ) : (
-                              <Badge variant="default">{`${formatStock(product.totalStock, product.saleType)}`}</Badge>
+                              <Badge variant="default">{`${formatStock(product.totalStock, product.saleType, weightUnit)}`}</Badge>
                             )}
                           </td>
                           <td className="p-2 text-center">
@@ -492,7 +494,9 @@ export default function InventoryView() {
                   <div>
                     <p className="font-medium">{selectedProductForStock.name}</p>
                     <p className="text-sm text-gray-500">SKU: {selectedProductForStock.sku}</p>
-                    <p className="text-sm text-gray-500">Stock actual: {selectedProductForStock.totalStock} (gramos)</p>
+                    <p className="text-sm text-gray-500">
+                      Stock actual: {formatStock(selectedProductForStock.totalStock, selectedProductForStock.saleType, weightUnit)}
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Tipo de ajuste</label>

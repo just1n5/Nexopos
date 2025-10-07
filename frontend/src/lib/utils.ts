@@ -33,14 +33,19 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
-export function formatStock(stockValue: number, saleType?: string): string {
+export function formatStock(stockValue: number, saleType?: string, weightUnit?: 'grams' | 'pounds'): string {
   if (typeof stockValue !== 'number' || !Number.isFinite(stockValue)) {
     return '0';
   }
   if (saleType === 'WEIGHT') {
-    // convert grams to pounds for display and append suffix
-    const pounds = parseFloat((stockValue / 453.592).toFixed(3));
-    return `${pounds} lb`;
+    // Si no se especifica weightUnit, usar gramos por defecto
+    const unit = weightUnit || 'grams';
+    if (unit === 'pounds') {
+      const pounds = parseFloat((stockValue / 453.592).toFixed(3));
+      return `${pounds} lb`;
+    }
+    // Mostrar en gramos
+    return `${Math.floor(stockValue)} g`;
   }
   return Math.floor(stockValue).toString();
 }
