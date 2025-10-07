@@ -380,11 +380,9 @@ export default function App() {
 
             <Route path="/dashboard" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <RequireCashRegister>
-                  <MainLayout>
-                    <DashboardView />
-                  </MainLayout>
-                </RequireCashRegister>
+                <MainLayout>
+                  <DashboardView />
+                </MainLayout>
               )
             } />
 
