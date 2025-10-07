@@ -595,7 +595,7 @@ export class SalesService {
   private async getProductInfo(productId: string, variantId?: string): Promise<any> {
     try {
       const product = await this.productsService.findOne(productId);
-      
+
       if (!product) {
         throw new NotFoundException(`Product with ID ${productId} not found`);
       }
@@ -613,17 +613,21 @@ export class SalesService {
       let costPrice = 0;
       if (product.basePrice !== undefined && product.basePrice !== null) {
         costPrice = Number(product.basePrice);
-        
+
         // Add priceDelta if this is a variant
         if (variant && variant.priceDelta !== undefined && variant.priceDelta !== null) {
           costPrice += Number(variant.priceDelta);
         }
       }
-      
+
       // Validate that costPrice is a valid number
       if (isNaN(costPrice) || !isFinite(costPrice)) {
         costPrice = 0;
       }
+
+      // Get actual stock from inventory service
+      const stockData = await this.inventoryService.getStock(productId, variantId);
+      const currentStock = Number(stockData?.quantity || 0);
 
       return {
         id: productId,
@@ -631,7 +635,7 @@ export class SalesService {
         sku: variant?.sku || product.sku,
         variantName: variant?.name || null,
         costPrice: costPrice,
-        stock: variant?.stock || 0,
+        stock: currentStock,
         taxRate: 19, // Colombian IVA - this should come from product config
         taxCode: 'IVA',
         saleType: product.saleType,
@@ -646,6 +650,7 @@ export class SalesService {
         sku: 'UNKNOWN',
         variantName: null,
         costPrice: 0,
+        stock: 0,
         taxRate: 19,
         taxCode: 'IVA',
         saleType: 'UNIT',
