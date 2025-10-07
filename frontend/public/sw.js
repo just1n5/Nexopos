@@ -1,5 +1,5 @@
 // Service Worker para NexoPOS
-const CACHE_NAME = 'nexopos-v1.0.0';
+const CACHE_NAME = 'nexopos-v1.0.1';
 const urlsToCache = [
   '/',
   '/index.html',
