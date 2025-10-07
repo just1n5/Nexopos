@@ -631,7 +631,7 @@ export class SalesService {
         sku: variant?.sku || product.sku,
         variantName: variant?.name || null,
         costPrice: costPrice,
-        stock: variant?.stock || product.stock || 0,
+        stock: variant?.stock || 0,
         taxRate: 19, // Colombian IVA - this should come from product config
         taxCode: 'IVA',
         saleType: product.saleType,
