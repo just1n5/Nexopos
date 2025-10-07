@@ -1,5 +1,5 @@
 // Service Worker para NexoPOS
-const CACHE_NAME = 'nexopos-v1.0.1';
+const CACHE_NAME = 'nexopos-v1.0.2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,28 +10,42 @@ const urlsToCache = [
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
+  console.log('[SW] Instalando nueva versión:', CACHE_NAME);
+  // Skip waiting para activar inmediatamente
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache abierto');
+        console.log('[SW] Cache abierto:', CACHE_NAME);
         return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('[SW] Error al abrir cache:', error);
       })
   );
 });
 
 // Activación del Service Worker
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activando nueva versión:', CACHE_NAME);
+  // Tomar control de todos los clientes inmediatamente
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Eliminando cache antiguo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Eliminar caches antiguos
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('[SW] Eliminando cache antiguo:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Tomar control de las páginas abiertas
+      self.clients.claim()
+    ])
   );
 });
 
@@ -42,6 +56,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  // Para archivos JS y CSS, SIEMPRE intentar red primero (no usar cache viejo)
+  if (url.pathname.match(/\.(js|css)$/)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Solo cachear si es exitoso
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Solo en caso de error, usar cache como fallback
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Para otros recursos, estrategia Network First normal
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -66,7 +105,7 @@ self.addEventListener('fetch', (event) => {
             if (response) {
               return response;
             }
-            
+
             // Si no está en cache y es una navegación, mostramos la página offline
             if (event.request.mode === 'navigate') {
               return caches.match('/');
