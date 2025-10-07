@@ -30,7 +30,7 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 export default function Receipt({ sale, onClose, showActions = true }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { business } = useAuthStore()
-  const { config: businessConfig } = useBusinessStore()
+  const businessConfig = useBusinessStore((state) => state.config)
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
 

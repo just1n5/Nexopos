@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, RefreshCw, AlertCircle, X, Save } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, X, Save, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -124,6 +124,19 @@ export default function InventoryView() {
     quantity: '',
     reason: '',
     type: 'add' as 'add' | 'subtract'
+  });
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedProductForEdit, setSelectedProductForEdit] = useState<InventoryRow | null>(null);
+  const [editForm, setEditForm] = useState<NewProductFormState>({
+    name: '',
+    description: '',
+    sku: '',
+    basePrice: '',
+    stock: '',
+    saleType: 'unit',
+    pricePerGram: '',
+    variants: []
   });
 
   const fetchProducts = useCallback(async () => {
@@ -369,6 +382,26 @@ export default function InventoryView() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
+                                  setSelectedProductForEdit(product);
+                                  setEditForm({
+                                    name: product.name,
+                                    description: product.description || '',
+                                    sku: product.sku,
+                                    basePrice: product.price.toString(),
+                                    stock: product.totalStock.toString(),
+                                    saleType: product.saleType as 'unit' | 'weight',
+                                    pricePerGram: product.pricePerGram?.toString() || '',
+                                    variants: []
+                                  });
+                                  setShowEditModal(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
                                   setSelectedProductForStock(product);
                                   setShowStockModal(true);
                                   setStockAdjustment({ quantity: '', reason: '', type: 'add' });
@@ -479,6 +512,133 @@ export default function InventoryView() {
                   <div className="flex gap-2 pt-4 border-t">
                     <Button onClick={async () => { if (!stockAdjustment.quantity || !stockAdjustment.reason) { toast({ title: 'Error', description: 'Por favor complete todos los campos', variant: 'destructive' }); return; } const quantity = parseDecimalInput(stockAdjustment.quantity); if (isNaN(quantity) || quantity <= 0) { toast({ title: 'Error', description: 'Ingrese una cantidad válida y mayor a cero.', variant: 'destructive' }); return; } const finalQuantity = stockAdjustment.type === 'subtract' ? -quantity : quantity; if (stockAdjustment.type === 'subtract' && selectedProductForStock.totalStock < quantity) { toast({ title: 'Error', description: 'No hay suficiente stock para realizar esta operación', variant: 'destructive' }); return; } try { await inventoryService.adjustStock({ productId: selectedProductForStock.id, variantId: selectedProductForStock.variants && selectedProductForStock.variants.length > 0 ? selectedProductForStock.variants[0].id : undefined, quantity: finalQuantity, movementType: MovementType.ADJUSTMENT, reason: stockAdjustment.reason, notes: `Ajuste manual: ${stockAdjustment.reason}` }, token!); toast({ title: 'Stock actualizado', description: `El stock se ha ${stockAdjustment.type === 'add' ? 'aumentado' : 'reducido'} en ${quantity} unidades` }); setShowStockModal(false); setSelectedProductForStock(null); await fetchProducts(); } catch (error) { console.error('Error ajustando stock:', error); toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo ajustar el stock', variant: 'destructive' }); } }} className="flex-1">Confirmar Ajuste</Button>
                     <Button variant="outline" onClick={() => { setShowStockModal(false); setSelectedProductForStock(null); }}>Cancelar</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditModal && selectedProductForEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-2xl w-full my-8">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Editar Producto</h2>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowEditModal(false); setSelectedProductForEdit(null); }}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Nombre</label>
+                      <Input
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        placeholder="Nombre del producto"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">SKU</label>
+                      <Input
+                        value={editForm.sku}
+                        onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })}
+                        placeholder="Código único del producto"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descripción</label>
+                    <Input
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      placeholder="Descripción del producto"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Tipo de venta</label>
+                      <select
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                        value={editForm.saleType}
+                        onChange={(e) => setEditForm({ ...editForm, saleType: e.target.value as 'unit' | 'weight' })}
+                      >
+                        <option value="unit">Por unidad</option>
+                        <option value="weight">Por peso</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        {editForm.saleType === 'weight' ? 'Precio por gramo' : 'Precio base'}
+                      </label>
+                      <Input
+                        type="number"
+                        value={editForm.saleType === 'weight' ? editForm.pricePerGram : editForm.basePrice}
+                        onChange={(e) => {
+                          if (editForm.saleType === 'weight') {
+                            setEditForm({ ...editForm, pricePerGram: e.target.value });
+                          } else {
+                            setEditForm({ ...editForm, basePrice: e.target.value });
+                          }
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      onClick={async () => {
+                        if (!editForm.name || !editForm.sku) {
+                          toast({ title: 'Error', description: 'Complete los campos obligatorios', variant: 'destructive' });
+                          return;
+                        }
+
+                        try {
+                          const updatePayload: any = {
+                            name: editForm.name,
+                            description: cleanDescription(editForm.description) || undefined,
+                            sku: editForm.sku,
+                            saleType: editForm.saleType.toUpperCase()
+                          };
+
+                          if (editForm.saleType === 'weight') {
+                            const pricePerGram = parseDecimalInput(editForm.pricePerGram || '0');
+                            if (pricePerGram <= 0) {
+                              toast({ title: 'Error', description: 'El precio por gramo debe ser mayor a cero', variant: 'destructive' });
+                              return;
+                            }
+                            updatePayload.pricePerGram = pricePerGram;
+                          } else {
+                            const basePrice = parseDecimalInput(editForm.basePrice);
+                            if (basePrice <= 0) {
+                              toast({ title: 'Error', description: 'El precio debe ser mayor a cero', variant: 'destructive' });
+                              return;
+                            }
+                            updatePayload.basePrice = basePrice;
+                          }
+
+                          await productsService.updateProduct(selectedProductForEdit.id, updatePayload, token!);
+
+                          toast({ title: 'Producto actualizado', description: 'Los cambios se han guardado correctamente' });
+                          setShowEditModal(false);
+                          setSelectedProductForEdit(null);
+                          await fetchProducts();
+                        } catch (error) {
+                          console.error('Error actualizando producto:', error);
+                          toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo actualizar el producto', variant: 'destructive' });
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      Guardar Cambios
+                    </Button>
+                    <Button variant="outline" onClick={() => { setShowEditModal(false); setSelectedProductForEdit(null); }}>
+                      Cancelar
+                    </Button>
                   </div>
                 </div>
               </div>

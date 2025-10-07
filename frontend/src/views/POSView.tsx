@@ -91,7 +91,7 @@ export default function POSView() {
 
 
   const { token } = useAuthStore()
-  const { config: businessConfig } = useBusinessStore()
+  const weightUnit = useBusinessStore((state) => state.config.weightUnit)
 
   useEffect(() => {
     if (!token) {
@@ -625,7 +625,7 @@ export default function POSView() {
                             </Button>
                             <span className="w-10 text-center font-medium">
                               {item.isSoldByWeight
-                                ? formatWeight(item.quantity, businessConfig.weightUnit)
+                                ? formatWeight(item.quantity, weightUnit)
                                 : item.quantity
                               }
                             </span>
