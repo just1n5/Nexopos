@@ -396,6 +396,16 @@ export default function POSView() {
   }
 
   const handleProductClick = (product: any) => {
+    // Validar stock disponible
+    if (product.stock <= 0) {
+      toast({
+        title: 'Sin stock disponible',
+        description: `El producto '${product.name}' no tiene stock disponible.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (product.saleType === 'WEIGHT') {
       if (!product.pricePerGram || product.pricePerGram <= 0) {
         toast({
@@ -480,35 +490,48 @@ export default function POSView() {
         <div className="flex-1 overflow-auto p-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             <AnimatePresence>
-              {filteredProducts.map(product => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Card 
-                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 active:scale-95"
-                    onClick={() => handleProductClick(product)}
+              {filteredProducts.map(product => {
+                const isOutOfStock = product.stock <= 0;
+                return (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <CardContent className="p-4">
-                      <div className="aspect-square bg-gray-100 rounded-md mb-3 flex items-center justify-center">
-                        <Package className="w-12 h-12 text-gray-400" />
-                      </div>
-                      <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-primary">
-                          {formatCurrency(product.price)}
-                        </span>
-                        <Badge variant={product.stock < 10 ? 'destructive' : 'default'} className="text-xs">
-                          {formatStock(product.stock, product.saleType, weightUnit)}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                    <Card
+                      className={`${isOutOfStock
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer hover:shadow-lg transition-all hover:scale-105 active:scale-95'
+                      }`}
+                      onClick={() => !isOutOfStock && handleProductClick(product)}
+                    >
+                      <CardContent className="p-4 relative">
+                        {isOutOfStock && (
+                          <div className="absolute inset-0 bg-black bg-opacity-10 rounded-md flex items-center justify-center z-10">
+                            <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                              SIN STOCK
+                            </span>
+                          </div>
+                        )}
+                        <div className="aspect-square bg-gray-100 rounded-md mb-3 flex items-center justify-center">
+                          <Package className="w-12 h-12 text-gray-400" />
+                        </div>
+                        <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.name}</h3>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-primary">
+                            {formatCurrency(product.price)}
+                          </span>
+                          <Badge variant={product.stock === 0 ? 'destructive' : product.stock < 10 ? 'destructive' : 'default'} className="text-xs">
+                            {formatStock(product.stock, product.saleType, weightUnit)}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         </div>

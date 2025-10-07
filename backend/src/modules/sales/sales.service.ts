@@ -95,6 +95,18 @@ export class SalesService {
         }
       }
 
+      // Validar stock disponible ANTES de crear la venta
+      for (const itemDto of createSaleDto.items) {
+        const productInfo = await this.getProductInfo(itemDto.productId, itemDto.productVariantId);
+
+        if (productInfo.stock < itemDto.quantity) {
+          const productName = productInfo.name;
+          throw new BadRequestException(
+            `Stock insuficiente para ${productName}. Disponible: ${productInfo.stock}, Solicitado: ${itemDto.quantity}`
+          );
+        }
+      }
+
       // Generate sale number
       const saleNumber = await this.generateSaleNumber();
 
