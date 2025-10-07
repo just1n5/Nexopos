@@ -67,6 +67,51 @@ export class ReportsService {
       salesByHour[hour] = (salesByHour[hour] || 0) + Number(sale.total || 0);
     });
 
+    // DESGLOSE DE IVA POR TASA
+    // Estructura: { baseGravable, ivaAmount, exemptAmount }
+    const taxBreakdown = {
+      iva19: { baseGravable: 0, ivaAmount: 0 },
+      iva5: { baseGravable: 0, ivaAmount: 0 },
+      iva0: { baseGravable: 0, ivaAmount: 0 },  // Exento
+      inc: { baseGravable: 0, incAmount: 0 },   // INC (si aplica)
+      totalTax: 0,
+      totalBase: 0
+    };
+
+    sales.forEach((sale) => {
+      sale.items?.forEach((item) => {
+        const taxRate = Number(item.taxRate || 0);
+        const taxAmount = Number(item.taxAmount || 0);
+        const subtotal = Number(item.subtotal || 0);
+        const baseGravable = subtotal - Number(item.discountAmount || 0);
+
+        // Clasificar según tasa de impuesto
+        if (item.taxCode === 'INC') {
+          // Impuesto al Consumo (INC)
+          taxBreakdown.inc.baseGravable += baseGravable;
+          taxBreakdown.inc.incAmount += taxAmount;
+          taxBreakdown.totalTax += taxAmount;
+          taxBreakdown.totalBase += baseGravable;
+        } else if (taxRate === 19) {
+          // IVA 19%
+          taxBreakdown.iva19.baseGravable += baseGravable;
+          taxBreakdown.iva19.ivaAmount += taxAmount;
+          taxBreakdown.totalTax += taxAmount;
+          taxBreakdown.totalBase += baseGravable;
+        } else if (taxRate === 5) {
+          // IVA 5%
+          taxBreakdown.iva5.baseGravable += baseGravable;
+          taxBreakdown.iva5.ivaAmount += taxAmount;
+          taxBreakdown.totalTax += taxAmount;
+          taxBreakdown.totalBase += baseGravable;
+        } else if (taxRate === 0) {
+          // Exento o sin IVA
+          taxBreakdown.iva0.baseGravable += baseGravable;
+          taxBreakdown.totalBase += baseGravable;
+        }
+      });
+    });
+
     return {
       // Métricas principales
       totalSales: totalSalesCount,        // Cantidad de ventas
@@ -80,6 +125,7 @@ export class ReportsService {
       // Desglosados
       salesByPaymentMethod,
       salesByHour,
+      taxBreakdown,                        // Desglose de IVA por tasa
 
       // Legacy (deprecated, usar totalSalesAmount)
       totalRevenue: totalSalesAmount,

@@ -393,7 +393,118 @@ export default function ReportsView() {
                     </div>
                   </CardContent>
                 </Card>
-                
+
+                {/* Desglose de IVA por Tasa */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Desglose de IVA por Tasa
+                      <Badge variant="outline" className="text-xs">Colombia - Resolución DIAN</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* IVA 19% */}
+                      {salesReport.taxBreakdown.iva19.baseGravable > 0 && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-blue-900">IVA 19%</span>
+                            <TrendingUp className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Base Gravable:</span>
+                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva19.baseGravable)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">IVA:</span>
+                              <span className="font-bold text-blue-700">{formatCurrency(salesReport.taxBreakdown.iva19.ivaAmount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* IVA 5% */}
+                      {salesReport.taxBreakdown.iva5.baseGravable > 0 && (
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-green-900">IVA 5%</span>
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Base Gravable:</span>
+                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva5.baseGravable)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">IVA:</span>
+                              <span className="font-bold text-green-700">{formatCurrency(salesReport.taxBreakdown.iva5.ivaAmount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Exento */}
+                      {salesReport.taxBreakdown.iva0.baseGravable > 0 && (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-900">Exento / Sin IVA</span>
+                            <Package className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Base:</span>
+                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva0.baseGravable)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">IVA:</span>
+                              <span className="font-bold text-gray-700">{formatCurrency(0)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* INC (si aplica) */}
+                      {salesReport.taxBreakdown.inc.baseGravable > 0 && (
+                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-purple-900">INC</span>
+                            <AlertCircle className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Base:</span>
+                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.inc.baseGravable)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">INC:</span>
+                              <span className="font-bold text-purple-700">{formatCurrency(salesReport.taxBreakdown.inc.incAmount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-yellow-900">Total Impuestos</span>
+                          <DollarSign className="w-4 h-4 text-yellow-600" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Base Total:</span>
+                            <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.totalBase)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Impuestos:</span>
+                            <span className="font-bold text-yellow-700 text-base">{formatCurrency(salesReport.taxBreakdown.totalTax)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Gráfico de Ventas por Hora */}
                 <Card>
                   <CardHeader>

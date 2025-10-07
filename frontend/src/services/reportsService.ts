@@ -10,6 +10,27 @@ export interface ReportFilters {
   format?: string
 }
 
+export interface TaxBreakdown {
+  iva19: {
+    baseGravable: number
+    ivaAmount: number
+  }
+  iva5: {
+    baseGravable: number
+    ivaAmount: number
+  }
+  iva0: {
+    baseGravable: number
+    ivaAmount: number
+  }
+  inc: {
+    baseGravable: number
+    incAmount: number
+  }
+  totalTax: number
+  totalBase: number
+}
+
 export interface SalesReport {
   totalSales: number              // Cantidad de ventas
   totalSalesAmount: number         // Monto total facturado (incluye crédito)
@@ -20,6 +41,7 @@ export interface SalesReport {
   averageTicket: number            // Ticket promedio
   salesByPaymentMethod: Record<string, number>
   salesByHour: Record<number, number>
+  taxBreakdown: TaxBreakdown       // Desglose de IVA por tasa
 
   // Legacy fields (deprecated)
   totalRevenue?: number
@@ -75,6 +97,14 @@ class ReportsService {
       averageTicket: Number(data.averageTicket || 0),
       salesByPaymentMethod: data.salesByPaymentMethod || {},
       salesByHour: data.salesByHour || {},
+      taxBreakdown: data.taxBreakdown || {
+        iva19: { baseGravable: 0, ivaAmount: 0 },
+        iva5: { baseGravable: 0, ivaAmount: 0 },
+        iva0: { baseGravable: 0, ivaAmount: 0 },
+        inc: { baseGravable: 0, incAmount: 0 },
+        totalTax: 0,
+        totalBase: 0
+      },
 
       // Legacy
       totalRevenue: Number(data.totalRevenue || 0),
