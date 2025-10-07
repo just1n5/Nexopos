@@ -119,6 +119,42 @@ export interface CashRegisterReport {
   arqueos: CashRegisterArqueo[]
 }
 
+export interface InventoryMovement {
+  id: string
+  productId: string
+  productVariantId?: string
+  movementType: string
+  quantity: number
+  quantityBefore: number
+  quantityAfter: number
+  unitCost: number
+  totalCost: number
+  referenceType?: string
+  referenceId?: string
+  referenceNumber?: string
+  batchNumber?: string
+  expiryDate?: Date
+  warehouseId?: string
+  warehouseName?: string
+  notes?: string
+  reason?: string
+  userId?: string
+  createdAt: Date
+}
+
+export interface InventoryMovementsReport {
+  summary: {
+    totalMovements: number
+    totalIn: number
+    totalOut: number
+    netMovement: number
+    totalCostIn: number
+    totalCostOut: number
+    movementsByType: Record<string, { count: number; quantity: number; totalCost: number }>
+  }
+  movements: InventoryMovement[]
+}
+
 class ReportsService {
   async getSalesReport(token: string, filters?: ReportFilters): Promise<SalesReport> {
     const params = this.buildQueryParams(filters)
@@ -268,6 +304,54 @@ class ReportsService {
         closingNotes: arq.closingNotes,
         discrepancyReason: arq.discrepancyReason,
         status: arq.status
+      }))
+    }
+  }
+
+  async getInventoryMovementsReport(token: string, filters?: ReportFilters): Promise<InventoryMovementsReport> {
+    const params = this.buildQueryParams(filters)
+    const response = await apiFetch(`/reports/inventory-movements?${params}`, {
+      method: 'GET',
+      token,
+      skipContentType: true
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al obtener el reporte de movimientos de inventario')
+    }
+
+    const data = await response.json()
+    return {
+      summary: {
+        totalMovements: data.summary?.totalMovements || 0,
+        totalIn: Number(data.summary?.totalIn || 0),
+        totalOut: Number(data.summary?.totalOut || 0),
+        netMovement: Number(data.summary?.netMovement || 0),
+        totalCostIn: Number(data.summary?.totalCostIn || 0),
+        totalCostOut: Number(data.summary?.totalCostOut || 0),
+        movementsByType: data.summary?.movementsByType || {}
+      },
+      movements: (data.movements || []).map((mov: any) => ({
+        id: mov.id,
+        productId: mov.productId,
+        productVariantId: mov.productVariantId,
+        movementType: mov.movementType,
+        quantity: Number(mov.quantity || 0),
+        quantityBefore: Number(mov.quantityBefore || 0),
+        quantityAfter: Number(mov.quantityAfter || 0),
+        unitCost: Number(mov.unitCost || 0),
+        totalCost: Number(mov.totalCost || 0),
+        referenceType: mov.referenceType,
+        referenceId: mov.referenceId,
+        referenceNumber: mov.referenceNumber,
+        batchNumber: mov.batchNumber,
+        expiryDate: mov.expiryDate ? new Date(mov.expiryDate) : undefined,
+        warehouseId: mov.warehouseId,
+        warehouseName: mov.warehouseName,
+        notes: mov.notes,
+        reason: mov.reason,
+        userId: mov.userId,
+        createdAt: new Date(mov.createdAt)
       }))
     }
   }

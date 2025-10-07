@@ -1,10 +1,13 @@
 ﻿import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { SalesService } from '../sales/sales.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
 import { Sale, SaleType } from '../sales/entities/sale.entity';
 import { PaymentMethod } from '../sales/entities/payment.entity';
 import { InventoryStock, StockStatus } from '../inventory/entities/inventory-stock.entity';
+import { InventoryMovement, MovementType } from '../inventory/entities/inventory-movement.entity';
 import { CashRegisterStatus } from '../cash-register/entities/cash-register.entity';
 
 interface ReportFilters {
@@ -24,6 +27,8 @@ export class ReportsService {
     private readonly salesService: SalesService,
     private readonly inventoryService: InventoryService,
     private readonly cashRegisterService: CashRegisterService,
+    @InjectRepository(InventoryMovement)
+    private readonly movementRepository: Repository<InventoryMovement>,
   ) {}
 
   async getSalesReport(filters: ReportFilters) {
@@ -314,6 +319,91 @@ export class ReportsService {
         discrepancyRate: totalSessions > 0 ? (sessionsWithDiscrepancies / totalSessions) * 100 : 0,
       },
       arqueos,
+    };
+  }
+
+  async getInventoryMovementsReport(filters: ReportFilters) {
+    const query = this.movementRepository.createQueryBuilder('movement');
+
+    if (filters.startDate) {
+      query.andWhere('movement.createdAt >= :startDate', { startDate: filters.startDate });
+    }
+
+    if (filters.endDate) {
+      query.andWhere('movement.createdAt <= :endDate', { endDate: filters.endDate });
+    }
+
+    const movements = await query
+      .orderBy('movement.createdAt', 'DESC')
+      .limit(500) // Limit to prevent overwhelming the UI
+      .getMany();
+
+    // Agrupar movimientos por tipo
+    const movementsByType: Record<string, { count: number; quantity: number; totalCost: number }> = {};
+
+    movements.forEach((movement) => {
+      const type = movement.movementType;
+      if (!movementsByType[type]) {
+        movementsByType[type] = { count: 0, quantity: 0, totalCost: 0 };
+      }
+
+      movementsByType[type].count += 1;
+      movementsByType[type].quantity += Number(movement.quantity || 0);
+      movementsByType[type].totalCost += Number(movement.totalCost || 0);
+    });
+
+    // Mapear movimientos con información legible
+    const movementsData = movements.map((movement) => ({
+      id: movement.id,
+      productId: movement.productId,
+      productVariantId: movement.productVariantId,
+      movementType: movement.movementType,
+      quantity: Number(movement.quantity || 0),
+      quantityBefore: Number(movement.quantityBefore || 0),
+      quantityAfter: Number(movement.quantityAfter || 0),
+      unitCost: Number(movement.unitCost || 0),
+      totalCost: Number(movement.totalCost || 0),
+      referenceType: movement.referenceType,
+      referenceId: movement.referenceId,
+      referenceNumber: movement.referenceNumber,
+      batchNumber: movement.batchNumber,
+      expiryDate: movement.expiryDate,
+      warehouseId: movement.warehouseId,
+      warehouseName: movement.warehouseName,
+      notes: movement.notes,
+      reason: movement.reason,
+      userId: movement.userId,
+      createdAt: movement.createdAt,
+    }));
+
+    // Calcular resumen
+    const totalMovements = movements.length;
+    const totalIn = movements
+      .filter((m) => Number(m.quantity) > 0)
+      .reduce((sum, m) => sum + Number(m.quantity), 0);
+    const totalOut = Math.abs(
+      movements
+        .filter((m) => Number(m.quantity) < 0)
+        .reduce((sum, m) => sum + Number(m.quantity), 0)
+    );
+    const totalCostIn = movements
+      .filter((m) => Number(m.quantity) > 0)
+      .reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
+    const totalCostOut = movements
+      .filter((m) => Number(m.quantity) < 0)
+      .reduce((sum, m) => sum + Number(m.totalCost || 0), 0);
+
+    return {
+      summary: {
+        totalMovements,
+        totalIn,
+        totalOut,
+        netMovement: totalIn - totalOut,
+        totalCostIn,
+        totalCostOut,
+        movementsByType,
+      },
+      movements: movementsData,
     };
   }
 

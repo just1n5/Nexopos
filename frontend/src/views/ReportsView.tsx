@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Clock,
   CreditCard,
-  Calculator
+  Calculator,
+  ArrowUpDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,7 +25,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 import { reportsService } from '@/services/reportsService'
-import type { ProductReport, SalesReport, CustomerReport, InventoryReport, CashRegisterReport } from '@/services/reportsService'
+import type { ProductReport, SalesReport, CustomerReport, InventoryReport, CashRegisterReport, InventoryMovementsReport } from '@/services/reportsService'
 import {
   getTodayRangeColombia,
   getWeekRangeColombia,
@@ -43,6 +44,7 @@ export default function ReportsView() {
   const [customerReports, setCustomerReports] = useState<CustomerReport[]>([])
   const [inventoryReport, setInventoryReport] = useState<InventoryReport | null>(null)
   const [cashRegisterReport, setCashRegisterReport] = useState<CashRegisterReport | null>(null)
+  const [movementsReport, setMovementsReport] = useState<InventoryMovementsReport | null>(null)
   
   useEffect(() => {
     if (token) {
@@ -77,12 +79,13 @@ export default function ReportsView() {
       const filters = dateRangeFilters
 
       // Cargar todos los reportes en paralelo
-      const [sales, products, customers, inventory, cashRegister] = await Promise.all([
+      const [sales, products, customers, inventory, cashRegister, movements] = await Promise.all([
         reportsService.getSalesReport(token!, filters),
         reportsService.getProductsReport(token!, filters),
         reportsService.getCustomersReport(token!, filters),
         reportsService.getInventoryReport(token!),
-        reportsService.getCashRegisterReport(token!, filters)
+        reportsService.getCashRegisterReport(token!, filters),
+        reportsService.getInventoryMovementsReport(token!, filters)
       ])
 
       setSalesReport(sales)
@@ -90,6 +93,7 @@ export default function ReportsView() {
       setCustomerReports(customers)
       setInventoryReport(inventory)
       setCashRegisterReport(cashRegister)
+      setMovementsReport(movements)
     } catch (error) {
       console.error('Error loading reports:', error)
       toast({
@@ -354,6 +358,10 @@ export default function ReportsView() {
             <TabsTrigger value="cash-register">
               <Calculator className="w-4 h-4 mr-2" />
               Arqueos de Caja
+            </TabsTrigger>
+            <TabsTrigger value="movements">
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              Movimientos
             </TabsTrigger>
           </TabsList>
           
@@ -913,6 +921,159 @@ export default function ReportsView() {
                                 }>
                                   {Math.abs(arqueo.difference) > 1000 ? 'Con diferencia' : 'Cuadrado'}
                                 </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Tab de Movimientos de Inventario */}
+          <TabsContent value="movements" className="space-y-4">
+            {movementsReport && (
+              <>
+                {/* Resumen de Movimientos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Total Movimientos
+                      </CardTitle>
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {movementsReport.summary.totalMovements}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Entradas
+                      </CardTitle>
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">
+                        +{movementsReport.summary.totalIn.toFixed(2)}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatCurrency(movementsReport.summary.totalCostIn)}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Salidas
+                      </CardTitle>
+                      <TrendingDown className="h-4 w-4 text-red-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-red-600">
+                        -{movementsReport.summary.totalOut.toFixed(2)}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatCurrency(movementsReport.summary.totalCostOut)}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        Movimiento Neto
+                      </CardTitle>
+                      <Package className="h-4 w-4 text-gray-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className={`text-2xl font-bold ${
+                        movementsReport.summary.netMovement >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {movementsReport.summary.netMovement >= 0 && '+'}
+                        {movementsReport.summary.netMovement.toFixed(2)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tabla de Movimientos */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Últimos Movimientos</CardTitle>
+                    <p className="text-sm text-gray-500">Máximo 500 movimientos más recientes</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2 font-medium text-gray-600">Fecha</th>
+                            <th className="text-left p-2 font-medium text-gray-600">Tipo</th>
+                            <th className="text-left p-2 font-medium text-gray-600">Producto</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Cantidad</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Stock Anterior</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Stock Nuevo</th>
+                            <th className="text-right p-2 font-medium text-gray-600">Costo Total</th>
+                            <th className="text-left p-2 font-medium text-gray-600">Referencia</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {movementsReport.movements.slice(0, 100).map((movement) => (
+                            <tr key={movement.id} className="border-b hover:bg-gray-50">
+                              <td className="p-2 text-sm">
+                                {new Date(movement.createdAt).toLocaleDateString('es-CO', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="p-2">
+                                <Badge className={
+                                  movement.quantity > 0
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }>
+                                  {movement.movementType}
+                                </Badge>
+                              </td>
+                              <td className="p-2 text-sm">
+                                <div className="font-medium">{movement.productId.slice(0, 8)}...</div>
+                                {movement.productVariantId && (
+                                  <div className="text-xs text-gray-500">
+                                    Var: {movement.productVariantId.slice(0, 8)}...
+                                  </div>
+                                )}
+                              </td>
+                              <td className={`p-2 text-right font-medium ${
+                                movement.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {movement.quantity > 0 && '+'}
+                                {movement.quantity.toFixed(2)}
+                              </td>
+                              <td className="p-2 text-right text-gray-600">
+                                {movement.quantityBefore.toFixed(2)}
+                              </td>
+                              <td className="p-2 text-right font-medium">
+                                {movement.quantityAfter.toFixed(2)}
+                              </td>
+                              <td className="p-2 text-right">
+                                {formatCurrency(movement.totalCost)}
+                              </td>
+                              <td className="p-2 text-sm">
+                                {movement.referenceNumber || movement.referenceType || '-'}
+                                {movement.notes && (
+                                  <div className="text-xs text-gray-500">{movement.notes}</div>
+                                )}
                               </td>
                             </tr>
                           ))}

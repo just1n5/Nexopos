@@ -68,6 +68,17 @@ export class ReportsController {
     return this.reportsService.getCashRegisterReport(this.toFilters(startDate, endDate));
   }
 
+  @Get('inventory-movements')
+  @ApiOperation({ summary: 'Get inventory movements report' })
+  @ApiQuery({ name: 'startDate', required: false, type: Date })
+  @ApiQuery({ name: 'endDate', required: false, type: Date })
+  getInventoryMovementsReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportsService.getInventoryMovementsReport(this.toFilters(startDate, endDate));
+  }
+
   @Get(':type/download')
   @ApiOperation({ summary: 'Download report as CSV' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
