@@ -53,6 +53,18 @@ export default function ReportsView() {
       loadReports()
     }
   }, [token, dateRange])
+
+  // Deshabilitar navegación con PageDown/PageUp en tabs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'PageDown' || e.key === 'PageUp') {
+        e.preventDefault()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
   
   const loadReports = async () => {
     try {
@@ -158,15 +170,24 @@ export default function ReportsView() {
 
         case 'inventory':
           if (!inventoryReport) return
+          // Incluir resumen general primero
           data = [
+            { 'Métrica': 'Total Productos', 'Valor': inventoryReport.totalProducts },
+            { 'Métrica': 'Valor Total Inventario', 'Valor': inventoryReport.totalValue },
+            { 'Métrica': 'Productos Stock Bajo', 'Valor': inventoryReport.lowStockProducts.length },
+            { 'Métrica': 'Productos Agotados', 'Valor': inventoryReport.outOfStockProducts.length },
+            {},
+            // Productos con alertas
             ...inventoryReport.lowStockProducts.map((product) => ({
               'Producto': product.name,
               'SKU': product.sku,
+              'Stock': (product as any).stock || 0,
               'Estado': 'Stock Bajo'
             })),
             ...inventoryReport.outOfStockProducts.map((product) => ({
               'Producto': product.name,
               'SKU': product.sku,
+              'Stock': 0,
               'Estado': 'Agotado'
             }))
           ]
@@ -432,7 +453,10 @@ export default function ReportsView() {
                 {/* Ventas por Método de Pago */}
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Ventas por Método de Pago</CardTitle>
+                    <div>
+                      <CardTitle>Ventas por Método de Pago</CardTitle>
+                      <p className="text-xs text-gray-500 mt-1">Suma de pagos recibidos por método (puede diferir del total de ventas por descuentos o redondeos)</p>
+                    </div>
                     <Button size="sm" onClick={() => handleDownloadExcel('sales')}>
                       <Download className="w-4 h-4 mr-2" />
                       Exportar Excel
