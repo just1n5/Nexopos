@@ -7,13 +7,16 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { User, UserRole } from './entities/user.entity';
+import { UserAuditService } from './services/user-audit.service';
+import { UserAuditAction } from './entities/user-audit.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly auditService: UserAuditService
   ) {}
 
   private resolveSaltRounds(): number {
