@@ -30,10 +30,11 @@ import { usersService } from '@/services/usersService'
 import UserTable from '@/components/users/UserTable'
 import UserFormModal from '@/components/users/UserFormModal'
 import UserDeleteDialog from '@/components/users/UserDeleteDialog'
+import MyProfile from '@/components/users/MyProfile'
 import type { User, CreateUserDto, UpdateUserDto } from '@/types'
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState('business')
+  const [activeTab, setActiveTab] = useState('profile')
   const [saved, setSaved] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -219,16 +220,21 @@ export default function SettingsView() {
     }
   }
 
-  const tabs = [
-    { id: 'business', label: 'Negocio', icon: Store },
-    { id: 'dian', label: 'DIAN', icon: FileText },
-    { id: 'hardware', label: 'Hardware', icon: Printer },
-    { id: 'payments', label: 'Pagos', icon: CreditCard },
-    { id: 'notifications', label: 'Notificaciones', icon: Bell },
-    { id: 'users', label: 'Usuarios', icon: UsersIcon },
-    { id: 'security', label: 'Seguridad', icon: Shield },
-    { id: 'help', label: 'Ayuda', icon: HelpCircle }
+  // Filtrar tabs según rol del usuario
+  const allTabs = [
+    { id: 'profile', label: 'Mi Perfil', icon: UsersIcon, roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
+    { id: 'business', label: 'Negocio', icon: Store, roles: ['ADMIN', 'MANAGER'] },
+    { id: 'dian', label: 'DIAN', icon: FileText, roles: ['ADMIN'] },
+    { id: 'hardware', label: 'Hardware', icon: Printer, roles: ['ADMIN', 'MANAGER'] },
+    { id: 'payments', label: 'Pagos', icon: CreditCard, roles: ['ADMIN'] },
+    { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
+    { id: 'users', label: 'Usuarios', icon: Shield, roles: ['ADMIN', 'MANAGER'] },
+    { id: 'help', label: 'Ayuda', icon: HelpCircle, roles: ['ADMIN', 'MANAGER', 'CASHIER'] }
   ]
+
+  const tabs = allTabs.filter(tab =>
+    currentUser && tab.roles.includes(currentUser.role)
+  )
 
   return (
     <div className="h-full bg-gray-50 overflow-auto">
@@ -303,6 +309,10 @@ export default function SettingsView() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >
+              {activeTab === 'profile' && (
+                <MyProfile />
+              )}
+
               {activeTab === 'business' && (
                 <Card>
                   <CardHeader>
@@ -649,7 +659,7 @@ export default function SettingsView() {
               )}
 
               {/* Placeholder para otras pestañas */}
-              {['payments', 'notifications', 'security', 'help'].includes(activeTab) && (
+              {['payments', 'notifications', 'help'].includes(activeTab) && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
