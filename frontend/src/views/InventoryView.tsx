@@ -506,15 +506,30 @@ export default function InventoryView() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Cantidad (en gramos)</label>
-                    <Input type="number" value={stockAdjustment.quantity} onChange={(e) => setStockAdjustment({ ...stockAdjustment, quantity: e.target.value })} placeholder="Ingrese el peso en gramos" min="1" step="0.001" />
+                    <label className="block text-sm font-medium mb-1">
+                      Cantidad {selectedProductForStock.saleType === 'WEIGHT' ? `(en ${weightUnit === 'pounds' ? 'libras' : 'gramos'})` : '(unidades)'}
+                    </label>
+                    <Input
+                      type="number"
+                      value={stockAdjustment.quantity}
+                      onChange={(e) => setStockAdjustment({ ...stockAdjustment, quantity: e.target.value })}
+                      placeholder={selectedProductForStock.saleType === 'WEIGHT'
+                        ? `Ingrese ${weightUnit === 'pounds' ? 'las libras' : 'los gramos'}`
+                        : 'Ingrese la cantidad de unidades'
+                      }
+                      min="1"
+                      step={selectedProductForStock.saleType === 'WEIGHT' ? '0.001' : '1'}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Razón del ajuste</label>
                     <Input value={stockAdjustment.reason} onChange={(e) => setStockAdjustment({ ...stockAdjustment, reason: e.target.value })} placeholder="Ej: Inventario físico, pérdida, daño" />
                   </div>
                   <div className="flex gap-2 pt-4 border-t">
-                    <Button onClick={async () => { if (!stockAdjustment.quantity || !stockAdjustment.reason) { toast({ title: 'Error', description: 'Por favor complete todos los campos', variant: 'destructive' }); return; } const quantity = parseDecimalInput(stockAdjustment.quantity); if (isNaN(quantity) || quantity <= 0) { toast({ title: 'Error', description: 'Ingrese una cantidad válida y mayor a cero.', variant: 'destructive' }); return; } const finalQuantity = stockAdjustment.type === 'subtract' ? -quantity : quantity; if (stockAdjustment.type === 'subtract' && selectedProductForStock.totalStock < quantity) { toast({ title: 'Error', description: 'No hay suficiente stock para realizar esta operación', variant: 'destructive' }); return; } try { await inventoryService.adjustStock({ productId: selectedProductForStock.id, variantId: selectedProductForStock.variants && selectedProductForStock.variants.length > 0 ? selectedProductForStock.variants[0].id : undefined, quantity: finalQuantity, movementType: MovementType.ADJUSTMENT, reason: stockAdjustment.reason, notes: `Ajuste manual: ${stockAdjustment.reason}` }, token!); toast({ title: 'Stock actualizado', description: `El stock se ha ${stockAdjustment.type === 'add' ? 'aumentado' : 'reducido'} en ${quantity} unidades` }); setShowStockModal(false); setSelectedProductForStock(null); await fetchProducts(); } catch (error) { console.error('Error ajustando stock:', error); toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo ajustar el stock', variant: 'destructive' }); } }} className="flex-1">Confirmar Ajuste</Button>
+                    <Button onClick={async () => { if (!stockAdjustment.quantity || !stockAdjustment.reason) { toast({ title: 'Error', description: 'Por favor complete todos los campos', variant: 'destructive' }); return; } const quantity = parseDecimalInput(stockAdjustment.quantity); if (isNaN(quantity) || quantity <= 0) { toast({ title: 'Error', description: 'Ingrese una cantidad válida y mayor a cero.', variant: 'destructive' }); return; } const finalQuantity = stockAdjustment.type === 'subtract' ? -quantity : quantity; if (stockAdjustment.type === 'subtract' && selectedProductForStock.totalStock < quantity) { toast({ title: 'Error', description: 'No hay suficiente stock para realizar esta operación', variant: 'destructive' }); return; } try { await inventoryService.adjustStock({ productId: selectedProductForStock.id, variantId: selectedProductForStock.variants && selectedProductForStock.variants.length > 0 ? selectedProductForStock.variants[0].id : undefined, quantity: finalQuantity, movementType: MovementType.ADJUSTMENT, reason: stockAdjustment.reason, notes: `Ajuste manual: ${stockAdjustment.reason}` }, token!); const unitLabel = selectedProductForStock.saleType === 'WEIGHT'
+                          ? (weightUnit === 'pounds' ? 'libras' : 'gramos')
+                          : 'unidades';
+                        toast({ title: 'Stock actualizado', description: `El stock se ha ${stockAdjustment.type === 'add' ? 'aumentado' : 'reducido'} en ${quantity} ${unitLabel}` }); setShowStockModal(false); setSelectedProductForStock(null); await fetchProducts(); } catch (error) { console.error('Error ajustando stock:', error); toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo ajustar el stock', variant: 'destructive' }); } }} className="flex-1">Confirmar Ajuste</Button>
                     <Button variant="outline" onClick={() => { setShowStockModal(false); setSelectedProductForStock(null); }}>Cancelar</Button>
                   </div>
                 </div>
