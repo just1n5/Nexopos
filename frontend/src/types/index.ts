@@ -200,9 +200,9 @@ export interface Expense {
 
 export interface User {
   id: string
-  name: string
-  email?: string
-  phone?: string
+  firstName: string
+  lastName: string
+  email: string
   role: UserRole
   isActive: boolean
   createdAt: Date
@@ -210,9 +210,30 @@ export interface User {
 }
 
 export enum UserRole {
-  ADMIN = 'admin',
-  CASHIER = 'cashier',
-  MANAGER = 'manager'
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  CASHIER = 'CASHIER'
+}
+
+export interface CreateUserDto {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  role?: UserRole
+}
+
+export interface UpdateUserDto {
+  firstName?: string
+  lastName?: string
+  email?: string
+  password?: string
+  role?: UserRole
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string
+  newPassword: string
 }
 
 export interface Business {

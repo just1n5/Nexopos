@@ -1,10 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { User, UserRole } from './entities/user.entity';
 
 @Injectable()
@@ -77,5 +78,111 @@ export class UsersService {
 
   async validatePassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find({
+      order: { createdAt: 'DESC' }
+    });
+  }
+
+  async toggleActive(id: string, requestingUserId: string): Promise<User> {
+    const user = await this.findById(id);
+
+    // No se puede desactivar a sí mismo
+    if (id === requestingUserId) {
+      throw new BadRequestException('Cannot deactivate your own account');
+    }
+
+    // Validar que no sea el último admin activo
+    if (user.role === UserRole.ADMIN && user.isActive) {
+      const activeAdminsCount = await this.usersRepository.count({
+        where: { role: UserRole.ADMIN, isActive: true }
+      });
+
+      if (activeAdminsCount <= 1) {
+        throw new BadRequestException('Cannot deactivate the last active admin');
+      }
+    }
+
+    user.isActive = !user.isActive;
+    return this.usersRepository.save(user);
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Validar contraseña actual
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    // Actualizar con nueva contraseña
+    user.password = await bcrypt.hash(changePasswordDto.newPassword, this.resolveSaltRounds());
+    await this.usersRepository.save(user);
+  }
+
+  async validateUserCanManage(requestingUser: User, targetUserId?: string, targetRole?: UserRole): Promise<void> {
+    // Admin puede gestionar a todos
+    if (requestingUser.role === UserRole.ADMIN) {
+      return;
+    }
+
+    // Manager solo puede gestionar cajeros
+    if (requestingUser.role === UserRole.MANAGER) {
+      if (targetRole && targetRole !== UserRole.CASHIER) {
+        throw new ForbiddenException('Managers can only manage cashiers');
+      }
+
+      // Si es edición, validar que el usuario target sea cajero
+      if (targetUserId) {
+        const targetUser = await this.findById(targetUserId);
+        if (targetUser.role !== UserRole.CASHIER) {
+          throw new ForbiddenException('Managers can only manage cashiers');
+        }
+      }
+
+      return;
+    }
+
+    throw new ForbiddenException('Insufficient permissions');
+  }
+
+  async removeWithValidation(id: string, requestingUser: User): Promise<void> {
+    const userToDelete = await this.findById(id);
+
+    // No se puede eliminar a sí mismo
+    if (id === requestingUser.id) {
+      throw new BadRequestException('Cannot delete your own account');
+    }
+
+    // Validar permisos según rol
+    await this.validateUserCanManage(requestingUser, id);
+
+    // Validar que no sea el último admin
+    if (userToDelete.role === UserRole.ADMIN) {
+      const adminsCount = await this.usersRepository.count({
+        where: { role: UserRole.ADMIN }
+      });
+
+      if (adminsCount <= 1) {
+        throw new BadRequestException('Cannot delete the last admin');
+      }
+    }
+
+    await this.remove(id);
   }
 }

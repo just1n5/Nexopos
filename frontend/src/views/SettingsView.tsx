@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import {
   Settings,
   Store,
@@ -6,7 +6,7 @@ import {
   Printer,
   Bell,
   Shield,
-  Users,
+  Users as UsersIcon,
   Save,
   Upload,
   FileText,
@@ -14,7 +14,8 @@ import {
   Wifi,
   HelpCircle,
   ChevronRight,
-  Check
+  Check,
+  UserPlus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -23,7 +24,13 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
 import { useBusinessStore } from '@/stores/businessStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/useToast'
+import { usersService } from '@/services/usersService'
+import UserTable from '@/components/users/UserTable'
+import UserFormModal from '@/components/users/UserFormModal'
+import UserDeleteDialog from '@/components/users/UserDeleteDialog'
+import type { User, CreateUserDto, UpdateUserDto } from '@/types'
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = useState('business')
@@ -32,6 +39,15 @@ export default function SettingsView() {
   const { toast } = useToast()
 
   const { config, updateConfig, setLogo } = useBusinessStore()
+  const { user: currentUser, token } = useAuthStore()
+
+  // Estado para gestión de usuarios
+  const [users, setUsers] = useState<User[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [userFormOpen, setUserFormOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
 
   // Estado local para el formulario
   const [formData, setFormData] = useState({
@@ -104,13 +120,112 @@ export default function SettingsView() {
     reader.readAsDataURL(file)
   }
 
+  // Cargar usuarios cuando se abre la pestaña
+  useEffect(() => {
+    if (activeTab === 'users' && token) {
+      loadUsers()
+    }
+  }, [activeTab, token])
+
+  const loadUsers = async () => {
+    if (!token) return
+
+    setLoadingUsers(true)
+    try {
+      const data = await usersService.getAll(token)
+      setUsers(data)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los usuarios',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleCreateUser = async (data: CreateUserDto | UpdateUserDto) => {
+    if (!token) return
+
+    try {
+      if (selectedUser) {
+        await usersService.update(selectedUser.id, data as UpdateUserDto, token)
+        toast({
+          title: 'Usuario actualizado',
+          description: 'El usuario se ha actualizado correctamente',
+          variant: 'success'
+        })
+      } else {
+        await usersService.create(data as CreateUserDto, token)
+        toast({
+          title: 'Usuario creado',
+          description: 'El usuario se ha creado correctamente',
+          variant: 'success'
+        })
+      }
+      await loadUsers()
+      setUserFormOpen(false)
+      setSelectedUser(null)
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Error al guardar usuario',
+        variant: 'destructive'
+      })
+      throw error
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!token || !userToDelete) return
+
+    try {
+      await usersService.delete(userToDelete.id, token)
+      toast({
+        title: 'Usuario eliminado',
+        description: 'El usuario se ha eliminado correctamente',
+        variant: 'success'
+      })
+      await loadUsers()
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Error al eliminar usuario',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleToggleActive = async (user: User) => {
+    if (!token) return
+
+    try {
+      await usersService.toggleActive(user.id, token)
+      toast({
+        title: user.isActive ? 'Usuario desactivado' : 'Usuario activado',
+        description: `El usuario se ha ${user.isActive ? 'desactivado' : 'activado'} correctamente`,
+        variant: 'success'
+      })
+      await loadUsers()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Error al cambiar estado',
+        variant: 'destructive'
+      })
+    }
+  }
+
   const tabs = [
     { id: 'business', label: 'Negocio', icon: Store },
     { id: 'dian', label: 'DIAN', icon: FileText },
     { id: 'hardware', label: 'Hardware', icon: Printer },
     { id: 'payments', label: 'Pagos', icon: CreditCard },
     { id: 'notifications', label: 'Notificaciones', icon: Bell },
-    { id: 'users', label: 'Usuarios', icon: Users },
+    { id: 'users', label: 'Usuarios', icon: UsersIcon },
     { id: 'security', label: 'Seguridad', icon: Shield },
     { id: 'help', label: 'Ayuda', icon: HelpCircle }
   ]
@@ -486,8 +601,55 @@ export default function SettingsView() {
                 </div>
               )}
 
+              {activeTab === 'users' && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>👥 Gestión de Usuarios</CardTitle>
+                        <CardDescription>
+                          Administra los usuarios que tienen acceso al sistema
+                        </CardDescription>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setSelectedUser(null)
+                          setUserFormOpen(true)
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Nuevo Usuario
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingUsers ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-gray-600">Cargando usuarios...</p>
+                      </div>
+                    ) : currentUser ? (
+                      <UserTable
+                        users={users}
+                        onEdit={(user) => {
+                          setSelectedUser(user)
+                          setUserFormOpen(true)
+                        }}
+                        onDelete={(user) => {
+                          setUserToDelete(user)
+                          setDeleteDialogOpen(true)
+                        }}
+                        onToggleActive={handleToggleActive}
+                        currentUserId={currentUser.id}
+                        currentUserRole={currentUser.role}
+                      />
+                    ) : null}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Placeholder para otras pestañas */}
-              {['payments', 'notifications', 'users', 'security', 'help'].includes(activeTab) && (
+              {['payments', 'notifications', 'security', 'help'].includes(activeTab) && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -504,6 +666,32 @@ export default function SettingsView() {
           </div>
         </div>
       </div>
+
+      {/* Modales */}
+      {currentUser && (
+        <>
+          <UserFormModal
+            isOpen={userFormOpen}
+            onClose={() => {
+              setUserFormOpen(false)
+              setSelectedUser(null)
+            }}
+            onSubmit={handleCreateUser}
+            user={selectedUser}
+            currentUserRole={currentUser.role}
+          />
+
+          <UserDeleteDialog
+            isOpen={deleteDialogOpen}
+            onClose={() => {
+              setDeleteDialogOpen(false)
+              setUserToDelete(null)
+            }}
+            onConfirm={handleDeleteUser}
+            user={userToDelete}
+          />
+        </>
+      )}
     </div>
   )
 }

@@ -62,9 +62,9 @@ const roleFromApi = (role: string): UserRole => {
 
 const toUser = (payload: ApiUser): User => ({
   id: payload.id,
-  name: `${payload.firstName} ${payload.lastName}`.trim(),
+  firstName: payload.firstName,
+  lastName: payload.lastName,
   email: payload.email,
-  phone: payload.phone ?? '',
   role: roleFromApi(payload.role),
   isActive: payload.isActive,
   createdAt: new Date(payload.createdAt),

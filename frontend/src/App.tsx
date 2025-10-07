@@ -193,7 +193,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2 ml-2">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {user?.name || 'Usuario'}
+                  {user ? `${user.firstName} ${user.lastName}` : 'Usuario'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {user?.role || 'Administrador'}
@@ -282,7 +282,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user?.name || 'Usuario'}
+                      {user ? `${user.firstName} ${user.lastName}` : 'Usuario'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {user?.role || 'Administrador'}
