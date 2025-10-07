@@ -40,7 +40,8 @@ export default function SettingsView() {
     address: config.address,
     phone: config.phone,
     email: config.email,
-    regime: config.regime
+    regime: config.regime,
+    weightUnit: config.weightUnit
   })
 
   const dianData = {
@@ -249,6 +250,20 @@ export default function SettingsView() {
                           <option>No Responsable de IVA</option>
                           <option>Régimen Simple</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Unidad de Peso</label>
+                        <select
+                          className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                          value={formData.weightUnit}
+                          onChange={(e) => setFormData({...formData, weightUnit: e.target.value as 'grams' | 'pounds'})}
+                        >
+                          <option value="grams">Gramos (g)</option>
+                          <option value="pounds">Libras (lb)</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Unidad para mostrar productos vendidos por peso
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">Logo del Negocio (PNG)</label>

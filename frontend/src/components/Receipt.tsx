@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { formatWeight } from '@/lib/weightUtils'
 import { useAuthStore } from '@/stores/authStore'
 import { useBusinessStore } from '@/stores/businessStore'
 import { PaymentMethod, Sale, SaleType } from '@/types'
@@ -111,7 +112,12 @@ ${sale.saleNumber ? `No. ${sale.saleNumber}` : ''}
 ${formatDateTime(fallbackDate)}
 
 ---PRODUCTOS---
-${sale.items.map((item) => `${item.product.name}\n${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`).join('\n\n')}
+${sale.items.map((item) => {
+  const quantity = item.isSoldByWeight
+    ? formatWeight(item.quantity, businessConfig.weightUnit)
+    : item.quantity
+  return `${item.product.name}\n${quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
+}).join('\n\n')}
 
 ---TOTALES---
 Subtotal: ${formatCurrency(sale.subtotal)}
@@ -198,7 +204,10 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
                 </div>
                 <div className="item text-xs">
                   <span className="text-gray-600">
-                    {item.quantity} x {formatCurrency(item.price)}
+                    {item.isSoldByWeight
+                      ? `${formatWeight(item.quantity, businessConfig.weightUnit)} x ${formatCurrency(item.price)}`
+                      : `${item.quantity} x ${formatCurrency(item.price)}`
+                    }
                   </span>
                   <span className="font-medium">{formatCurrency(item.total)}</span>
                 </div>

@@ -29,7 +29,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { usePOSStore } from '@/stores/posStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { useCashRegisterStore } from '@/stores/cashRegisterStore'
+import { useBusinessStore } from '@/stores/businessStore'
 import { formatCurrency, formatStock } from '@/lib/utils';
+import { formatWeight } from '@/lib/weightUtils'
 import { salesService, mapFrontPaymentMethodToBackend } from '@/services'
 import { useAuthStore } from '@/stores/authStore'
 import { PaymentMethod, SaleType } from '@/types'
@@ -89,6 +91,7 @@ export default function POSView() {
 
 
   const { token } = useAuthStore()
+  const { config: businessConfig } = useBusinessStore()
 
   useEffect(() => {
     if (!token) {
@@ -620,7 +623,12 @@ export default function POSView() {
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                            <span className="w-10 text-center font-medium">{item.quantity}</span>
+                            <span className="w-10 text-center font-medium">
+                              {item.isSoldByWeight
+                                ? formatWeight(item.quantity, businessConfig.weightUnit)
+                                : item.quantity
+                              }
+                            </span>
                             <Button
                               variant="outline"
                               size="icon"
