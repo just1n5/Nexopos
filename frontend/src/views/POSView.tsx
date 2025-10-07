@@ -46,6 +46,15 @@ export default function POSView() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null)
   const [cashReceived, setCashReceived] = useState<string>('')
+
+  // Función para cerrar el modal de pago y resetear estado
+  const closePaymentModal = () => {
+    setShowPaymentModal(false)
+    setSelectedPayment(null)
+    setCashReceived('')
+  }
+
+
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false)
   const [showReceipt, setShowReceipt] = useState(false)
   const [lastSale, setLastSale] = useState<any>(null)
@@ -272,9 +281,7 @@ export default function POSView() {
       })
 
       clearCart()
-      setShowPaymentModal(false)
-      setSelectedPayment(null)
-      setCashReceived('')
+      closePaymentModal()
       setIsMobileCartOpen(false)
       if (discount > 0) {
         setGlobalDiscount(0)
@@ -329,7 +336,6 @@ export default function POSView() {
       ...POSShortcuts.PROCESS_PAYMENT,
       action: () => {
         if (cart.length > 0) {
-          setSelectedPayment(PaymentMethod.CASH)
           setShowPaymentModal(true)
         }
       }
@@ -338,7 +344,6 @@ export default function POSView() {
       ...POSShortcuts.CASH_PAYMENT,
       action: () => {
         if (cart.length > 0) {
-          setSelectedPayment(PaymentMethod.CASH)
           setShowPaymentModal(true)
         }
       }
@@ -347,7 +352,6 @@ export default function POSView() {
       ...POSShortcuts.CARD_PAYMENT,
       action: () => {
         if (cart.length > 0) {
-          setSelectedPayment(PaymentMethod.CARD)
           setShowPaymentModal(true)
         }
       }
@@ -356,7 +360,6 @@ export default function POSView() {
       ...POSShortcuts.CREDIT_SALE,
       action: () => {
         if (cart.length > 0) {
-          setSelectedPayment(PaymentMethod.CREDIT)
           setShowPaymentModal(true)
         }
       }
@@ -368,7 +371,7 @@ export default function POSView() {
     {
       key: 'Escape',
       action: () => {
-        setShowPaymentModal(false)
+        closePaymentModal()
         setShowDiscountModal(false)
         setShowReceipt(false)
       }
@@ -705,7 +708,6 @@ export default function POSView() {
               variant="outline"
               className="h-12"
               onClick={() => {
-                setSelectedPayment(PaymentMethod.CREDIT)
                 setShowPaymentModal(true)
               }}
               disabled={cart.length === 0 || Boolean(selectedCustomer && !selectedCustomer.creditEnabled)}
@@ -717,7 +719,6 @@ export default function POSView() {
             <Button
               className="h-12"
               onClick={() => {
-                setSelectedPayment(PaymentMethod.CASH)
                 setShowPaymentModal(true)
               }}
               disabled={cart.length === 0}
@@ -857,7 +858,7 @@ export default function POSView() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowPaymentModal(false)}
+            onClick={closePaymentModal}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -873,7 +874,7 @@ export default function POSView() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowPaymentModal(false)}
+                      onClick={closePaymentModal}
                       className="h-8 w-8"
                     >
                       <X className="w-5 h-5" />
