@@ -15,6 +15,8 @@ import {
   Calculator,
   ArrowUpDown
 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -106,49 +108,107 @@ export default function ReportsView() {
     }
   }
   
-  const handleDownloadReport = async (reportType: 'sales' | 'products' | 'customers' | 'inventory') => {
+  const handleDownloadExcel = (reportType: 'sales' | 'products' | 'customers' | 'inventory' | 'movements') => {
     try {
-      // Usar las mismas fechas que en loadReports (timezone Colombia)
-      let dateRangeFilters: { startDate: Date; endDate: Date }
+      let data: any[] = []
+      let sheetName = 'Reporte'
 
-      switch (dateRange) {
-        case 'today':
-          dateRangeFilters = getTodayRangeColombia()
+      switch (reportType) {
+        case 'sales':
+          if (!salesReport) return
+          data = [
+            { Métrica: 'Total Ventas', Valor: salesReport.totalSales },
+            { Métrica: 'Monto Ventas', Valor: salesReport.totalSalesAmount },
+            { Métrica: 'Ingresos', Valor: salesReport.totalIncome },
+            { Métrica: 'Ventas a Crédito', Valor: salesReport.totalCreditSales },
+            { Métrica: 'Ticket Promedio', Valor: salesReport.averageTicket },
+            {},
+            { 'Método de Pago': 'Método', 'Monto': 'Monto' },
+            ...Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => ({
+              'Método de Pago': method,
+              'Monto': amount
+            }))
+          ]
+          sheetName = 'Ventas'
           break
-        case 'week':
-          dateRangeFilters = getWeekRangeColombia()
+
+        case 'products':
+          data = productReports.map((report, index) => ({
+            '#': index + 1,
+            'Producto': report.product.name,
+            'SKU': report.product.sku,
+            'Cantidad': report.quantity,
+            'Ingresos': report.revenue,
+            'Margen': report.profitMargin || 0
+          }))
+          sheetName = 'Productos'
           break
-        case 'month':
-          dateRangeFilters = getMonthRangeColombia()
+
+        case 'customers':
+          data = customerReports.map((report, index) => ({
+            '#': index + 1,
+            'Cliente': report.customerName,
+            'Total Compras': report.totalPurchases,
+            'Total Gastado': report.totalSpent,
+            'Compra Promedio': report.averagePurchase,
+            'Última Compra': new Date(report.lastPurchase).toLocaleDateString('es-CO')
+          }))
+          sheetName = 'Clientes'
           break
-        case 'year':
-          dateRangeFilters = getYearRangeColombia()
+
+        case 'inventory':
+          if (!inventoryReport) return
+          data = [
+            ...inventoryReport.lowStockProducts.map((product) => ({
+              'Producto': product.name,
+              'SKU': product.sku,
+              'Estado': 'Stock Bajo'
+            })),
+            ...inventoryReport.outOfStockProducts.map((product) => ({
+              'Producto': product.name,
+              'SKU': product.sku,
+              'Estado': 'Agotado'
+            }))
+          ]
+          sheetName = 'Inventario'
           break
-        default:
-          dateRangeFilters = getTodayRangeColombia()
+
+        case 'movements':
+          if (!movementsReport) return
+          data = movementsReport.movements.slice(0, 500).map((mov) => ({
+            'Fecha': new Date(mov.createdAt).toLocaleString('es-CO'),
+            'Tipo': mov.movementType,
+            'Producto ID': mov.productId,
+            'Cantidad': mov.quantity,
+            'Stock Anterior': mov.quantityBefore,
+            'Stock Nuevo': mov.quantityAfter,
+            'Costo Total': mov.totalCost,
+            'Referencia': mov.referenceNumber || mov.referenceType || '-'
+          }))
+          sheetName = 'Movimientos'
+          break
       }
 
-      const blob = await reportsService.downloadReport(
-        token!,
-        reportType,
-        'csv',
-        dateRangeFilters
-      )
-      
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `reporte-${reportType}-${dateRange}.csv`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-      
+      if (data.length === 0) {
+        toast({
+          title: 'Sin Datos',
+          description: 'No hay datos para exportar',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, sheetName)
+      XLSX.writeFile(wb, `reporte-${reportType}-${dateRange}.xlsx`)
+
       toast({
         title: 'Reporte Descargado',
-        description: 'El reporte se ha descargado exitosamente',
+        description: 'El archivo Excel se ha descargado exitosamente',
       })
     } catch (error) {
+      console.error('Error downloading Excel:', error)
       toast({
         title: 'Error',
         description: 'No se pudo descargar el reporte',
@@ -373,9 +433,9 @@ export default function ReportsView() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Ventas por Método de Pago</CardTitle>
-                    <Button size="sm" onClick={() => handleDownloadReport('sales')}>
+                    <Button size="sm" onClick={() => handleDownloadExcel('sales')}>
                       <Download className="w-4 h-4 mr-2" />
-                      Descargar
+                      Exportar Excel
                     </Button>
                   </CardHeader>
                   <CardContent>
@@ -521,45 +581,118 @@ export default function ReportsView() {
                   </CardContent>
                 </Card>
 
-                {/* Gráfico de Ventas por Hora */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Distribución de Ventas por Hora</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64 flex items-end justify-between gap-2">
-                      {Object.entries(salesReport.salesByHour).map(([hour, count]) => {
-                        const maxCount = Math.max(...Object.values(salesReport.salesByHour))
-                        const height = maxCount > 0 ? (count / maxCount) * 100 : 0
-                        
-                        return (
-                          <div key={hour} className="flex-1 flex flex-col items-center">
-                            <div 
-                              className="w-full bg-blue-500 rounded-t"
-                              style={{ height: `${height}%` }}
-                              title={`${count} ventas`}
-                            />
-                            <span className="text-xs text-gray-500 mt-1">
-                              {hour}h
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Gráficos */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Gráfico de Ventas por Hora */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Distribución de Ventas por Hora</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart
+                          data={Object.entries(salesReport.salesByHour).map(([hour, amount]) => ({
+                            hour: `${hour}:00`,
+                            ventas: Number(amount)
+                          }))}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="hour" />
+                          <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                          <Tooltip
+                            formatter={(value: number) => formatCurrency(value)}
+                            labelStyle={{ color: '#000' }}
+                          />
+                          <Bar dataKey="ventas" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Gráfico de Métodos de Pago */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Ventas por Método de Pago</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => ({
+                              name: method === 'cash' ? 'Efectivo' :
+                                    method === 'card' ? 'Tarjeta' :
+                                    method === 'bank_transfer' ? 'Transferencia' :
+                                    method === 'wallet' ? 'Billetera Digital' :
+                                    method === 'credit' ? 'Crédito' : method,
+                              value: Number(amount)
+                            }))}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {Object.entries(salesReport.salesByPaymentMethod).map((_entry, index) => {
+                              const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
+                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                            })}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
               </>
             )}
           </TabsContent>
           
           {/* Tab de Productos */}
           <TabsContent value="products" className="space-y-4">
+            {productReports.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top 10 Productos Más Vendidos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart
+                      data={productReports.slice(0, 10).map((report) => ({
+                        name: report.product.name.length > 20
+                          ? report.product.name.substring(0, 20) + '...'
+                          : report.product.name,
+                        ingresos: Number(report.revenue),
+                        cantidad: Number(report.quantity)
+                      }))}
+                      layout="vertical"
+                      margin={{ left: 100 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
+                      <YAxis type="category" dataKey="name" width={100} />
+                      <Tooltip
+                        formatter={(value: number, name: string) => [
+                          name === 'ingresos' ? formatCurrency(value) : value,
+                          name === 'ingresos' ? 'Ingresos' : 'Cantidad'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="ingresos" fill="#3b82f6" name="Ingresos" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Productos Más Vendidos</CardTitle>
-                <Button size="sm" onClick={() => handleDownloadReport('products')}>
+                <CardTitle>Productos Más Vendidos - Detalle</CardTitle>
+                <Button size="sm" onClick={() => handleDownloadExcel('products')}>
                   <Download className="w-4 h-4 mr-2" />
-                  Descargar
+                  Exportar Excel
                 </Button>
               </CardHeader>
               <CardContent>
@@ -644,9 +777,9 @@ export default function ReportsView() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Mejores Clientes</CardTitle>
-                <Button size="sm" onClick={() => handleDownloadReport('customers')}>
+                <Button size="sm" onClick={() => handleDownloadExcel('customers')}>
                   <Download className="w-4 h-4 mr-2" />
-                  Descargar
+                  Exportar Excel
                 </Button>
               </CardHeader>
               <CardContent>
@@ -694,9 +827,9 @@ export default function ReportsView() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Estado del Inventario</CardTitle>
-                    <Button size="sm" onClick={() => handleDownloadReport('inventory')}>
+                    <Button size="sm" onClick={() => handleDownloadExcel('inventory')}>
                       <Download className="w-4 h-4 mr-2" />
-                      Descargar
+                      Exportar Excel
                     </Button>
                   </CardHeader>
                   <CardContent>
@@ -1007,9 +1140,15 @@ export default function ReportsView() {
 
                 {/* Tabla de Movimientos */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Últimos Movimientos</CardTitle>
-                    <p className="text-sm text-gray-500">Máximo 500 movimientos más recientes</p>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Últimos Movimientos</CardTitle>
+                      <p className="text-sm text-gray-500">Máximo 500 movimientos más recientes</p>
+                    </div>
+                    <Button size="sm" onClick={() => handleDownloadExcel('movements')}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar Excel
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
