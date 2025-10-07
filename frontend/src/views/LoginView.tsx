@@ -104,7 +104,7 @@ export default function LoginView() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@nexopos.co"
+                    placeholder="ejemplo@ejemplo.com"
                     value={email}
                     onChange={(event) => handleEmailChange(event.target.value)}
                     className="pl-10"
@@ -123,7 +123,7 @@ export default function LoginView() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="•••••••"
+                    placeholder="contraseña"
                     value={password}
                     onChange={(event) => handlePasswordChange(event.target.value)}
                     className="pl-10"
