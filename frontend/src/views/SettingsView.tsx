@@ -611,7 +611,7 @@ export default function SettingsView() {
                 </div>
               )}
 
-              {activeTab === 'users' && (
+              {activeTab === 'users' && currentUser && (
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -638,7 +638,7 @@ export default function SettingsView() {
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                         <p className="text-gray-600">Cargando usuarios...</p>
                       </div>
-                    ) : currentUser ? (
+                    ) : (
                       <UserTable
                         users={users}
                         onEdit={(user) => {
@@ -653,7 +653,7 @@ export default function SettingsView() {
                         currentUserId={currentUser.id}
                         currentUserRole={currentUser.role}
                       />
-                    ) : null}
+                    )}
                   </CardContent>
                 </Card>
               )}
