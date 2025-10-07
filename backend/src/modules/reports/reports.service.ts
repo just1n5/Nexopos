@@ -29,36 +29,61 @@ export class ReportsService {
       endDate: filters.endDate,
     });
 
-    const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-    const totalSales = sales.length;
-    const averageTicket = totalSales ? totalRevenue / totalSales : 0;
+    // VENTAS TOTALES = Todo lo facturado (incluye crédito)
+    const totalSalesAmount = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const totalSalesCount = sales.length;
 
+    // INGRESOS = Solo ventas REGULAR (excluye crédito, porque no entra a caja aún)
+    const regularSales = sales.filter((sale) => sale.type === SaleType.REGULAR);
+    const totalIncome = regularSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+
+    // VENTAS A CRÉDITO
+    const creditSalesData = sales.filter((sale) => sale.type === SaleType.CREDIT);
+    const totalCreditSales = creditSalesData.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const creditSalesCount = creditSalesData.length;
+
+    // CRÉDITOS PENDIENTES (saldo por recuperar)
+    const creditPending = creditSalesData.reduce(
+      (sum, sale) => sum + Math.max(0, Number(sale.creditAmount || 0)),
+      0
+    );
+
+    // TICKET PROMEDIO (sobre ventas completadas, no créditos)
+    const averageTicket = totalSalesCount ? totalSalesAmount / totalSalesCount : 0;
+
+    // VENTAS POR MÉTODO DE PAGO
     const salesByPaymentMethod: Record<string, number> = {};
-    const salesByHour: Record<number, number> = {};
-
     sales.forEach((sale) => {
       sale.payments?.forEach((payment) => {
         const methodKey = this.normalizePaymentMethod(payment.method);
         salesByPaymentMethod[methodKey] = (salesByPaymentMethod[methodKey] || 0) + Number(payment.amount || 0);
       });
+    });
 
+    // VENTAS POR HORA
+    const salesByHour: Record<number, number> = {};
+    sales.forEach((sale) => {
       const hour = new Date(sale.createdAt).getHours();
       salesByHour[hour] = (salesByHour[hour] || 0) + Number(sale.total || 0);
     });
 
-    const creditSales = sales.filter((sale) => sale.type === SaleType.CREDIT).length;
-    const creditPending = sales
-      .filter((sale) => sale.type === SaleType.CREDIT)
-      .reduce((sum, sale) => sum + Math.max(0, Number(sale.creditAmount || 0)), 0);
-
     return {
-      totalSales,
-      totalRevenue,
-      averageTicket,
+      // Métricas principales
+      totalSales: totalSalesCount,        // Cantidad de ventas
+      totalSalesAmount,                    // Monto total facturado (incluye crédito)
+      totalIncome,                         // Ingresos reales en caja (excluye crédito)
+      totalCreditSales,                    // Monto vendido a crédito
+      creditSalesCount,                    // Cantidad de ventas a crédito
+      creditPending,                       // Saldo pendiente de cobro
+      averageTicket,                       // Ticket promedio
+
+      // Desglosados
       salesByPaymentMethod,
       salesByHour,
-      creditSales,
-      creditPending,
+
+      // Legacy (deprecated, usar totalSalesAmount)
+      totalRevenue: totalSalesAmount,
+      creditSales: creditSalesCount,
     };
   }
 

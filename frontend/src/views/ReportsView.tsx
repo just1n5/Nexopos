@@ -24,6 +24,12 @@ import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 import { reportsService } from '@/services/reportsService'
 import type { ProductReport, SalesReport, CustomerReport, InventoryReport } from '@/services/reportsService'
+import {
+  getTodayRangeColombia,
+  getWeekRangeColombia,
+  getMonthRangeColombia,
+  getYearRangeColombia
+} from '@/lib/timezone'
 
 export default function ReportsView() {
   const { token } = useAuthStore()
@@ -45,27 +51,28 @@ export default function ReportsView() {
   const loadReports = async () => {
     try {
       setLoading(true)
-      
-      // Calcular fechas según el rango seleccionado
-      const endDate = new Date()
-      const startDate = new Date()
-      
+
+      // Calcular fechas según el rango seleccionado en timezone de Colombia
+      let dateRangeFilters: { startDate: Date; endDate: Date }
+
       switch (dateRange) {
         case 'today':
-          startDate.setHours(0, 0, 0, 0)
+          dateRangeFilters = getTodayRangeColombia()
           break
         case 'week':
-          startDate.setDate(startDate.getDate() - 7)
+          dateRangeFilters = getWeekRangeColombia()
           break
         case 'month':
-          startDate.setMonth(startDate.getMonth() - 1)
+          dateRangeFilters = getMonthRangeColombia()
           break
         case 'year':
-          startDate.setFullYear(startDate.getFullYear() - 1)
+          dateRangeFilters = getYearRangeColombia()
           break
+        default:
+          dateRangeFilters = getTodayRangeColombia()
       }
-      
-      const filters = { startDate, endDate }
+
+      const filters = dateRangeFilters
       
       // Cargar todos los reportes en paralelo
       const [sales, products, customers, inventory] = await Promise.all([
@@ -93,29 +100,31 @@ export default function ReportsView() {
   
   const handleDownloadReport = async (reportType: 'sales' | 'products' | 'customers' | 'inventory') => {
     try {
-      const endDate = new Date()
-      const startDate = new Date()
-      
+      // Usar las mismas fechas que en loadReports (timezone Colombia)
+      let dateRangeFilters: { startDate: Date; endDate: Date }
+
       switch (dateRange) {
         case 'today':
-          startDate.setHours(0, 0, 0, 0)
+          dateRangeFilters = getTodayRangeColombia()
           break
         case 'week':
-          startDate.setDate(startDate.getDate() - 7)
+          dateRangeFilters = getWeekRangeColombia()
           break
         case 'month':
-          startDate.setMonth(startDate.getMonth() - 1)
+          dateRangeFilters = getMonthRangeColombia()
           break
         case 'year':
-          startDate.setFullYear(startDate.getFullYear() - 1)
+          dateRangeFilters = getYearRangeColombia()
           break
+        default:
+          dateRangeFilters = getTodayRangeColombia()
       }
-      
+
       const blob = await reportsService.downloadReport(
         token!,
         reportType,
         'csv',
-        { startDate, endDate }
+        dateRangeFilters
       )
       
       const url = window.URL.createObjectURL(blob)
@@ -192,19 +201,20 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Ventas Totales</span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Total facturado (incluye crédito)">
+                      Ventas del Día
+                      <AlertCircle className="w-3 h-3 text-gray-400" />
+                    </span>
                     <ShoppingCart className="w-5 h-5 text-blue-500" />
                   </div>
-                  <div className="text-2xl font-bold">{salesReport.totalSales}</div>
-                  <div className="flex items-center mt-2">
-                    <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+12.5%</span>
-                    <span className="text-sm text-gray-500 ml-1">vs período anterior</span>
+                  <div className="text-2xl font-bold">{formatCurrency(salesReport.totalSalesAmount)}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {salesReport.totalSales} {salesReport.totalSales === 1 ? 'venta' : 'ventas'}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -213,14 +223,15 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Ingresos</span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Lo que entró en caja (excluye crédito)">
+                      Ingresos del Día
+                      <AlertCircle className="w-3 h-3 text-gray-400" />
+                    </span>
                     <DollarSign className="w-5 h-5 text-green-500" />
                   </div>
-                  <div className="text-2xl font-bold">{formatCurrency(salesReport.totalRevenue)}</div>
-                  <div className="flex items-center mt-2">
-                    <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+8.3%</span>
-                    <span className="text-sm text-gray-500 ml-1">vs período anterior</span>
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(salesReport.totalIncome)}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Efectivo, tarjeta, digital
                   </div>
                 </CardContent>
               </Card>
@@ -255,18 +266,65 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Créditos Pendientes</span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Saldo a recuperar de ventas a crédito">
+                      Créditos Pendientes
+                      <AlertCircle className="w-3 h-3 text-gray-400" />
+                    </span>
                     <Clock className="w-5 h-5 text-yellow-500" />
                   </div>
-                  <div className="text-2xl font-bold">{formatCurrency(salesReport.creditPending)}</div>
-                  <div className="flex items-center mt-2">
-                    <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">-15.2%</span>
-                    <span className="text-sm text-gray-500 ml-1">vs período anterior</span>
+                  <div className="text-2xl font-bold text-yellow-600">{formatCurrency(salesReport.creditPending)}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {salesReport.creditSalesCount} {salesReport.creditSalesCount === 1 ? 'crédito' : 'créditos'}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
+          </div>
+        )}
+
+        {/* Fila adicional con métricas secundarias */}
+        {salesReport && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-700 font-medium">Ventas a Crédito</p>
+                    <p className="text-xl font-bold text-blue-900">{formatCurrency(salesReport.totalCreditSales)}</p>
+                  </div>
+                  <CreditCard className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">Ticket Promedio</p>
+                    <p className="text-xl font-bold text-green-900">{formatCurrency(salesReport.averageTicket)}</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-purple-50 border-purple-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-700 font-medium">Reconciliación</p>
+                    <p className="text-xs text-purple-600 mt-1">
+                      Ventas = Ingresos + Créditos
+                    </p>
+                    <p className="text-sm text-purple-800 mt-1">
+                      {formatCurrency(salesReport.totalSalesAmount)} = {formatCurrency(salesReport.totalIncome)} + {formatCurrency(salesReport.totalCreditSales)}
+                    </p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
         
@@ -324,8 +382,8 @@ export default function ReportsView() {
                               {formatCurrency(amount)}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {salesReport.totalRevenue > 0 
-                                ? `${Math.round((amount / salesReport.totalRevenue) * 100)}%`
+                              {salesReport.totalSalesAmount > 0
+                                ? `${Math.round((amount / salesReport.totalSalesAmount) * 100)}%`
                                 : '0%'
                               } del total
                             </p>

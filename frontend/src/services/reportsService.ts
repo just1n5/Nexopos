@@ -11,13 +11,19 @@ export interface ReportFilters {
 }
 
 export interface SalesReport {
-  totalSales: number
-  totalRevenue: number
-  averageTicket: number
+  totalSales: number              // Cantidad de ventas
+  totalSalesAmount: number         // Monto total facturado (incluye crédito)
+  totalIncome: number              // Ingresos reales en caja (excluye crédito)
+  totalCreditSales: number         // Monto vendido a crédito
+  creditSalesCount: number         // Cantidad de ventas a crédito
+  creditPending: number            // Saldo pendiente de cobro
+  averageTicket: number            // Ticket promedio
   salesByPaymentMethod: Record<string, number>
   salesByHour: Record<number, number>
-  creditSales: number
-  creditPending: number
+
+  // Legacy fields (deprecated)
+  totalRevenue?: number
+  creditSales?: number
 }
 
 export interface ProductReport {
@@ -61,12 +67,18 @@ class ReportsService {
     const data = await response.json()
     return {
       totalSales: data.totalSales || 0,
-      totalRevenue: Number(data.totalRevenue || 0),
+      totalSalesAmount: Number(data.totalSalesAmount || 0),
+      totalIncome: Number(data.totalIncome || 0),
+      totalCreditSales: Number(data.totalCreditSales || 0),
+      creditSalesCount: Number(data.creditSalesCount || 0),
+      creditPending: Number(data.creditPending || 0),
       averageTicket: Number(data.averageTicket || 0),
       salesByPaymentMethod: data.salesByPaymentMethod || {},
       salesByHour: data.salesByHour || {},
-      creditSales: Number(data.creditSales || 0),
-      creditPending: Number(data.creditPending || 0)
+
+      // Legacy
+      totalRevenue: Number(data.totalRevenue || 0),
+      creditSales: Number(data.creditSales || 0)
     }
   }
 
