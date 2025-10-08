@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { BetaKeysModule } from '../beta-keys/beta-keys.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { EmailModule } from '../email/email.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -15,6 +16,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UsersModule,
     BetaKeysModule,
     TenantsModule,
+    EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -8,6 +8,7 @@ import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { User, UserRole } from '../users/entities/user.entity';
 import { BetaKeysService } from '../beta-keys/beta-keys.service';
 import { TenantsService } from '../tenants/tenants.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly betaKeysService: BetaKeysService,
     private readonly tenantsService: TenantsService,
+    private readonly emailService: EmailService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -75,7 +77,16 @@ export class AuthService {
       const safeUser = await this.usersService.findById(user.id);
       const accessToken = this.generateAccessToken(safeUser);
 
-      // TODO: Enviar email de bienvenida
+      // Enviar email de bienvenida (async, no bloquea el registro)
+      this.emailService.sendWelcomeEmail({
+        businessName: tenant.businessName,
+        adminName: `${user.firstName} ${user.lastName}`,
+        adminEmail: user.email,
+        betaKey: registerDto.betaKey,
+      }).catch(err => {
+        // Log error pero no fallar el registro
+        console.error('Failed to send welcome email:', err);
+      });
 
       return { user: safeUser, accessToken };
     } catch (error) {
