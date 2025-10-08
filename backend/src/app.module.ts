@@ -6,6 +6,8 @@ import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BetaKeysModule } from './modules/beta-keys/beta-keys.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
@@ -41,6 +43,8 @@ import { ReportsModule } from './modules/reports/reports.module';
     HealthModule,
     UsersModule,
     AuthModule,
+    BetaKeysModule,
+    TenantsModule,
     ProductsModule,
     CategoriesModule,
     CustomersModule,
