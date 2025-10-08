@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Settings,
   Store,
@@ -15,7 +16,8 @@ import {
   HelpCircle,
   ChevronRight,
   Check,
-  UserPlus
+  UserPlus,
+  Key
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -34,6 +36,7 @@ import MyProfile from '@/components/users/MyProfile'
 import type { User, CreateUserDto, UpdateUserDto } from '@/types'
 
 export default function SettingsView() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
   const [saved, setSaved] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -229,6 +232,7 @@ export default function SettingsView() {
     { id: 'payments', label: 'Pagos', icon: CreditCard, roles: ['ADMIN'] },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
     { id: 'users', label: 'Usuarios', icon: Shield, roles: ['ADMIN', 'MANAGER'] },
+    { id: 'beta-keys', label: 'Beta Keys', icon: Key, roles: ['ADMIN'], external: true, path: '/admin/beta-keys' },
     { id: 'help', label: 'Ayuda', icon: HelpCircle, roles: ['ADMIN', 'MANAGER', 'CASHIER'] }
   ]
 
@@ -256,7 +260,13 @@ export default function SettingsView() {
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                          if ('external' in tab && tab.external && tab.path) {
+                            navigate(tab.path)
+                          } else {
+                            setActiveTab(tab.id)
+                          }
+                        }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
                           activeTab === tab.id
                             ? 'bg-primary text-white'
