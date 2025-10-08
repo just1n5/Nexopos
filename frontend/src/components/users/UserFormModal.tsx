@@ -15,6 +15,7 @@ interface UserFormModalProps {
 }
 
 const roleDescriptions = {
+  [UserRole.SUPER_ADMIN]: 'Super Administrador. Control total de la plataforma incluyendo gestión de beta keys.',
   [UserRole.ADMIN]: 'Control total del sistema. Puede gestionar usuarios, configuración y todos los módulos.',
   [UserRole.MANAGER]: 'Gestión operativa. Puede crear cajeros y gestionar inventario, reportes y operaciones.',
   [UserRole.CASHIER]: 'Operaciones de venta. Solo puede procesar ventas y manejar su caja registradora.'

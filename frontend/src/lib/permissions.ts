@@ -28,6 +28,21 @@ export enum Permission {
 
 // Mapa de permisos por rol (debe coincidir con backend)
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [UserRole.SUPER_ADMIN]: [
+    // Super Admin tiene TODOS los permisos + gestión de beta keys
+    Permission.INVENTORY_READ,
+    Permission.INVENTORY_WRITE,
+    Permission.PRODUCTS_READ,
+    Permission.PRODUCTS_WRITE,
+    Permission.REPORTS_SALES,
+    Permission.REPORTS_INVENTORY,
+    Permission.REPORTS_FINANCIAL,
+    Permission.REPORTS_ALL,
+    Permission.USERS_MANAGE,
+    Permission.CONFIG_MANAGE,
+    Permission.CASH_REGISTER_MANAGE,
+    Permission.CASH_REGISTER_VIEW,
+  ],
   [UserRole.ADMIN]: [
     Permission.INVENTORY_READ,
     Permission.INVENTORY_WRITE,

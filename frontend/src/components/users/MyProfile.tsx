@@ -18,12 +18,16 @@ interface PasswordStrength {
 
 const getRoleBadge = (role: UserRole) => {
   switch (role) {
+    case UserRole.SUPER_ADMIN:
+      return { icon: '👑', label: 'Super Admin', color: 'bg-purple-600' }
     case UserRole.ADMIN:
       return { icon: '🔴', label: 'Administrador', color: 'bg-red-600' }
     case UserRole.MANAGER:
       return { icon: '🟡', label: 'Manager', color: 'bg-yellow-600' }
     case UserRole.CASHIER:
       return { icon: '🟢', label: 'Cajero', color: 'bg-green-600' }
+    default:
+      return { icon: '❓', label: 'Desconocido', color: 'bg-gray-600' }
   }
 }
 
