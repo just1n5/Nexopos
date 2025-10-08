@@ -162,7 +162,7 @@ export default function BetaKeysManagementView() {
     return true;
   });
 
-  if (user?.role !== 'ADMIN') {
+  if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
     return (
       <div className="container mx-auto px-4 py-8">
         <Alert variant="destructive">
