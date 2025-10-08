@@ -35,6 +35,7 @@ const CashRegisterView = lazy(() => import('@/views/CashRegisterView'))
 const SettingsView = lazy(() => import('@/views/SettingsView'))
 const DashboardView = lazy(() => import('@/views/DashboardView'))
 const BetaKeysManagementView = lazy(() => import('@/views/BetaKeysManagementView'))
+const TenantManagementView = lazy(() => import('@/views/TenantManagementView'))
 
 // Loading component
 function LoadingScreen() {
@@ -405,6 +406,14 @@ export default function App() {
               !isAuthenticated ? <Navigate to="/login" replace /> : (
                 <MainLayout>
                   <BetaKeysManagementView />
+                </MainLayout>
+              )
+            } />
+
+            <Route path="/admin/tenants" element={
+              !isAuthenticated ? <Navigate to="/login" replace /> : (
+                <MainLayout>
+                  <TenantManagementView />
                 </MainLayout>
               )
             } />

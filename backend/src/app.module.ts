@@ -17,6 +17,9 @@ import { IntegrationModule } from './modules/integration/integration.module';
 import { TaxesModule } from './modules/taxes/taxes.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { OtpModule } from './modules/otp/otp.module';
+import { EmailModule } from './modules/email/email.module';
+import { TenantManagementModule } from './modules/tenant-management/tenant-management.module';
 
 @Module({
   imports: [
@@ -55,6 +58,9 @@ import { ReportsModule } from './modules/reports/reports.module';
     TaxesModule,
     CreditsModule,
     ReportsModule,
+    OtpModule,
+    EmailModule,
+    TenantManagementModule,
   ],
   controllers: [],
   providers: [],

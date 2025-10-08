@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Check,
   UserPlus,
-  Key
+  Key,
+  Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -233,6 +234,7 @@ export default function SettingsView() {
     { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CASHIER'] },
     { id: 'users', label: 'Usuarios', icon: Shield, roles: ['ADMIN', 'MANAGER'] },
     { id: 'beta-keys', label: 'Beta Keys', icon: Key, roles: ['SUPER_ADMIN'], external: true, path: '/admin/beta-keys' },
+    { id: 'tenants', label: 'Gestión de Cuentas', icon: Building2, roles: ['SUPER_ADMIN'], external: true, path: '/admin/tenants' },
     { id: 'help', label: 'Ayuda', icon: HelpCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CASHIER'] }
   ]
 

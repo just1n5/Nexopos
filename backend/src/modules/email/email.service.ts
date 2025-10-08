@@ -10,6 +10,13 @@ export interface WelcomeEmailData {
   betaKey: string;
 }
 
+export interface OtpEmailData {
+  email: string;
+  otpCode: string;
+  purpose: 'ACCOUNT_DELETION' | 'ACCOUNT_SUSPENSION';
+  businessName?: string;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -274,6 +281,157 @@ export class EmailService {
             <p>Estamos aquí para ayudarte. Contáctanos en soporte@nexopos.com</p>
             <p style="margin-top: 20px;">
                 Este es un correo automático de bienvenida.<br>
+                © ${new Date().getFullYear()} NexoPOS - Sistema de Punto de Venta para Colombia
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  async sendOtpEmail(data: OtpEmailData): Promise<void> {
+    if (!this.transporter) {
+      this.logger.warn('Email transporter not configured. Skipping OTP email.');
+      return;
+    }
+
+    const html = this.getOtpEmailTemplate(data);
+    const actionText = data.purpose === 'ACCOUNT_DELETION' ? 'Eliminación' : 'Suspensión';
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>'),
+        to: data.email,
+        subject: `🔐 Código de verificación - ${actionText} de cuenta`,
+        html,
+      });
+
+      this.logger.log(`OTP email sent to ${data.email}: ${info.messageId}`);
+    } catch (error) {
+      this.logger.error(`Failed to send OTP email to ${data.email}:`, error);
+      throw error; // Lanzamos error porque el OTP es crítico
+    }
+  }
+
+  private getOtpEmailTemplate(data: OtpEmailData): string {
+    const actionText = data.purpose === 'ACCOUNT_DELETION' ? 'eliminar' : 'suspender';
+    const actionTextCaps = data.purpose === 'ACCOUNT_DELETION' ? 'Eliminación' : 'Suspensión';
+    const bgColor = data.purpose === 'ACCOUNT_DELETION' ? '#fed7d7' : '#fef5e7';
+    const borderColor = data.purpose === 'ACCOUNT_DELETION' ? '#fc8181' : '#f6ad55';
+    const textColor = data.purpose === 'ACCOUNT_DELETION' ? '#c53030' : '#c05621';
+
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de verificación OTP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .warning-icon {
+            width: 80px;
+            height: 80px;
+            background: ${bgColor};
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .otp-box {
+            background-color: ${bgColor};
+            border: 3px solid ${borderColor};
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .otp-code {
+            font-size: 42px;
+            font-weight: bold;
+            color: ${textColor};
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin: 15px 0;
+        }
+        .alert-box {
+            background-color: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #718096;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="warning-icon">⚠️</div>
+            <h1>${actionTextCaps} de Cuenta - Código de Verificación</h1>
+        </div>
+
+        <p>Hola,</p>
+
+        <p>Se ha solicitado <strong>${actionText}</strong> la cuenta${data.businessName ? ` de <strong>${data.businessName}</strong>` : ''} en NexoPOS.</p>
+
+        <div class="otp-box">
+            <p style="margin: 0 0 10px 0; color: ${textColor}; font-weight: 600; font-size: 16px;">Tu código de verificación es:</p>
+            <span class="otp-code">${data.otpCode}</span>
+            <p style="margin: 10px 0 0 0; color: #718096; font-size: 14px;">Válido por 10 minutos</p>
+        </div>
+
+        <div class="alert-box">
+            <strong>⚠️ IMPORTANTE:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Este código es <strong>confidencial</strong>, no lo compartas con nadie</li>
+                <li>El código expira en <strong>10 minutos</strong></li>
+                <li>Si no solicitaste esta acción, ignora este correo</li>
+                ${data.purpose === 'ACCOUNT_DELETION' ? '<li><strong style="color: #c53030;">La eliminación de la cuenta es PERMANENTE y no se puede revertir</strong></li>' : ''}
+            </ul>
+        </div>
+
+        <p style="color: #718096; font-size: 14px; margin-top: 30px;">
+            Si no solicitaste este código, por favor contacta inmediatamente a soporte@nexopos.com
+        </p>
+
+        <div class="footer">
+            <p>
+                Este es un correo automático de seguridad.<br>
                 © ${new Date().getFullYear()} NexoPOS - Sistema de Punto de Venta para Colombia
             </p>
         </div>
