@@ -49,6 +49,8 @@ const LOGIN_PATH = '/auth/login';
 
 const roleFromApi = (role: string): UserRole => {
   switch (role.toUpperCase()) {
+    case 'SUPER_ADMIN':
+      return UserRole.SUPER_ADMIN;
     case 'ADMIN':
       return UserRole.ADMIN;
     case 'MANAGER':
