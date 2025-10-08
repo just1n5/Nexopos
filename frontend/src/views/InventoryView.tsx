@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { useToast } from '@/hooks/useToast';
 import { productsService, inventoryService, MovementType } from '@/services';
+import { canWriteInventory } from '@/lib/permissions';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -99,9 +100,12 @@ const cleanDescription = (description?: string): string | undefined => {
 };
 
 export default function InventoryView() {
-  const { token, logout } = useAuthStore();
+  const { token, user, logout } = useAuthStore();
   const weightUnit = useBusinessStore((state) => state.config.weightUnit);
   const { toast } = useToast();
+
+  // Verificar permisos de escritura
+  const hasWritePermission = user ? canWriteInventory(user.role) : false;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<InventoryRow[]>([]);
@@ -273,7 +277,11 @@ export default function InventoryView() {
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold">Inventario</h1>
             <div className="flex gap-2">
-              <Button onClick={() => setShowAddModal(true)}>
+              <Button
+                onClick={() => setShowAddModal(true)}
+                disabled={!hasWritePermission}
+                title={!hasWritePermission ? 'No tienes permisos para agregar productos' : undefined}
+              >
                 <Plus className="w-5 h-5 mr-2" />
                 Agregar Producto
               </Button>
@@ -383,6 +391,8 @@ export default function InventoryView() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                disabled={!hasWritePermission}
+                                title={!hasWritePermission ? 'No tienes permisos para editar productos' : undefined}
                                 onClick={() => {
                                   setSelectedProductForEdit(product);
                                   setEditForm({
@@ -403,6 +413,8 @@ export default function InventoryView() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                disabled={!hasWritePermission}
+                                title={!hasWritePermission ? 'No tienes permisos para ajustar stock' : undefined}
                                 onClick={() => {
                                   setSelectedProductForStock(product);
                                   setShowStockModal(true);
