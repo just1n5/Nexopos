@@ -58,7 +58,6 @@ export default function TenantManagementView() {
   // Estados para OTP
   const [otpCode, setOtpCode] = useState('');
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const [otpExpiresAt, setOtpExpiresAt] = useState<string | null>(null);
 
