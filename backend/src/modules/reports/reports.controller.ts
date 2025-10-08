@@ -9,16 +9,19 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { StreamableFile } from '@nestjs/common';
 import { Buffer } from 'buffer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../users/guards/permissions.guard';
+import { Permissions, Permission } from '../users/decorators/permissions.decorator';
 import { ReportsService } from './reports.service';
 
 @ApiTags('Reports')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('sales')
+  @Permissions(Permission.REPORTS_SALES)
   @ApiOperation({ summary: 'Get sales report' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })
@@ -30,6 +33,7 @@ export class ReportsController {
   }
 
   @Get('products')
+  @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get products report' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })
@@ -41,6 +45,7 @@ export class ReportsController {
   }
 
   @Get('customers')
+  @Permissions(Permission.REPORTS_FINANCIAL)
   @ApiOperation({ summary: 'Get customers report' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })
@@ -52,12 +57,14 @@ export class ReportsController {
   }
 
   @Get('inventory')
+  @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get inventory report' })
   getInventoryReport() {
     return this.reportsService.getInventoryReport();
   }
 
   @Get('cash-register')
+  @Permissions(Permission.REPORTS_FINANCIAL)
   @ApiOperation({ summary: 'Get cash register arqueos report' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })

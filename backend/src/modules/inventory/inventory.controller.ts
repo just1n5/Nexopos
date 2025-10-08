@@ -20,16 +20,19 @@ import {
   ApiBody
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../users/guards/permissions.guard';
+import { Permissions, Permission } from '../users/decorators/permissions.decorator';
 import { MovementType } from './entities/inventory-movement.entity';
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Get('stock/:productId')
+  @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get stock for a product' })
   @ApiQuery({ name: 'variantId', required: false })
   @ApiQuery({ name: 'warehouseId', required: false })
@@ -42,6 +45,7 @@ export class InventoryController {
   }
 
   @Get('low-stock')
+  @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get products with low stock' })
   @ApiQuery({ name: 'warehouseId', required: false })
   async getLowStock(@Query('warehouseId') warehouseId?: string) {
@@ -49,6 +53,7 @@ export class InventoryController {
   }
 
   @Get('expiring')
+  @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get products expiring soon' })
   @ApiQuery({ name: 'daysAhead', required: false, type: Number })
   @ApiQuery({ name: 'warehouseId', required: false })
@@ -60,6 +65,7 @@ export class InventoryController {
   }
 
   @Get('movements')
+  @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get stock movements' })
   @ApiQuery({ name: 'productId', required: false })
   @ApiQuery({ name: 'variantId', required: false })
@@ -72,6 +78,7 @@ export class InventoryController {
   }
 
   @Get('valuation')
+  @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get stock valuation' })
   @ApiQuery({ name: 'warehouseId', required: false })
   async getValuation(@Query('warehouseId') warehouseId?: string) {
@@ -79,6 +86,7 @@ export class InventoryController {
   }
 
   @Post('adjust-stock')
+  @Permissions(Permission.INVENTORY_ADJUST)
   @ApiOperation({ summary: 'Manually adjust stock for a product' })
   @ApiBody({
     schema: {
@@ -131,6 +139,7 @@ export class InventoryController {
   }
 
   @Post('stock-count')
+  @Permissions(Permission.INVENTORY_ADJUST)
   @ApiOperation({ summary: 'Perform stock count and create adjustment if needed' })
   @ApiBody({
     schema: {
