@@ -64,17 +64,27 @@ export class TenantManagementService {
       tenantId,
     );
 
-    // Enviar email
-    await this.emailService.sendOtpEmail({
-      email: adminEmail,
-      otpCode: otp.code,
-      purpose: 'ACCOUNT_SUSPENSION',
-      businessName: tenant.businessName,
-    });
+    // Intentar enviar email (no bloquear si falla)
+    let emailSent = false;
+    try {
+      await this.emailService.sendOtpEmail({
+        email: adminEmail,
+        otpCode: otp.code,
+        purpose: 'ACCOUNT_SUSPENSION',
+        businessName: tenant.businessName,
+      });
+      emailSent = true;
+    } catch (error) {
+      console.warn('Email OTP could not be sent:', error.message);
+    }
 
     return {
-      message: 'OTP enviado al correo del administrador',
+      message: emailSent
+        ? 'OTP enviado al correo del administrador'
+        : 'OTP generado (email no configurado)',
       expiresAt: otp.expiresAt,
+      // Solo en desarrollo: mostrar código si email falló
+      ...(process.env.NODE_ENV !== 'production' && !emailSent && { otpCode: otp.code }),
     };
   }
 
@@ -97,17 +107,27 @@ export class TenantManagementService {
       tenantId,
     );
 
-    // Enviar email
-    await this.emailService.sendOtpEmail({
-      email: adminEmail,
-      otpCode: otp.code,
-      purpose: 'ACCOUNT_DELETION',
-      businessName: tenant.businessName,
-    });
+    // Intentar enviar email (no bloquear si falla)
+    let emailSent = false;
+    try {
+      await this.emailService.sendOtpEmail({
+        email: adminEmail,
+        otpCode: otp.code,
+        purpose: 'ACCOUNT_DELETION',
+        businessName: tenant.businessName,
+      });
+      emailSent = true;
+    } catch (error) {
+      console.warn('Email OTP could not be sent:', error.message);
+    }
 
     return {
-      message: 'OTP enviado al correo del administrador',
+      message: emailSent
+        ? 'OTP enviado al correo del administrador'
+        : 'OTP generado (email no configurado)',
       expiresAt: otp.expiresAt,
+      // Solo en desarrollo: mostrar código si email falló
+      ...(process.env.NODE_ENV !== 'production' && !emailSent && { otpCode: otp.code }),
     };
   }
 
