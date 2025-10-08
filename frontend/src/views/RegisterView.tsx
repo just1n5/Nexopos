@@ -27,6 +27,11 @@ export default function RegisterView() {
   const [error, setError] = useState<string | null>(null);
   const [betaKeyValid, setBetaKeyValid] = useState(false);
   const [validatingKey, setValidatingKey] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   const [formData, setFormData] = useState<RegisterFormData>({
     betaKey: '',
@@ -83,17 +88,19 @@ export default function RegisterView() {
   };
 
   const canProceedStep1 = betaKeyValid && formData.betaKey.trim().length > 0;
-  const canProceedStep2 =
+
+  const canProceedStep2 = emailVerified && formData.email.trim().length > 0;
+
+  const canProceedStep3 =
     formData.businessName.trim().length > 0 &&
     formData.nit.trim().length > 0 &&
     formData.address.trim().length > 0 &&
     formData.businessPhone.trim().length > 0 &&
     formData.businessEmail.trim().length > 0;
 
-  const canProceedStep3 =
+  const canProceedStep4 =
     formData.firstName.trim().length > 0 &&
     formData.lastName.trim().length > 0 &&
-    formData.email.trim().length > 0 &&
     formData.password.length >= 8 &&
     formData.password === formData.confirmPassword &&
     formData.documentId.trim().length > 0 &&
@@ -118,12 +125,60 @@ export default function RegisterView() {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!formData.email.trim()) {
+      setError('Por favor ingresa un email válido');
+      return;
+    }
+
+    setSendingOtp(true);
+    setError(null);
+
+    try {
+      await authService.requestEmailVerificationOtp(formData.email);
+      setOtpSent(true);
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al enviar código de verificación');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      setError('El código debe tener 6 dígitos');
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setError(null);
+
+    try {
+      await authService.verifyEmailOtp(formData.email, otpCode);
+      setEmailVerified(true);
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Código inválido o expirado');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   const nextStep = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      if (currentStep === 2) {
+        // Al regresar del paso 2, resetear verificación de email
+        setEmailVerified(false);
+        setOtpSent(false);
+        setOtpCode('');
+      }
+    }
   };
 
   return (
@@ -140,7 +195,7 @@ export default function RegisterView() {
 
           {/* Stepper */}
           <div className="flex justify-between mt-8 mb-6 px-4">
-            {[1, 2, 3].map((step) => (
+            {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex flex-col items-center flex-1">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                   currentStep > step ? 'bg-green-500 text-white' :
@@ -150,7 +205,7 @@ export default function RegisterView() {
                   {currentStep > step ? <Check className="w-5 h-5" /> : step}
                 </div>
                 <span className={`text-xs mt-2 ${currentStep >= step ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                  {step === 1 ? 'Clave Beta' : step === 2 ? 'Negocio' : 'Administrador'}
+                  {step === 1 ? 'Clave' : step === 2 ? 'Email' : step === 3 ? 'Negocio' : 'Admin'}
                 </span>
               </div>
             ))}
@@ -199,8 +254,89 @@ export default function RegisterView() {
             </div>
           )}
 
-          {/* Paso 2: Datos del Negocio */}
+          {/* Paso 2: Verificación de Email */}
           {currentStep === 2 && (
+            <div className="space-y-4">
+              <div className="col-span-2">
+                <Label htmlFor="email">Email (para iniciar sesión) *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  placeholder="tu@email.com"
+                  disabled={emailVerified}
+                />
+                {emailVerified && (
+                  <p className="text-sm text-green-600 mt-1 flex items-center">
+                    <Check className="h-4 w-4 mr-1" /> Email verificado correctamente
+                  </p>
+                )}
+              </div>
+
+              {!emailVerified && (
+                <>
+                  {!otpSent ? (
+                    <Button
+                      onClick={handleSendOtp}
+                      disabled={!formData.email.trim() || sendingOtp}
+                      className="w-full"
+                    >
+                      {sendingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Enviar Código de Verificación
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="otpCode">Código de Verificación</Label>
+                        <Input
+                          id="otpCode"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="123456"
+                          maxLength={6}
+                          className="text-center text-lg tracking-widest font-mono"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Ingresa el código de 6 dígitos enviado a {formData.email}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleVerifyOtp}
+                          disabled={otpCode.length !== 6 || verifyingOtp}
+                          className="flex-1"
+                        >
+                          {verifyingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Verificar Código
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleSendOtp}
+                          disabled={sendingOtp}
+                        >
+                          {sendingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Reenviar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={prevStep}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Atrás
+                </Button>
+                <Button onClick={nextStep} disabled={!canProceedStep2}>
+                  Continuar <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Paso 3: Datos del Negocio */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -273,15 +409,15 @@ export default function RegisterView() {
                 <Button variant="outline" onClick={prevStep}>
                   <ChevronLeft className="mr-2 h-4 w-4" /> Atrás
                 </Button>
-                <Button onClick={nextStep} disabled={!canProceedStep2}>
+                <Button onClick={nextStep} disabled={!canProceedStep3}>
                   Continuar <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Paso 3: Datos del Administrador */}
-          {currentStep === 3 && (
+          {/* Paso 4: Datos del Administrador */}
+          {currentStep === 4 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -301,17 +437,6 @@ export default function RegisterView() {
                     value={formData.lastName}
                     onChange={(e) => updateField('lastName', e.target.value)}
                     placeholder="Pérez"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <Label htmlFor="email">Email (para iniciar sesión) *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateField('email', e.target.value)}
-                    placeholder="juan.perez@gmail.com"
                   />
                 </div>
 
@@ -367,7 +492,7 @@ export default function RegisterView() {
                 </Button>
                 <Button
                   onClick={handleRegister}
-                  disabled={!canProceedStep3 || isLoading}
+                  disabled={!canProceedStep4 || isLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Crear Cuenta

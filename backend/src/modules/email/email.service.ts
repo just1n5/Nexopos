@@ -309,9 +309,18 @@ export class EmailService {
 
   async sendOtpEmail(data: OtpEmailData): Promise<void> {
     const html = this.getOtpEmailTemplate(data);
-    const actionText = data.purpose === 'ACCOUNT_DELETION' ? 'Eliminación' : 'Suspensión';
+
+    let actionText = '';
+    if (data.purpose === 'ACCOUNT_DELETION') {
+      actionText = 'Eliminación de cuenta';
+    } else if (data.purpose === 'ACCOUNT_SUSPENSION') {
+      actionText = 'Suspensión de cuenta';
+    } else if (data.purpose === 'EMAIL_VERIFICATION') {
+      actionText = 'Verificación de email';
+    }
+
     const from = this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>');
-    const subject = `🔐 Código de verificación - ${actionText} de cuenta`;
+    const subject = `🔐 Código de verificación - ${actionText}`;
 
     try {
       if (this.useSendGrid) {
@@ -341,11 +350,31 @@ export class EmailService {
   }
 
   private getOtpEmailTemplate(data: OtpEmailData): string {
-    const actionText = data.purpose === 'ACCOUNT_DELETION' ? 'eliminar' : 'suspender';
-    const actionTextCaps = data.purpose === 'ACCOUNT_DELETION' ? 'Eliminación' : 'Suspensión';
-    const bgColor = data.purpose === 'ACCOUNT_DELETION' ? '#fed7d7' : '#fef5e7';
-    const borderColor = data.purpose === 'ACCOUNT_DELETION' ? '#fc8181' : '#f6ad55';
-    const textColor = data.purpose === 'ACCOUNT_DELETION' ? '#c53030' : '#c05621';
+    let actionText = '';
+    let actionTextCaps = '';
+    let bgColor = '';
+    let borderColor = '';
+    let textColor = '';
+
+    if (data.purpose === 'ACCOUNT_DELETION') {
+      actionText = 'eliminar';
+      actionTextCaps = 'Eliminación';
+      bgColor = '#fed7d7';
+      borderColor = '#fc8181';
+      textColor = '#c53030';
+    } else if (data.purpose === 'ACCOUNT_SUSPENSION') {
+      actionText = 'suspender';
+      actionTextCaps = 'Suspensión';
+      bgColor = '#fef5e7';
+      borderColor = '#f6ad55';
+      textColor = '#c05621';
+    } else if (data.purpose === 'EMAIL_VERIFICATION') {
+      actionText = 'verificar tu correo electrónico';
+      actionTextCaps = 'Verificación de Email';
+      bgColor = '#e6f7ff';
+      borderColor = '#91d5ff';
+      textColor = '#0050b3';
+    }
 
     return `
 <!DOCTYPE html>

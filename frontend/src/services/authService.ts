@@ -56,4 +56,20 @@ export const authService = {
     });
     return data;
   },
+
+  /**
+   * Solicita OTP para verificación de email
+   */
+  async requestEmailVerificationOtp(email: string): Promise<{ message: string; expiresAt: Date }> {
+    const { data } = await axios.post(`${API_URL}/auth/verify-email/request-otp`, { email });
+    return data;
+  },
+
+  /**
+   * Verifica el código OTP de email
+   */
+  async verifyEmailOtp(email: string, otpCode: string): Promise<{ verified: boolean; message: string; email: string }> {
+    const { data } = await axios.post(`${API_URL}/auth/verify-email/verify-otp`, { email, otpCode });
+    return data;
+  },
 };
