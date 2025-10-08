@@ -16,7 +16,6 @@ export interface TenantInfo {
 export interface OtpResponse {
   message: string;
   expiresAt: string;
-  otpCode?: string; // Solo en desarrollo cuando email no está configurado
 }
 
 export interface ActionResponse {

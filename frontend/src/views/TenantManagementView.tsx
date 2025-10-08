@@ -109,20 +109,10 @@ export default function TenantManagementView() {
 
       setOtpExpiresAt(response.expiresAt);
 
-      // Si viene otpCode en la respuesta (modo desarrollo), pre-llenarlo
-      if (response.otpCode) {
-        setOtpCode(response.otpCode);
-        toast({
-          title: 'OTP generado',
-          description: `Código OTP (dev): ${response.otpCode}`,
-          duration: 10000,
-        });
-      } else {
-        toast({
-          title: 'OTP enviado',
-          description: `Se ha enviado un código de verificación a ${user.email}`,
-        });
-      }
+      toast({
+        title: 'OTP enviado',
+        description: `Se ha enviado un código de verificación a ${user.email}`,
+      });
 
       setOtpDialogOpen(true);
     } catch (err: any) {

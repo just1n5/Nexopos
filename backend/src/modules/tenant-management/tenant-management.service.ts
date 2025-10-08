@@ -64,8 +64,7 @@ export class TenantManagementService {
       tenantId,
     );
 
-    // Intentar enviar email (no bloquear si falla)
-    let emailSent = false;
+    // Enviar email OTP
     try {
       await this.emailService.sendOtpEmail({
         email: adminEmail,
@@ -73,19 +72,15 @@ export class TenantManagementService {
         purpose: 'ACCOUNT_SUSPENSION',
         businessName: tenant.businessName,
       });
-      emailSent = true;
-    } catch (error) {
-      console.warn('Email OTP could not be sent:', error.message);
-    }
 
-    return {
-      message: emailSent
-        ? 'OTP enviado al correo del administrador'
-        : 'OTP generado (email no configurado)',
-      expiresAt: otp.expiresAt,
-      // Solo en desarrollo: mostrar código si email falló
-      ...(process.env.NODE_ENV !== 'production' && !emailSent && { otpCode: otp.code }),
-    };
+      return {
+        message: 'Código OTP enviado al correo del administrador',
+        expiresAt: otp.expiresAt,
+      };
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      throw new Error('No se pudo enviar el código OTP. Verifica la configuración de email.');
+    }
   }
 
   /**
@@ -107,8 +102,7 @@ export class TenantManagementService {
       tenantId,
     );
 
-    // Intentar enviar email (no bloquear si falla)
-    let emailSent = false;
+    // Enviar email OTP
     try {
       await this.emailService.sendOtpEmail({
         email: adminEmail,
@@ -116,19 +110,15 @@ export class TenantManagementService {
         purpose: 'ACCOUNT_DELETION',
         businessName: tenant.businessName,
       });
-      emailSent = true;
-    } catch (error) {
-      console.warn('Email OTP could not be sent:', error.message);
-    }
 
-    return {
-      message: emailSent
-        ? 'OTP enviado al correo del administrador'
-        : 'OTP generado (email no configurado)',
-      expiresAt: otp.expiresAt,
-      // Solo en desarrollo: mostrar código si email falló
-      ...(process.env.NODE_ENV !== 'production' && !emailSent && { otpCode: otp.code }),
-    };
+      return {
+        message: 'Código OTP enviado al correo del administrador',
+        expiresAt: otp.expiresAt,
+      };
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      throw new Error('No se pudo enviar el código OTP. Verifica la configuración de email.');
+    }
   }
 
   /**
