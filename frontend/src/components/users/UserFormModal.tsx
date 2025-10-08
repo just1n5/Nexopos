@@ -11,6 +11,7 @@ interface UserFormModalProps {
   onSubmit: (data: CreateUserDto | UpdateUserDto) => Promise<void>
   user?: User | null
   currentUserRole: UserRole
+  users?: User[]
 }
 
 const roleDescriptions = {
@@ -19,7 +20,7 @@ const roleDescriptions = {
   [UserRole.CASHIER]: 'Operaciones de venta. Solo puede procesar ventas y manejar su caja registradora.'
 }
 
-export default function UserFormModal({ isOpen, onClose, onSubmit, user, currentUserRole }: UserFormModalProps) {
+export default function UserFormModal({ isOpen, onClose, onSubmit, user, currentUserRole, users = [] }: UserFormModalProps) {
   const [formData, setFormData] = useState<CreateUserDto | UpdateUserDto>({
     firstName: '',
     lastName: '',
@@ -106,6 +107,22 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
   const availableRoles = currentUserRole === UserRole.ADMIN
     ? [UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER]
     : [UserRole.CASHIER]
+
+  // Contar usuarios existentes por rol (excluyendo el usuario que se está editando)
+  const getUserCountByRole = (role: UserRole): number => {
+    return users.filter(u => u.role === role && u.id !== user?.id).length
+  }
+
+  const managersCount = getUserCountByRole(UserRole.MANAGER)
+  const cashiersCount = getUserCountByRole(UserRole.CASHIER)
+
+  // Determinar si un rol está disponible
+  const isRoleAvailable = (role: UserRole): boolean => {
+    if (user && user.role === role) return true // Si está editando y el rol actual es este, permitir
+    if (role === UserRole.MANAGER && managersCount >= 1) return false
+    if (role === UserRole.CASHIER && cashiersCount >= 2) return false
+    return true
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -211,35 +228,63 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
           <div>
             <h3 className="text-sm font-semibold mb-3">Rol del Sistema</h3>
             <div className="space-y-2">
-              {availableRoles.map((role) => (
-                <label
-                  key={role}
-                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    formData.role === role
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={role}
-                    checked={formData.role === role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">
-                      {role === UserRole.ADMIN && '🔴 Administrador'}
-                      {role === UserRole.MANAGER && '🟡 Manager'}
-                      {role === UserRole.CASHIER && '🟢 Cajero'}
+              {availableRoles.map((role) => {
+                const available = isRoleAvailable(role)
+                const isCurrentRole = user && user.role === role
+
+                return (
+                  <label
+                    key={role}
+                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
+                      !available && !isCurrentRole
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                        : formData.role === role
+                        ? 'border-primary bg-primary/5 cursor-pointer'
+                        : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={role}
+                      checked={formData.role === role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                      disabled={!available && !isCurrentRole}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        {role === UserRole.ADMIN && '🔴 Administrador'}
+                        {role === UserRole.MANAGER && (
+                          <>
+                            🟡 Manager
+                            <span className="text-xs font-normal text-gray-500">
+                              ({managersCount}/1)
+                            </span>
+                          </>
+                        )}
+                        {role === UserRole.CASHIER && (
+                          <>
+                            🟢 Cajero
+                            <span className="text-xs font-normal text-gray-500">
+                              ({cashiersCount}/2)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {roleDescriptions[role]}
+                      </p>
+                      {!available && !isCurrentRole && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Límite alcanzado
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {roleDescriptions[role]}
-                    </p>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                )
+              })}
             </div>
 
             {currentUserRole === UserRole.MANAGER && (

@@ -30,15 +30,41 @@ export class UsersService {
       throw new ConflictException('Email is already registered.');
     }
 
+    // Validar límites de usuarios por rol
+    const role = createUserDto.role ?? UserRole.CASHIER;
+    await this.validateUserLimits(role);
+
     const passwordHash = await bcrypt.hash(createUserDto.password, this.resolveSaltRounds());
 
     const user = this.usersRepository.create({
       ...createUserDto,
       password: passwordHash,
-      role: createUserDto.role ?? UserRole.CASHIER
+      role
     });
 
     return this.usersRepository.save(user);
+  }
+
+  private async validateUserLimits(role: UserRole): Promise<void> {
+    if (role === UserRole.MANAGER) {
+      const managersCount = await this.usersRepository.count({
+        where: { role: UserRole.MANAGER }
+      });
+
+      if (managersCount >= 1) {
+        throw new BadRequestException('Solo se puede crear 1 usuario Manager. Ya existe un Manager en el sistema.');
+      }
+    }
+
+    if (role === UserRole.CASHIER) {
+      const cashiersCount = await this.usersRepository.count({
+        where: { role: UserRole.CASHIER }
+      });
+
+      if (cashiersCount >= 2) {
+        throw new BadRequestException('Solo se pueden crear 2 usuarios Cajero. Límite alcanzado.');
+      }
+    }
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -64,12 +90,44 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
 
+    // Si se está cambiando el rol, validar límites
+    if (updateUserDto.role && updateUserDto.role !== user.role) {
+      await this.validateUserLimitsForUpdate(id, user.role, updateUserDto.role);
+    }
+
     if (updateUserDto.password) {
       user.password = await bcrypt.hash(updateUserDto.password, this.resolveSaltRounds());
     }
 
     Object.assign(user, { ...updateUserDto, password: user.password });
     return this.usersRepository.save(user);
+  }
+
+  private async validateUserLimitsForUpdate(
+    userId: string,
+    currentRole: UserRole,
+    newRole: UserRole
+  ): Promise<void> {
+    // Validar límites del nuevo rol (excluyendo el usuario actual)
+    if (newRole === UserRole.MANAGER) {
+      const managersCount = await this.usersRepository.count({
+        where: { role: UserRole.MANAGER }
+      });
+
+      if (managersCount >= 1) {
+        throw new BadRequestException('Solo se puede tener 1 usuario Manager. Ya existe un Manager en el sistema.');
+      }
+    }
+
+    if (newRole === UserRole.CASHIER) {
+      const cashiersCount = await this.usersRepository.count({
+        where: { role: UserRole.CASHIER }
+      });
+
+      if (cashiersCount >= 2) {
+        throw new BadRequestException('Solo se pueden tener 2 usuarios Cajero. Límite alcanzado.');
+      }
+    }
   }
 
   async remove(id: string): Promise<void> {

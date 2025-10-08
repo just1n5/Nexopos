@@ -689,6 +689,7 @@ export default function SettingsView() {
             onSubmit={handleCreateUser}
             user={selectedUser}
             currentUserRole={currentUser.role}
+            users={users}
           />
 
           <UserDeleteDialog
