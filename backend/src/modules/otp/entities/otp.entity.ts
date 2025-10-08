@@ -8,6 +8,7 @@ import {
 export enum OtpPurpose {
   ACCOUNT_DELETION = 'ACCOUNT_DELETION',
   ACCOUNT_SUSPENSION = 'ACCOUNT_SUSPENSION',
+  EMAIL_VERIFICATION = 'EMAIL_VERIFICATION',
 }
 
 @Entity('otp_codes')

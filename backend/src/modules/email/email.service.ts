@@ -14,7 +14,7 @@ export interface WelcomeEmailData {
 export interface OtpEmailData {
   email: string;
   otpCode: string;
-  purpose: 'ACCOUNT_DELETION' | 'ACCOUNT_SUSPENSION';
+  purpose: 'ACCOUNT_DELETION' | 'ACCOUNT_SUSPENSION' | 'EMAIL_VERIFICATION';
   businessName?: string;
 }
 

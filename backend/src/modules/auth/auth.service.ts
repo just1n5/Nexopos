@@ -9,6 +9,8 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { BetaKeysService } from '../beta-keys/beta-keys.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EmailService } from '../email/email.service';
+import { OtpService } from '../otp/otp.service';
+import { OtpPurpose } from '../otp/entities/otp.entity';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +20,7 @@ export class AuthService {
     private readonly betaKeysService: BetaKeysService,
     private readonly tenantsService: TenantsService,
     private readonly emailService: EmailService,
+    private readonly otpService: OtpService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -116,6 +119,55 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async requestEmailVerificationOtp(email: string) {
+    // Verificar que el email no esté ya registrado
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Este email ya está registrado');
+    }
+
+    // Crear OTP
+    const otp = await this.otpService.createOtp(
+      email,
+      OtpPurpose.EMAIL_VERIFICATION,
+    );
+
+    // Enviar email con OTP
+    try {
+      await this.emailService.sendOtpEmail({
+        email,
+        otpCode: otp.code,
+        purpose: 'EMAIL_VERIFICATION',
+      });
+
+      return {
+        message: 'Código de verificación enviado al correo',
+        expiresAt: otp.expiresAt,
+      };
+    } catch (error) {
+      console.error('Failed to send verification OTP email:', error);
+      throw new Error('No se pudo enviar el código de verificación. Verifica la configuración de email.');
+    }
+  }
+
+  async verifyEmailOtp(email: string, otpCode: string) {
+    try {
+      await this.otpService.verifyOtp(
+        email,
+        otpCode,
+        OtpPurpose.EMAIL_VERIFICATION,
+      );
+
+      return {
+        verified: true,
+        message: 'Email verificado correctamente',
+        email,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Código OTP inválido o expirado');
+    }
   }
 
   private generateAccessToken(user: User): string {
