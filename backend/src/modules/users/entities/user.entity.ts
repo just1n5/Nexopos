@@ -12,6 +12,7 @@ import {
 import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN', // Solo para gestión de plataforma y beta keys
   ADMIN = 'ADMIN',
   MANAGER = 'MANAGER',
   CASHIER = 'CASHIER'

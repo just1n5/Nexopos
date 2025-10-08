@@ -225,15 +225,15 @@ export default function SettingsView() {
 
   // Filtrar tabs según rol del usuario
   const allTabs = [
-    { id: 'profile', label: 'Mi Perfil', icon: UsersIcon, roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
+    { id: 'profile', label: 'Mi Perfil', icon: UsersIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CASHIER'] },
     { id: 'business', label: 'Negocio', icon: Store, roles: ['ADMIN', 'MANAGER'] },
     { id: 'dian', label: 'DIAN', icon: FileText, roles: ['ADMIN'] },
     { id: 'hardware', label: 'Hardware', icon: Printer, roles: ['ADMIN', 'MANAGER'] },
     { id: 'payments', label: 'Pagos', icon: CreditCard, roles: ['ADMIN'] },
-    { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
+    { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CASHIER'] },
     { id: 'users', label: 'Usuarios', icon: Shield, roles: ['ADMIN', 'MANAGER'] },
-    { id: 'beta-keys', label: 'Beta Keys', icon: Key, roles: ['ADMIN'], external: true, path: '/admin/beta-keys' },
-    { id: 'help', label: 'Ayuda', icon: HelpCircle, roles: ['ADMIN', 'MANAGER', 'CASHIER'] }
+    { id: 'beta-keys', label: 'Beta Keys', icon: Key, roles: ['SUPER_ADMIN'], external: true, path: '/admin/beta-keys' },
+    { id: 'help', label: 'Ayuda', icon: HelpCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CASHIER'] }
   ]
 
   const tabs = allTabs.filter(tab =>
