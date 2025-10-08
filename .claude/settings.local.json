@@ -1,22 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run start:dev:*)",
-      "Bash(npx ts-node:*)",
-      "Bash(npm run dev:*)",
-      "Bash(npm run typeorm:*)",
-      "Bash(node:*)",
-      "Bash(curl:*)",
-      "Bash(netstat:*)",
-      "Bash(findstr:*)",
-      "Bash(tasklist)",
-      "Bash(taskkill:*)",
-      "Bash(npx rimraf:*)",
-      "Bash(npm run build:*)",
-      "Bash(timeout:*)",
-      "Bash(echo $APPDATA)",
-      "Read(//c/Users/justi/AppData/Roaming/Claude/**)",
-      "Bash(npx @anthropic-ai/mcp-client-cli call render services:*)"
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix: Configurar CORS para permitir múltiples orígenes\n\nEl frontend está desplegado en múltiples dominios (nexopos-1.onrender.com,\noverbridgenet.com) y el backend estaba rechazando requests por CORS.\n\nCambios:\n- Configurada whitelist de orígenes permitidos\n- Incluye localhost para desarrollo\n- Incluye ambos dominios de Render\n- Log de advertencia para orígenes bloqueados\n- Configurados métodos y headers permitidos\n\nFixes: CORS error \"No 'Access-Control-Allow-Origin' header\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run generate:beta-keys:*)"
     ],
     "deny": [],
     "ask": []

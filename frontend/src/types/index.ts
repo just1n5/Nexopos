@@ -286,3 +286,58 @@ export interface Settings {
   currency: string
   language: string
 }
+
+// Tipos para sistema de Beta Cerrada
+export enum BusinessType {
+  TIENDA = 'Tienda',
+  SUPERMERCADO = 'Supermercado',
+  MINIMERCADO = 'Minimercado',
+  FARMACIA = 'Farmacia',
+  DROGUERIA = 'Droguería',
+  RESTAURANTE = 'Restaurante',
+  CAFETERIA = 'Cafetería',
+  PANADERIA = 'Panadería',
+  FERRETERIA = 'Ferretería',
+  PAPELERIA = 'Papelería',
+  BOUTIQUE = 'Boutique',
+  SKATESHOP = 'Skateshop',
+  DEPORTES = 'Artículos Deportivos',
+  TECNOLOGIA = 'Tecnología y Electrónica',
+  MASCOTAS = 'Tienda de Mascotas',
+  BELLEZA = 'Belleza y Cosméticos',
+  LICORES = 'Licores',
+  VARIEDADES = 'Miscelánea/Variedades',
+  OTRO = 'Otro',
+}
+
+export interface RegisterFormData {
+  // Paso 1: Beta Key
+  betaKey: string
+
+  // Paso 2: Datos del Negocio
+  businessName: string
+  nit: string
+  businessType: BusinessType
+  address: string
+  businessPhone: string
+  businessEmail: string
+
+  // Paso 3: Datos del Administrador
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  confirmPassword: string
+  documentId: string
+  phoneNumber: string
+}
+
+export interface BetaKeyValidation {
+  valid: boolean
+  message?: string
+}
+
+export interface RegisterResponse {
+  user: User
+  accessToken: string
+}

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico NexoPOS - Render</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #569cd6; margin-top: 30px; }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #252526;
+            border-left: 4px solid #0e639c;
+            border-radius: 4px;
+        }
+        .success { border-left-color: #4ec9b0; }
+        .error { border-left-color: #f48771; }
+        .warning { border-left-color: #dcdcaa; }
+        .label { color: #9cdcfe; font-weight: bold; }
+        .value { color: #ce9178; }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.ok { background: #4ec9b0; color: #000; }
+        .status.fail { background: #f48771; color: #000; }
+        .status.warn { background: #dcdcaa; color: #000; }
+        pre {
+            background: #1e1e1e;
+            border: 1px solid #3c3c3c;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1177bb; }
+        #results { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnóstico de NexoPOS en Render</h1>
+    <p>Este script verifica la conectividad y configuración de tu deployment.</p>
+
+    <button onclick="runAllTests()">▶️ Ejecutar Diagnóstico Completo</button>
+    <button onclick="clearResults()">🗑️ Limpiar Resultados</button>
+
+    <div id="results"></div>
+
+    <script>
+        const BACKEND_URL = 'https://nexopos-aaj2.onrender.com';
+        const FRONTEND_URL = 'https://nexopos-1.onrender.com';
+        const resultsDiv = document.getElementById('results');
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        function addResult(title, status, details) {
+            const statusClass = status === 'ok' ? 'success' : status === 'fail' ? 'error' : 'warning';
+            const statusLabel = status === 'ok' ? 'OK' : status === 'fail' ? 'FAIL' : 'WARN';
+
+            const html = `
+                <div class="test-item ${statusClass}">
+                    <div>
+                        <span class="label">${title}</span>
+                        <span class="status ${status}">${statusLabel}</span>
+                    </div>
+                    <div style="margin-top: 10px;">${details}</div>
+                </div>
+            `;
+            resultsDiv.innerHTML += html;
+        }
+
+        async function testBackendConnection() {
+            addResult('🔌 Conexión al Backend', 'warn', 'Testeando...');
+            try {
+                const start = Date.now();
+                const response = await fetch(`${BACKEND_URL}/api`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const time = Date.now() - start;
+
+                if (response.ok) {
+                    addResult('✅ Backend API', 'ok', `
+                        <span class="label">URL:</span> <span class="value">${BACKEND_URL}/api</span><br>
+                        <span class="label">Status:</span> <span class="value">${response.status}</span><br>
+                        <span class="label">Tiempo:</span> <span class="value">${time}ms</span><br>
+                        <span class="label">CORS:</span> <span class="value">✓ OK</span>
+                    `);
+                    return true;
+                } else {
+                    addResult('⚠️ Backend API', 'warn', `
+                        Status ${response.status}, pero respondió (puede ser normal)
+                    `);
+                    return true;
+                }
+            } catch (error) {
+                addResult('❌ Backend API', 'fail', `
+                    <span class="label">Error:</span> <span class="value">${error.message}</span><br>
+                    <span class="label">Posible causa:</span> CORS bloqueado o backend caído
+                `);
+                return false;
+            }
+        }
+
+        async function testLoginEndpoint() {
+            addResult('🔐 Endpoint de Login', 'warn', 'Testeando...');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test@test.com', password: '12345' })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 400 || response.status === 401) {
+                    addResult('✅ Login Endpoint', 'ok', `
+                        <span class="label">Status:</span> <span class="value">${response.status}</span><br>
+                        <span class="label">Validación:</span> <span class="value">✓ Funcionando</span><br>
+                        <span class="label">Respuesta:</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                    return true;
+                }
+            } catch (error) {
+                addResult('❌ Login Endpoint', 'fail', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testBrowserInfo() {
+            const extensions = await checkExtensions();
+            const info = `
+                <span class="label">User Agent:</span><br>
+                <span class="value" style="font-size: 11px;">${navigator.userAgent}</span><br><br>
+                <span class="label">JavaScript:</span> <span class="value">✓ Habilitado</span><br>
+                <span class="label">Cookies:</span> <span class="value">${navigator.cookieEnabled ? '✓' : '✗'} ${navigator.cookieEnabled ? 'Habilitadas' : 'Deshabilitadas'}</span><br>
+                <span class="label">Storage:</span> <span class="value">${typeof(Storage) !== 'undefined' ? '✓' : '✗'} ${typeof(Storage) !== 'undefined' ? 'Disponible' : 'No disponible'}</span><br>
+                <span class="label">Service Workers:</span> <span class="value">${'serviceWorker' in navigator ? '✓' : '✗'} ${('serviceWorker' in navigator) ? 'Soportado' : 'No soportado'}</span><br><br>
+                ${extensions}
+            `;
+            addResult('🌐 Información del Navegador', 'ok', info);
+        }
+
+        async function checkExtensions() {
+            // Detectar posibles extensiones que interfieren
+            const suspiciousScripts = [];
+            const scripts = document.getElementsByTagName('script');
+
+            for (let script of scripts) {
+                if (script.src && !script.src.startsWith(window.location.origin)) {
+                    const src = script.src;
+                    if (src.includes('chrome-extension') ||
+                        src.includes('moz-extension') ||
+                        src.includes('overbridgenet') ||
+                        src.includes('launchdarkly')) {
+                        suspiciousScripts.push(src);
+                    }
+                }
+            }
+
+            if (suspiciousScripts.length > 0) {
+                return `
+                    <span class="label">⚠️ Scripts de Extensiones Detectados:</span><br>
+                    <pre style="color: #dcdcaa;">${suspiciousScripts.join('\n')}</pre>
+                    <span class="value">Recomendación: Prueba en modo incógnito</span>
+                `;
+            }
+            return '<span class="label">Extensiones:</span> <span class="value">Ninguna detectada interfiriendo</span>';
+        }
+
+        async function testConsoleErrors() {
+            const errors = [];
+            const originalError = console.error;
+
+            console.error = function(...args) {
+                errors.push(args.join(' '));
+                originalError.apply(console, args);
+            };
+
+            // Esperar un poco para capturar errores
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            if (errors.length > 0) {
+                addResult('⚠️ Errores en Consola', 'warn', `
+                    <span class="label">Errores encontrados:</span>
+                    <pre>${errors.join('\n\n')}</pre>
+                `);
+            } else {
+                addResult('✅ Consola', 'ok', 'No hay errores críticos');
+            }
+
+            console.error = originalError;
+        }
+
+        async function testStorageAccess() {
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+
+                addResult('✅ Storage Access', 'ok', `
+                    <span class="label">localStorage:</span> <span class="value">✓ OK</span><br>
+                    <span class="label">sessionStorage:</span> <span class="value">✓ OK</span>
+                `);
+                return true;
+            } catch (error) {
+                addResult('❌ Storage Access', 'fail', `
+                    <span class="label">Error:</span> <span class="value">${error.message}</span><br>
+                    <span class="value">Puede estar en modo privado o cookies bloqueadas</span>
+                `);
+                return false;
+            }
+        }
+
+        async function testNetworkTab() {
+            addResult('💡 Verificación Manual Requerida', 'warn', `
+                <span class="label">Abre las DevTools:</span><br>
+                1. Presiona <span class="value">F12</span><br>
+                2. Ve a la pestaña <span class="value">Network</span><br>
+                3. Recarga la página de NexoPOS: <a href="${FRONTEND_URL}" target="_blank" style="color: #569cd6;">${FRONTEND_URL}</a><br>
+                4. Busca requests a <span class="value">${BACKEND_URL}/api</span><br>
+                5. Verifica que no haya errores CORS o 404<br><br>
+                <span class="label">También verifica la pestaña <span class="value">Console</span>:</span><br>
+                - Ignora errores de <span style="text-decoration: line-through;">overbridgenet.com</span> (son de extensiones)<br>
+                - Ignora errores de <span style="text-decoration: line-through;">LaunchDarkly</span> (son de extensiones)<br>
+                - Busca errores específicos de <span class="value">NexoPOS</span>
+            `);
+        }
+
+        async function runAllTests() {
+            clearResults();
+
+            addResult('🚀 Iniciando Diagnóstico', 'ok', `
+                <span class="label">Frontend:</span> <span class="value">${FRONTEND_URL}</span><br>
+                <span class="label">Backend:</span> <span class="value">${BACKEND_URL}</span><br>
+                <span class="label">Timestamp:</span> <span class="value">${new Date().toLocaleString()}</span>
+            `);
+
+            await testBrowserInfo();
+            await testStorageAccess();
+
+            const backendOk = await testBackendConnection();
+            if (backendOk) {
+                await testLoginEndpoint();
+            }
+
+            await testNetworkTab();
+
+            addResult('✅ Diagnóstico Completo', 'ok', `
+                <span class="label">Siguiente paso:</span><br>
+                1. Si todos los tests son OK, abre <a href="${FRONTEND_URL}" target="_blank" style="color: #569cd6;">NexoPOS</a><br>
+                2. Si no carga, presiona F12 → Console y envía el error real (no de extensiones)<br>
+                3. Si carga pero no puedes hacer login, necesitas ejecutar el seed del backend
+            `);
+        }
+
+        // Auto-ejecutar al cargar
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>

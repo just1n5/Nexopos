@@ -28,6 +28,7 @@ import RequireCashRegister from '@/components/RequireCashRegister'
 
 // Lazy load de otros componentes
 const LoginView = lazy(() => import('@/views/LoginView'))
+const RegisterView = lazy(() => import('@/views/RegisterView'))
 const InventoryView = lazy(() => import('@/views/InventoryView'))
 const CreditView = lazy(() => import('@/views/CreditView'))
 const CashRegisterView = lazy(() => import('@/views/CashRegisterView'))
@@ -337,6 +338,11 @@ export default function App() {
             {/* Ruta de login */}
             <Route path="/login" element={
               isAuthenticated ? <Navigate to="/" replace /> : <LoginView />
+            } />
+
+            {/* Ruta de registro */}
+            <Route path="/register" element={
+              isAuthenticated ? <Navigate to="/" replace /> : <RegisterView />
             } />
 
             {/* Rutas protegidas */}

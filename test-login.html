@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login - NexoPOS</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-top: 0; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Test de Login - NexoPOS</h1>
+        <p>Esta herramienta prueba el login directamente al backend de Render.</p>
+
+        <form id="loginForm">
+            <label>
+                <strong>Email:</strong>
+                <input type="email" id="email" value="admin@nexopos.co" required>
+            </label>
+
+            <label>
+                <strong>Password:</strong>
+                <input type="password" id="password" value="Admin123!" required>
+            </label>
+
+            <button type="submit">🚀 Probar Login</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://nexopos-aaj2.onrender.com/api';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<div class="info">⏳ Intentando login...</div>';
+
+            try {
+                const startTime = Date.now();
+
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const responseTime = Date.now() - startTime;
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ LOGIN EXITOSO!</strong>
+
+                            Tiempo: ${responseTime}ms
+                            Status: ${response.status}
+
+                            Usuario:
+                            - ID: ${data.user.id}
+                            - Email: ${data.user.email}
+                            - Nombre: ${data.user.firstName} ${data.user.lastName}
+                            - Rol: ${data.user.role}
+
+                            Token (primeros 50 caracteres):
+                            ${data.accessToken.substring(0, 50)}...
+
+                            ✅ El backend funciona correctamente!
+
+                            Si el login no funciona en la app principal, el problema está en:
+                            1. Caché del navegador
+                            2. Service Worker viejo
+                            3. Configuración de VITE_API_URL en el build
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ ERROR DE LOGIN</strong>
+
+                            Status: ${response.status}
+                            Tiempo: ${responseTime}ms
+
+                            Mensaje:
+                            ${JSON.stringify(data, null, 2)}
+
+                            ${response.status === 401 ? '⚠️ Credenciales incorrectas' : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ ERROR DE CONEXIÓN</strong>
+
+                        ${error.message}
+
+                        Posibles causas:
+                        - Backend caído
+                        - CORS bloqueado
+                        - Red sin conexión
+                        - URL incorrecta
+
+                        Backend URL: ${BACKEND_URL}/auth/login
+                    </div>
+                `;
+            }
+        });
+
+        // Auto-submit on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loginForm').requestSubmit();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

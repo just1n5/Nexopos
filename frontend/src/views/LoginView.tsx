@@ -159,7 +159,7 @@ export default function LoginView() {
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full" type="button" onClick={() => navigate('/register')}>
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Crear cuenta gratuita
               </Button>
