@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 export interface WelcomeEmailData {
   businessName: string;
@@ -21,6 +22,7 @@ export interface OtpEmailData {
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter;
+  private useSendGrid: boolean = false;
 
   constructor(private configService: ConfigService) {
     this.initializeTransporter();
@@ -34,11 +36,20 @@ export class EmailService {
       return;
     }
 
+    // Intentar configurar SendGrid primero
+    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    if (sendgridApiKey) {
+      sgMail.setApiKey(sendgridApiKey);
+      this.useSendGrid = true;
+      this.logger.log('Email service initialized with SendGrid');
+      return;
+    }
+
+    // Fallback a configuración SMTP tradicional
     const host = this.configService.get<string>('EMAIL_HOST');
     const port = this.configService.get<number>('EMAIL_PORT', 587);
     const user = this.configService.get<string>('EMAIL_USER');
     const pass = this.configService.get<string>('EMAIL_PASS');
-    const from = this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>');
 
     if (!host || !user || !pass) {
       this.logger.warn('Email configuration incomplete. Emails will not be sent.');
@@ -48,36 +59,42 @@ export class EmailService {
     this.transporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465, // true for 465, false for other ports
+      secure: port === 465,
       auth: {
         user,
         pass,
       },
     });
 
-    this.logger.log(`Email service initialized with host: ${host}`);
+    this.logger.log(`Email service initialized with SMTP host: ${host}`);
   }
 
   async sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
-    if (!this.transporter) {
-      this.logger.warn('Email transporter not configured. Skipping welcome email.');
-      return;
-    }
-
     const html = this.getWelcomeEmailTemplate(data);
+    const from = this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>');
 
     try {
-      const info = await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>'),
-        to: data.adminEmail,
-        subject: '¡Bienvenido a NexoPOS! 🚀',
-        html,
-      });
-
-      this.logger.log(`Welcome email sent to ${data.adminEmail}: ${info.messageId}`);
+      if (this.useSendGrid) {
+        await sgMail.send({
+          to: data.adminEmail,
+          from,
+          subject: '¡Bienvenido a NexoPOS! 🚀',
+          html,
+        });
+        this.logger.log(`Welcome email sent via SendGrid to ${data.adminEmail}`);
+      } else if (this.transporter) {
+        const info = await this.transporter.sendMail({
+          from,
+          to: data.adminEmail,
+          subject: '¡Bienvenido a NexoPOS! 🚀',
+          html,
+        });
+        this.logger.log(`Welcome email sent to ${data.adminEmail}: ${info.messageId}`);
+      } else {
+        this.logger.warn('Email service not configured. Skipping welcome email.');
+      }
     } catch (error) {
       this.logger.error(`Failed to send welcome email to ${data.adminEmail}:`, error);
-      // No lanzamos error para no bloquear el registro si falla el email
     }
   }
 
@@ -291,26 +308,35 @@ export class EmailService {
   }
 
   async sendOtpEmail(data: OtpEmailData): Promise<void> {
-    if (!this.transporter) {
-      this.logger.warn('Email transporter not configured. Skipping OTP email.');
-      return;
-    }
-
     const html = this.getOtpEmailTemplate(data);
     const actionText = data.purpose === 'ACCOUNT_DELETION' ? 'Eliminación' : 'Suspensión';
+    const from = this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>');
+    const subject = `🔐 Código de verificación - ${actionText} de cuenta`;
 
     try {
-      const info = await this.transporter.sendMail({
-        from: this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>'),
-        to: data.email,
-        subject: `🔐 Código de verificación - ${actionText} de cuenta`,
-        html,
-      });
-
-      this.logger.log(`OTP email sent to ${data.email}: ${info.messageId}`);
+      if (this.useSendGrid) {
+        await sgMail.send({
+          to: data.email,
+          from,
+          subject,
+          html,
+        });
+        this.logger.log(`OTP email sent via SendGrid to ${data.email}`);
+      } else if (this.transporter) {
+        const info = await this.transporter.sendMail({
+          from,
+          to: data.email,
+          subject,
+          html,
+        });
+        this.logger.log(`OTP email sent to ${data.email}: ${info.messageId}`);
+      } else {
+        this.logger.warn('Email service not configured. Skipping OTP email.');
+        throw new Error('Email service not configured');
+      }
     } catch (error) {
       this.logger.error(`Failed to send OTP email to ${data.email}:`, error);
-      throw error; // Lanzamos error porque el OTP es crítico
+      throw error;
     }
   }
 
@@ -442,6 +468,11 @@ export class EmailService {
   }
 
   async verifyConnection(): Promise<boolean> {
+    if (this.useSendGrid) {
+      // SendGrid no necesita verificación de conexión
+      return true;
+    }
+
     if (!this.transporter) {
       return false;
     }
