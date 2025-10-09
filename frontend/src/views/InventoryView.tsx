@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, RefreshCw, AlertCircle, X, Save, Edit } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, X, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { useBusinessStore } from '@/stores/businessStore';
 import { useToast } from '@/hooks/useToast';
 import { productsService, inventoryService, MovementType } from '@/services';
 import { canWriteInventory } from '@/lib/permissions';
+import AddProductModal, { NewProductData } from '@/components/AddProductModal';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -54,13 +55,6 @@ type InventoryRow = {
   updatedAt: Date;
 };
 
-type NewProductVariantForm = {
-  size?: string;
-  color?: string;
-  stock: string;
-  priceDelta: string;
-};
-
 type NewProductFormState = {
   name: string;
   description: string;
@@ -69,7 +63,7 @@ type NewProductFormState = {
   stock: string;
   saleType: 'unit' | 'weight';
   pricePerGram?: string;
-  variants: NewProductVariantForm[];
+  variants: [];
 };
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
@@ -112,18 +106,7 @@ export default function InventoryView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   // const [showImportModal, setShowImportModal] = useState(false);
-  
-  const [newProduct, setNewProduct] = useState<NewProductFormState>({
-    name: '',
-    description: '',
-    sku: '',
-    basePrice: '',
-    stock: '',
-    saleType: 'unit',
-    pricePerGram: '',
-    variants: []
-  });
-  
+
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] = useState<InventoryRow | null>(null);
   const [stockAdjustment, setStockAdjustment] = useState({
@@ -201,63 +184,50 @@ export default function InventoryView() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleAddProduct = async () => {
-    const trimmedName = newProduct.name.trim();
-    const trimmedSku = newProduct.sku.trim();
-    const trimmedBasePrice = newProduct.basePrice.trim();
-
+  const handleAddProduct = async (productData: NewProductData) => {
     if (!token) {
       toast({ title: 'Error', description: 'Tu sesión expiró. Inicia sesión nuevamente.', variant: 'destructive' });
-      return;
+      throw new Error('Sin token de autenticación');
     }
 
-    if (!trimmedName || !trimmedSku || !trimmedBasePrice) {
-      toast({ title: 'Error', description: 'Por favor complete los campos obligatorios', variant: 'destructive' });
-      return;
+    const trimmedName = productData.name.trim();
+    const basePriceValue = Number.parseFloat(productData.basePrice);
+    const stockValue = toSafeInteger(productData.stock);
+
+    // Determinar SKU y barcode según lo que se proporcionó
+    const sku = productData.sku?.trim() || productData.barcode?.trim() || '';
+    const barcode = productData.barcode?.trim();
+
+    const variantsPayload = [{
+      name: trimmedName,
+      sku,
+      stock: stockValue,
+      barcode: barcode || undefined
+    }];
+
+    const productPayload: any = {
+      name: trimmedName,
+      description: productData.description.trim() || undefined,
+      sku,
+      basePrice: basePriceValue,
+      saleType: productData.saleType.toUpperCase(),
+      variants: variantsPayload
+    };
+
+    if (barcode) {
+      productPayload.barcode = barcode;
     }
 
-    const basePriceValue = Number.parseFloat(trimmedBasePrice);
-    if (!Number.isFinite(basePriceValue) || basePriceValue < 0) {
-      toast({ title: 'Error', description: 'Ingrese un precio base válido.', variant: 'destructive' });
-      return;
+    if (productData.saleType === 'weight' && productData.pricePerGram) {
+      productPayload.pricePerGram = Number.parseFloat(productData.pricePerGram);
     }
 
-    if (newProduct.saleType === 'weight') {
-      const pricePerGramValue = Number.parseFloat(newProduct.pricePerGram || '');
-      if (!Number.isFinite(pricePerGramValue) || pricePerGramValue <= 0) {
-        toast({ title: 'Error', description: 'Ingrese un precio por gramo válido.', variant: 'destructive' });
-        return;
-      }
-    }
+    await productsService.createProduct(productPayload, token);
 
-    try {
-      const stockValue = toSafeInteger(newProduct.stock);
-      const variantsPayload = [{ name: trimmedName, sku: trimmedSku, stock: stockValue }];
+    toast({ title: 'Producto agregado', description: 'El producto se ha agregado exitosamente.' });
 
-      const productPayload: any = {
-        name: trimmedName,
-        description: newProduct.description.trim() || undefined,
-        sku: trimmedSku,
-        basePrice: basePriceValue,
-        saleType: newProduct.saleType.toUpperCase(),
-        variants: variantsPayload
-      };
-
-      if (newProduct.saleType === 'weight' && newProduct.pricePerGram) {
-        productPayload.pricePerGram = Number.parseFloat(newProduct.pricePerGram);
-      }
-
-      await productsService.createProduct(productPayload, token);
-
-      toast({ title: 'Producto agregado', description: 'El producto se ha agregado exitosamente.' });
-
-      setShowAddModal(false);
-      setNewProduct({ name: '', description: '', sku: '', basePrice: '', stock: '', saleType: 'unit', pricePerGram: '', variants: [] });
-      await fetchProducts();
-    } catch (error) {
-      console.error('Error al agregar el producto:', error);
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo agregar el producto', variant: 'destructive' });
-    }
+    setShowAddModal(false);
+    await fetchProducts();
   };
 
   const filteredProducts = useMemo(() => {
@@ -436,62 +406,10 @@ export default function InventoryView() {
         </Card>
 
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold">Agregar Nuevo Producto</h2>
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddModal(false)}><X className="w-5 h-5" /></Button>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nombre del Producto *</label>
-                    <Input value={newProduct.name} onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))} placeholder="Ej: Camiseta Básica" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Descripción</label>
-                    <Input value={newProduct.description} onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))} placeholder="Ej: Camiseta de algodón 100%" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">SKU *</label>
-                      <Input value={newProduct.sku} onChange={(e) => setNewProduct(prev => ({ ...prev, sku: e.target.value }))} placeholder="Ej: CAM001" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Precio Base *</label>
-                      <Input type="number" value={newProduct.basePrice} onChange={(e) => setNewProduct(prev => ({ ...prev, basePrice: e.target.value }))} placeholder="25000" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Tipo de Venta *</label>
-                    <select value={newProduct.saleType} onChange={(e) => setNewProduct(prev => ({ ...prev, saleType: e.target.value as 'unit' | 'weight' }))} className="w-full px-3 py-2 border rounded-md">
-                      <option value="unit">Por Unidad</option>
-                      <option value="weight">Por Peso (gramos)</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {newProduct.saleType === 'unit' ? 'El producto se vende por unidades completas' : 'El producto se vende por peso (frutas, verduras, granos, etc.)'}
-                    </p>
-                  </div>
-                  {newProduct.saleType === 'weight' && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Precio por Gramo *</label>
-                      <Input type="number" step="0.01" value={newProduct.pricePerGram} onChange={(e) => setNewProduct(prev => ({ ...prev, pricePerGram: e.target.value }))} placeholder="Ej: 15.50" />
-                      <p className="text-xs text-gray-500 mt-1">Precio por gramo. Ej: Si 1kg cuesta $15,500, ingrese 15.5</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{newProduct.saleType === 'weight' ? 'Stock Inicial (gramos)' : 'Stock Inicial'}</label>
-                    <Input type="number" min="0" step={newProduct.saleType === 'weight' ? '0.001' : '1'} value={newProduct.stock} onChange={(e) => setNewProduct(prev => ({ ...prev, stock: e.target.value }))} placeholder={newProduct.saleType === 'weight' ? '1000 (1kg = 1000g)' : '50'} />
-                    {newProduct.saleType === 'weight' && <p className="text-xs text-gray-500 mt-1">Ingrese el stock en gramos. Ej: 5kg = 5000g</p>}
-                  </div>
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button onClick={handleAddProduct} className="flex-1"><Save className="w-4 h-4 mr-2" />Guardar Producto</Button>
-                    <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancelar</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AddProductModal
+            onClose={() => setShowAddModal(false)}
+            onSave={handleAddProduct}
+          />
         )}
 
         {showStockModal && selectedProductForStock && (
