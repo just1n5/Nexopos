@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Camera, Keyboard, CheckCircle, AlertCircle, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   }, [])
 
   // Iniciar escáner de códigos de barras
-  const startScanner = useCallback(async () => {
+  const startScanner = async () => {
     // Evitar múltiples inicializaciones simultáneas
     if (isInitializing || isScanning) {
       console.log('Scanner ya está inicializando o escaneando, saltando...')
@@ -176,10 +176,10 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         variant: "destructive"
       })
     }
-  }, [hasCamera, lastScannedCode, onScan, onClose, toast, isScanning, isInitializing])
+  }
 
   // Detener escáner
-  const stopScanner = useCallback(async () => {
+  const stopScanner = async () => {
     if (html5QrcodeRef.current) {
       try {
         const state = html5QrcodeRef.current.getState()
@@ -198,22 +198,23 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         setIsInitializing(false)
       }
     }
-  }, [])
+  }
 
   // Cambiar modo
   useEffect(() => {
     if (mode === 'camera') {
+      // Iniciar scanner cuando se cambia a modo cámara
       startScanner()
-    } else {
-      stopScanner()
     }
 
     return () => {
+      // Limpiar cuando se desmonta o cambia el modo
       if (mode === 'camera') {
         stopScanner()
       }
     }
-  }, [mode, startScanner, stopScanner])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode])
 
   // Limpiar al desmontar
   useEffect(() => {
