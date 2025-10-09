@@ -114,21 +114,28 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
         // Detener escáner y enviar código
         setTimeout(async () => {
-          if (html5QrcodeRef.current) {
-            try {
+          try {
+            if (html5QrcodeRef.current) {
               const state = html5QrcodeRef.current.getState()
+              console.log('Estado del scanner antes de detener:', state)
               if (state === 2) { // 2 = SCANNING
+                console.log('Deteniendo scanner después de detección...')
                 await html5QrcodeRef.current.stop()
+                console.log('Scanner detenido después de detección')
               }
-              setIsScanning(false)
-              setIsInitializing(false)
-            } catch (err) {
-              console.error('Error al detener el escáner:', err)
             }
+            setIsScanning(false)
+            setIsInitializing(false)
+          } catch (err) {
+            console.log('Error al detener (esperado si ya se detuvo):', err)
+            setIsScanning(false)
+            setIsInitializing(false)
+          } finally {
+            // Siempre enviar el código y cerrar
+            onScan(decodedText)
+            onClose()
           }
-          onScan(decodedText)
-          onClose()
-        }, 500)
+        }, 300)
       }
 
       console.log('Iniciando scanner...')
