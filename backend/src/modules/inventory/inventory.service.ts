@@ -178,15 +178,26 @@ export class InventoryService {
   }
 
   async getLowStockProducts(tenantId: string, warehouseId?: string): Promise<InventoryStock[]> {
+    // Get all product IDs for this tenant
+    const productIds = await this.dataSource.query(
+      'SELECT id FROM products WHERE "tenantId" = $1',
+      [tenantId]
+    );
+
+    const productIdList = productIds.map((p: any) => p.id);
+
+    if (productIdList.length === 0) {
+      return [];
+    }
+
     const query = this.stockRepository.createQueryBuilder('stock')
-      .innerJoin('products', 'product', 'stock."productId" = product.id')
       .where('stock.status IN (:...statuses)', {
         statuses: [StockStatus.LOW_STOCK, StockStatus.OUT_OF_STOCK]
       })
-      .andWhere('product."tenantId" = :tenantId', { tenantId });
+      .andWhere('stock.productId IN (:...productIds)', { productIds: productIdList });
 
     if (warehouseId) {
-      query.andWhere('stock."warehouseId" = :warehouseId', { warehouseId });
+      query.andWhere('stock.warehouseId = :warehouseId', { warehouseId });
     }
 
     return query.getMany();
@@ -245,12 +256,32 @@ export class InventoryService {
   }
 
   async getStockValuation(tenantId: string, warehouseId?: string): Promise<any> {
+    // Get all product IDs for this tenant
+    const productIds = await this.dataSource.query(
+      'SELECT id FROM products WHERE "tenantId" = $1',
+      [tenantId]
+    );
+
+    const productIdList = productIds.map((p: any) => p.id);
+
+    if (productIdList.length === 0) {
+      return {
+        totalValue: 0,
+        totalItems: 0,
+        totalProducts: 0,
+        byStatus: {
+          inStock: 0,
+          lowStock: 0,
+          outOfStock: 0
+        }
+      };
+    }
+
     const query = this.stockRepository.createQueryBuilder('stock')
-      .innerJoin('products', 'product', 'stock."productId" = product.id')
-      .where('product."tenantId" = :tenantId', { tenantId });
+      .where('stock.productId IN (:...productIds)', { productIds: productIdList });
 
     if (warehouseId) {
-      query.andWhere('stock."warehouseId" = :warehouseId', { warehouseId });
+      query.andWhere('stock.warehouseId = :warehouseId', { warehouseId });
     }
 
     const stocks = await query.getMany();
