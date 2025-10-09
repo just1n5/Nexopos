@@ -3,11 +3,14 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn
 } from 'typeorm';
 import { ProductVariant } from './product-variant.entity';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum ProductStatus {
   ACTIVE = 'ACTIVE',
@@ -21,6 +24,7 @@ export enum ProductSaleType {
 }
 
 @Entity('products')
+@Index(['tenantId', 'sku'], { unique: true }) // SKU único por tenant
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -31,7 +35,6 @@ export class Product {
   @Column({ length: 500, nullable: true })
   description?: string;
 
-  @Index({ unique: true })
   @Column({ length: 80 })
   sku: string;
 
@@ -51,13 +54,22 @@ export class Product {
   saleType: ProductSaleType;
 
   // Precio por gramo (solo para productos vendidos por peso)
-  @Column('decimal', { 
+  @Column('decimal', {
     name: 'price_per_gram',
-    precision: 12, 
-    scale: 4, 
-    nullable: true 
+    precision: 12,
+    scale: 4,
+    nullable: true
   })
   pricePerGram?: number;
+
+  // Multi-tenancy: cada producto pertenece a un tenant específico
+  @Index()
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenantId' })
+  tenant: Tenant;
 
   @OneToMany(() => ProductVariant, (variant) => variant.product, {
     cascade: true,

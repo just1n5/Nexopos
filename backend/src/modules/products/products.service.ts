@@ -22,9 +22,10 @@ export class ProductsService {
     private readonly inventoryService: InventoryService
   ) {}
 
-  async create(createProductDto: CreateProductDto): Promise<Product> {
+  async create(createProductDto: CreateProductDto, tenantId: string): Promise<Product> {
     const product = this.productsRepository.create({
       ...createProductDto,
+      tenantId,
       variants: createProductDto.variants?.map((variant) => this.variantsRepository.create(variant)) ?? []
     });
 
@@ -79,8 +80,9 @@ export class ProductsService {
     return savedProduct;
   }
 
-  async findAll(): Promise<ProductResponseDto[]> {
+  async findAll(tenantId: string): Promise<ProductResponseDto[]> {
     const products = await this.productsRepository.find({
+      where: { tenantId },
       relations: ['variants'],
       order: { name: 'ASC' },
     });
@@ -130,16 +132,16 @@ export class ProductsService {
     });
   }
 
-  async findOne(id: string): Promise<Product> {
-    const product = await this.productsRepository.findOne({ where: { id } });
+  async findOne(id: string, tenantId: string): Promise<Product> {
+    const product = await this.productsRepository.findOne({ where: { id, tenantId } });
     if (!product) {
       throw new NotFoundException('Product not found.');
     }
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
-    const product = await this.productsRepository.findOne({ where: { id } });
+  async update(id: string, updateProductDto: UpdateProductDto, tenantId: string): Promise<Product> {
+    const product = await this.productsRepository.findOne({ where: { id, tenantId } });
     if (!product) {
       throw new NotFoundException('Product not found.');
     }
@@ -154,8 +156,8 @@ export class ProductsService {
     return this.productsRepository.save(product);
   }
 
-  async remove(id: string): Promise<void> {
-    const product = await this.productsRepository.findOne({ where: { id } });
+  async remove(id: string, tenantId: string): Promise<void> {
+    const product = await this.productsRepository.findOne({ where: { id, tenantId } });
     if (!product) {
       throw new NotFoundException('Product not found.');
     }
