@@ -86,7 +86,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             Html5QrcodeSupportedFormats.UPC_E,
             Html5QrcodeSupportedFormats.QR_CODE,
           ],
-          verbose: false
+          verbose: true // Activar verbose para debugging
         })
       }
 
@@ -135,10 +135,19 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       await html5QrcodeRef.current.start(
         { facingMode: 'environment' },
         {
-          fps: 30, // Aumentado de 10 a 30 para mejor detección
-          qrbox: { width: 300, height: 150 },
-          aspectRatio: 16/9,
-          disableFlip: false // Permitir flip para mejor detección
+          fps: 20, // Balance entre rendimiento y detección
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            // Área de escaneo más grande y adaptativa
+            const minEdgePercentage = 0.7 // 70% del área visible
+            const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
+            const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
+            return {
+              width: qrboxSize,
+              height: Math.floor(qrboxSize * 0.5) // Proporción 2:1 para códigos de barras
+            }
+          },
+          aspectRatio: 1.777778, // 16:9
+          disableFlip: false
         },
         qrCodeSuccessCallback,
         () => {
