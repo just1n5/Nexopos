@@ -51,7 +51,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     try {
       setCameraError(null)
 
+      // Primero solicitar permisos explícitamente
+      console.log('Solicitando permisos de cámara...')
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        })
+        console.log('Permisos concedidos, deteniendo stream de prueba')
+        // Detener el stream de prueba
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permError) {
+        console.error('Error al solicitar permisos:', permError)
+        throw new Error('No se pudieron obtener permisos de cámara')
+      }
+
       if (!html5QrcodeRef.current) {
+        console.log('Creando instancia de Html5Qrcode...')
         html5QrcodeRef.current = new Html5Qrcode(scannerDivId, {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
@@ -62,11 +77,12 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             Html5QrcodeSupportedFormats.UPC_E,
             Html5QrcodeSupportedFormats.QR_CODE,
           ],
-          verbose: false
+          verbose: true
         })
       }
 
       const qrCodeSuccessCallback = (decodedText: string) => {
+        console.log('Código detectado:', decodedText)
         // Evitar escaneos duplicados
         if (decodedText === lastScannedCode) {
           return
@@ -89,12 +105,20 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
         // Detener escáner y enviar código
         setTimeout(async () => {
-          await stopScanner()
+          if (html5QrcodeRef.current && isScanning) {
+            try {
+              await html5QrcodeRef.current.stop()
+              setIsScanning(false)
+            } catch (err) {
+              console.error('Error al detener el escáner:', err)
+            }
+          }
           onScan(decodedText)
           onClose()
         }, 500)
       }
 
+      console.log('Iniciando scanner...')
       await html5QrcodeRef.current.start(
         { facingMode: 'environment' },
         {
@@ -106,19 +130,34 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         undefined
       )
 
+      console.log('Scanner iniciado exitosamente')
       setIsScanning(true)
     } catch (error: any) {
       console.error('Error al iniciar el escáner:', error)
-      setCameraError('No se pudo acceder a la cámara. Verifica los permisos.')
+      console.error('Error detallado:', error.message, error.name, error.stack)
+
+      let errorMessage = 'No se pudo acceder a la cámara.'
+
+      if (error.message?.includes('Permission denied') || error.name === 'NotAllowedError') {
+        errorMessage = 'Permisos de cámara denegados. Por favor, permite el acceso en tu navegador.'
+      } else if (error.message?.includes('NotFoundError') || error.name === 'NotFoundError') {
+        errorMessage = 'No se encontró ninguna cámara en este dispositivo.'
+      } else if (error.message?.includes('NotReadableError') || error.name === 'NotReadableError') {
+        errorMessage = 'La cámara está siendo usada por otra aplicación.'
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`
+      }
+
+      setCameraError(errorMessage)
       setMode('manual')
 
       toast({
         title: "Error al acceder a la cámara",
-        description: "Por favor, verifica los permisos de la cámara en tu navegador",
+        description: errorMessage,
         variant: "destructive"
       })
     }
-  }, [hasCamera, lastScannedCode, onScan, onClose, toast])
+  }, [hasCamera, lastScannedCode, onScan, onClose, toast, isScanning])
 
   // Detener escáner
   const stopScanner = useCallback(async () => {
