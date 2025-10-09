@@ -244,9 +244,12 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     }
 
     return () => {
-      // Limpiar cuando se desmonta o cambia el modo
-      if (mode === 'camera') {
-        stopScanner()
+      // Limpiar solo si el modo era camera
+      if (mode === 'camera' && html5QrcodeRef.current) {
+        const state = html5QrcodeRef.current.getState()
+        if (state === 2) { // Solo si está SCANNING
+          stopScanner()
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,8 +259,15 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   useEffect(() => {
     return () => {
       if (html5QrcodeRef.current) {
-        html5QrcodeRef.current.stop()
-          .catch((err) => console.error('Error al limpiar escáner:', err))
+        try {
+          const state = html5QrcodeRef.current.getState()
+          if (state === 2) { // Solo si está SCANNING
+            html5QrcodeRef.current.stop()
+              .catch((err) => console.log('Error al limpiar escáner (esperado):', err))
+          }
+        } catch (err) {
+          console.log('Error al verificar estado en cleanup:', err)
+        }
       }
     }
   }, [])
