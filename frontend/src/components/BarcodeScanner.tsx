@@ -25,7 +25,6 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
   const scannerDivId = 'barcode-scanner-reader'
   const { toast } = useToast()
-  const detectionCountRef = useRef<{ [key: string]: number }>({})
   const processingRef = useRef(false)
 
   // Verificar si hay cámara disponible
@@ -60,8 +59,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     setIsInitializing(true)
 
     try {
-      // Resetear contadores de detección
-      detectionCountRef.current = {}
+      // Resetear estado de procesamiento
       processingRef.current = false
 
       setCameraError(null)
@@ -97,75 +95,61 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       }
 
       const qrCodeSuccessCallback = (decodedText: string) => {
+        console.log('Código detectado:', decodedText)
+
         // Evitar procesar si ya estamos procesando un código
         if (processingRef.current) {
           console.log('Ya procesando un código, ignorando...')
           return
         }
 
-        // Sistema de confirmación: requiere 2 detecciones del mismo código
-        if (!detectionCountRef.current[decodedText]) {
-          detectionCountRef.current[decodedText] = 1
-          console.log(`Código detectado 1/2: ${decodedText}`)
+        // Evitar escaneos duplicados del mismo código
+        if (decodedText === lastScannedCode) {
+          console.log('Código ya procesado anteriormente, ignorando')
           return
         }
 
-        detectionCountRef.current[decodedText]++
+        // Marcar como procesando
+        processingRef.current = true
+        setLastScannedCode(decodedText)
+        setScanSuccess(true)
 
-        // Si es la segunda detección, procesar
-        if (detectionCountRef.current[decodedText] >= 2) {
-          console.log(`Código confirmado (${detectionCountRef.current[decodedText]}/2):`, decodedText)
-
-          // Marcar como procesando
-          processingRef.current = true
-
-          // Evitar escaneos duplicados del mismo código
-          if (decodedText === lastScannedCode) {
-            console.log('Código ya procesado anteriormente, ignorando')
-            processingRef.current = false
-            return
-          }
-
-          setLastScannedCode(decodedText)
-          setScanSuccess(true)
-
-          // Vibrar si está disponible
-          if ('vibrate' in navigator) {
-            navigator.vibrate(200)
-          }
-
-          // Mostrar éxito visual
-          toast({
-            title: "✓ Código detectado",
-            description: `${decodedText}`,
-            variant: "default" as any
-          })
-
-          // Detener escáner y enviar código
-          setTimeout(async () => {
-            try {
-              if (html5QrcodeRef.current) {
-                const state = html5QrcodeRef.current.getState()
-                console.log('Estado del scanner antes de detener:', state)
-                if (state === 2) { // 2 = SCANNING
-                  console.log('Deteniendo scanner después de detección...')
-                  await html5QrcodeRef.current.stop()
-                  console.log('Scanner detenido después de detección')
-                }
-              }
-              setIsScanning(false)
-              setIsInitializing(false)
-            } catch (err) {
-              console.log('Error al detener (esperado si ya se detuvo):', err)
-              setIsScanning(false)
-              setIsInitializing(false)
-            } finally {
-              // Siempre enviar el código y cerrar
-              onScan(decodedText)
-              onClose()
-            }
-          }, 300)
+        // Vibrar si está disponible
+        if ('vibrate' in navigator) {
+          navigator.vibrate(200)
         }
+
+        // Mostrar éxito visual
+        toast({
+          title: "✓ Código detectado",
+          description: `${decodedText}`,
+          variant: "default" as any
+        })
+
+        // Detener escáner y enviar código
+        setTimeout(async () => {
+          try {
+            if (html5QrcodeRef.current) {
+              const state = html5QrcodeRef.current.getState()
+              console.log('Estado del scanner antes de detener:', state)
+              if (state === 2) { // 2 = SCANNING
+                console.log('Deteniendo scanner después de detección...')
+                await html5QrcodeRef.current.stop()
+                console.log('Scanner detenido después de detección')
+              }
+            }
+            setIsScanning(false)
+            setIsInitializing(false)
+          } catch (err) {
+            console.log('Error al detener (esperado si ya se detuvo):', err)
+            setIsScanning(false)
+            setIsInitializing(false)
+          } finally {
+            // Siempre enviar el código y cerrar
+            onScan(decodedText)
+            onClose()
+          }
+        }, 300)
       }
 
       console.log('Iniciando scanner...')
