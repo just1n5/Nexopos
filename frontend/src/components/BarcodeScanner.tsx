@@ -135,12 +135,16 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       await html5QrcodeRef.current.start(
         { facingMode: 'environment' },
         {
-          fps: 10,
+          fps: 30, // Aumentado de 10 a 30 para mejor detección
           qrbox: { width: 300, height: 150 },
-          aspectRatio: 16/9
+          aspectRatio: 16/9,
+          disableFlip: false // Permitir flip para mejor detección
         },
         qrCodeSuccessCallback,
-        undefined
+        () => {
+          // Error callback - no hacer nada, errores normales durante escaneo
+          // Solo log si es necesario para debugging
+        }
       )
 
       console.log('Scanner iniciado exitosamente')
@@ -185,6 +189,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         const state = html5QrcodeRef.current.getState()
         if (state === 2) { // 2 = SCANNING
           console.log('Deteniendo scanner...')
+          // Pequeño delay para evitar transición mientras ya está en transición
+          await new Promise(resolve => setTimeout(resolve, 100))
           await html5QrcodeRef.current.stop()
           console.log('Scanner detenido exitosamente')
         } else {
@@ -192,8 +198,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         }
         setIsScanning(false)
         setIsInitializing(false)
-      } catch (error) {
-        console.error('Error al detener el escáner:', error)
+      } catch (error: any) {
+        // Si el error es por transición, esperar y reintentar
+        if (error.message?.includes('transition')) {
+          console.log('Scanner en transición, esperando...')
+          await new Promise(resolve => setTimeout(resolve, 300))
+          try {
+            const state = html5QrcodeRef.current.getState()
+            if (state === 2) {
+              await html5QrcodeRef.current.stop()
+            }
+          } catch (retryError) {
+            console.error('Error en reintento al detener el escáner:', retryError)
+          }
+        } else {
+          console.error('Error al detener el escáner:', error)
+        }
         setIsScanning(false)
         setIsInitializing(false)
       }
