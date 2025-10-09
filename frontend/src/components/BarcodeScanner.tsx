@@ -145,7 +145,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         stopScanner()
       }
     }
-  }, [mode])
+  }, [mode, startScanner, stopScanner])
 
   // Limpiar al desmontar
   useEffect(() => {
@@ -283,12 +283,30 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                       className="w-full aspect-video"
                     />
 
+                    {/* Indicador de cámara activa */}
+                    {isScanning && !scanSuccess && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute top-4 right-4 z-10"
+                      >
+                        <div className="flex items-center gap-2 bg-green-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+                          <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="w-2 h-2 bg-white rounded-full"
+                          />
+                          <span className="text-xs font-medium">Cámara Activa</span>
+                        </div>
+                      </motion.div>
+                    )}
+
                     {/* Overlay de éxito */}
                     {scanSuccess && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-0 bg-green-500/20 backdrop-blur-sm flex items-center justify-center"
+                        className="absolute inset-0 bg-green-500/20 backdrop-blur-sm flex items-center justify-center z-10"
                       >
                         <div className="bg-white rounded-full p-4 shadow-2xl">
                           <CheckCircle className="w-12 h-12 text-green-500" />
@@ -296,24 +314,53 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                       </motion.div>
                     )}
 
-                    {/* Mensaje de escaneo */}
+                    {/* Guía de escaneo animada */}
                     {isScanning && !scanSuccess && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute bottom-4 left-0 right-0 px-4"
-                      >
-                        <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg mx-auto max-w-xs">
-                          <p className="text-sm font-medium text-center text-gray-800">
-                            📷 Enfoca el código de barras
-                          </p>
-                        </div>
-                      </motion.div>
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+                        >
+                          {/* Marco de guía */}
+                          <div className="relative w-64 h-32">
+                            {/* Esquinas del marco */}
+                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
+
+                            {/* Línea de escaneo animada */}
+                            <motion.div
+                              animate={{ y: [0, 120, 0] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                              className="absolute left-0 right-0 h-0.5 bg-primary shadow-lg"
+                              style={{ top: 0 }}
+                            />
+                          </div>
+                        </motion.div>
+
+                        {/* Mensaje de instrucción */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute bottom-4 left-0 right-0 px-4 z-10"
+                        >
+                          <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg mx-auto max-w-xs">
+                            <p className="text-sm font-medium text-center text-gray-800">
+                              📷 Coloca el código dentro del marco
+                            </p>
+                            <p className="text-xs text-center text-gray-600 mt-1">
+                              Asegúrate de tener buena iluminación
+                            </p>
+                          </div>
+                        </motion.div>
+                      </>
                     )}
 
                     {/* Error de cámara */}
                     {cameraError && (
-                      <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-6">
+                      <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-6 z-10">
                         <div className="text-center">
                           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                           <p className="text-white text-sm">{cameraError}</p>
