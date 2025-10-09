@@ -28,7 +28,7 @@ export class AuthService {
    * Registro completo de nueva organización + usuario admin
    * Se ejecuta en transacción para garantizar consistencia
    */
-  async register(registerDto: RegisterDto): Promise<{ user: User; accessToken: string }> {
+  async register(registerDto: RegisterDto): Promise<{ user: User; tenant: any; accessToken: string }> {
     // Validar beta key
     const betaKeyValidation = await this.betaKeysService.validateBetaKey(registerDto.betaKey);
     if (!betaKeyValidation.valid) {
@@ -91,7 +91,7 @@ export class AuthService {
         console.error('Failed to send welcome email:', err);
       });
 
-      return { user: safeUser, accessToken };
+      return { user: safeUser, tenant, accessToken };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -100,11 +100,18 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto): Promise<{ user: User; accessToken: string }> {
+  async login(loginDto: LoginDto): Promise<{ user: User; tenant: any; accessToken: string }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     const safeUser = await this.usersService.findById(user.id);
     const accessToken = this.generateAccessToken(safeUser);
-    return { user: safeUser, accessToken };
+
+    // Obtener información del tenant
+    let tenant = null;
+    if (safeUser.tenantId) {
+      tenant = await this.tenantsService.findOne(safeUser.tenantId);
+    }
+
+    return { user: safeUser, tenant, accessToken };
   }
 
   private async validateUser(email: string, password: string): Promise<User> {

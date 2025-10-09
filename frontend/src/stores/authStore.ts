@@ -33,8 +33,21 @@ type ApiUser = {
   phone?: string;
 };
 
+type ApiTenant = {
+  id: string;
+  businessName: string;
+  nit: string;
+  businessType: string;
+  address: string;
+  phone: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type ApiLoginResponse = {
   user: ApiUser;
+  tenant?: ApiTenant | null;
   accessToken: string;
 };
 
@@ -71,6 +84,18 @@ const toUser = (payload: ApiUser): User => ({
   isActive: payload.isActive,
   createdAt: new Date(payload.createdAt),
   updatedAt: new Date(payload.updatedAt),
+});
+
+const toBusiness = (payload: ApiTenant): Business => ({
+  id: payload.id,
+  name: payload.businessName,
+  nit: payload.nit,
+  address: payload.address,
+  phone: payload.phone,
+  email: payload.email,
+  createdAt: new Date(payload.createdAt),
+  updatedAt: new Date(payload.updatedAt),
+  dianResolution: undefined,
 });
 
 const createDefaultBusiness = (): Business => ({
@@ -155,10 +180,11 @@ export const useAuthStore = create<AuthState>()(
 
             const payload: ApiLoginResponse = await response.json();
             const user = toUser(payload.user);
+            const business = payload.tenant ? toBusiness(payload.tenant) : createDefaultBusiness();
 
             set({
               user,
-              business: createDefaultBusiness(),
+              business,
               token: payload.accessToken,
               isAuthenticated: true,
               isLoading: false,
