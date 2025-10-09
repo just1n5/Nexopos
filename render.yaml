@@ -46,24 +46,20 @@ services:
       - key: BCRYPT_SALT_ROUNDS
         value: 12
 
-  # Frontend (React + Vite)
+  # Frontend (React + Vite + Express)
   - type: web
     name: nexopos-frontend
-    runtime: static
-    env: static
+    runtime: node
+    env: node
     region: oregon
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: cd frontend && npm start
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
       - key: VITE_API_URL
         value: https://nexopos-aaj2.onrender.com/api
       - key: VITE_ENV
