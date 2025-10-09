@@ -439,11 +439,11 @@ export default function POSView() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* Panel Izquierdo - Catálogo de Productos */}
-      <div className={`flex-1 flex flex-col ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
+      <div className={`flex-1 flex flex-col h-full ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header de busqueda y categorias */}
-        <div className="bg-white border-b p-4 space-y-4">
+        <div className="bg-white border-b p-4 space-y-4 flex-shrink-0">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -541,9 +541,9 @@ export default function POSView() {
       </div>
 
       {/* Panel Derecho - Carrito de Compras */}
-      <div className={`w-full lg:w-[450px] bg-white border-l flex flex-col ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
+      <div className={`w-full lg:w-[450px] bg-white border-l flex flex-col h-full ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header del carrito */}
-        <div className="px-3 py-2 border-b bg-primary text-white">
+        <div className="px-3 py-2 border-b bg-primary text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isMobileCartOpen && (
@@ -567,7 +567,7 @@ export default function POSView() {
 
         {/* Seccion de cliente */}
         {cart.length > 0 && (
-          <div className="border-b">
+          <div className="border-b flex-shrink-0">
             <Button
               variant="ghost"
               className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-gray-50"
@@ -678,7 +678,7 @@ export default function POSView() {
         </div>
 
         {/* Resumen y acciones */}
-        <div className="border-t p-2.5 space-y-2.5">
+        <div className="border-t p-2.5 space-y-2.5 flex-shrink-0">
           {/* Totales */}
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
