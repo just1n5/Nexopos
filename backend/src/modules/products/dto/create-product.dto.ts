@@ -28,6 +28,11 @@ export class CreateProductDto {
   @MaxLength(80)
   sku: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  barcode?: string;
+
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

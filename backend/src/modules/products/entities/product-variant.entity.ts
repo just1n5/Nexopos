@@ -21,6 +21,9 @@ export class ProductVariant {
   @Column({ length: 80 })
   sku: string;
 
+  @Column({ length: 80, nullable: true })
+  barcode?: string;
+
   @Column({ length: 40, nullable: true })
   size?: string;
 

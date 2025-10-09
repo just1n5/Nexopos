@@ -14,6 +14,11 @@ export class CreateProductVariantDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(80)
+  barcode?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(40)
   size?: string;
 

@@ -38,6 +38,9 @@ export class Product {
   @Column({ length: 80 })
   sku: string;
 
+  @Column({ length: 80, nullable: true })
+  barcode?: string;
+
   @Column('decimal', { precision: 12, scale: 2 })
   basePrice: number;
 
