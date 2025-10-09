@@ -606,7 +606,7 @@ export default function POSView() {
         {/* Lista de items del carrito */}
         <div className="flex-1 overflow-auto p-2">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
               <ShoppingCart className="w-10 h-10 mb-1.5" />
               <p className="text-sm font-medium">Carrito vacio</p>
               <p className="text-xs">Agrega productos</p>
