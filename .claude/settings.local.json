@@ -10,7 +10,10 @@
       "Bash(DB_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node add-email-verification-enum.js)",
       "Bash(DB_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node add-tenant-to-products.js)",
       "Bash(DB_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node add-tenant-to-customers.js)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix: Corregir errores de build en AddProductModal\n\nCambios realizados:\n- Eliminado código duplicado del scanner embebido\n- Reemplazado con componente BarcodeScanner existente\n- Removidos imports no utilizados: useRef, Keyboard, AlertCircle, Badge\n- Removidas variables no utilizadas: html5QrcodeRef, scannerDivId, isScanning\n- Simplificadas funciones del scanner a un solo handler: handleBarcodeScanned\n\nBeneficios:\n- Reutilización del componente BarcodeScanner ya existente\n- Código más limpio y mantenible\n- Sin duplicación de lógica del scanner\n- Build de producción exitoso\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

@@ -1,13 +1,12 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Save, Camera, Keyboard, Package, DollarSign, Hash, Barcode, CheckCircle2, AlertCircle } from 'lucide-react'
+import { X, Save, Camera, Package, DollarSign, Hash, Barcode, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/useToast'
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import BarcodeScanner from './BarcodeScanner'
 
 interface AddProductModalProps {
   onClose: () => void
@@ -41,10 +40,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
   const [identifierType, setIdentifierType] = useState<IdentifierType>('both')
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
-  const [isScanning, setIsScanning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
-  const scannerDivId = 'product-barcode-scanner'
   const { toast } = useToast()
 
   const updateField = (field: keyof NewProductData, value: string) => {
@@ -70,72 +66,15 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     return true
   }
 
-  // Iniciar escáner
-  const startBarcodeScanner = async () => {
-    try {
-      if (!html5QrcodeRef.current) {
-        html5QrcodeRef.current = new Html5Qrcode(scannerDivId, {
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-          ],
-          verbose: false
-        })
-      }
-
-      const onScanSuccess = (decodedText: string) => {
-        updateField('barcode', decodedText)
-
-        if ('vibrate' in navigator) {
-          navigator.vibrate(200)
-        }
-
-        toast({
-          title: "✓ Código escaneado",
-          description: decodedText,
-          variant: "default" as any
-        })
-
-        stopBarcodeScanner()
-        setShowBarcodeScanner(false)
-      }
-
-      await html5QrcodeRef.current.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 300, height: 150 }
-        },
-        onScanSuccess,
-        undefined
-      )
-
-      setIsScanning(true)
-    } catch (error) {
-      console.error('Error al iniciar escáner:', error)
-      toast({
-        title: "Error",
-        description: "No se pudo acceder a la cámara",
-        variant: "destructive"
-      })
-      setShowBarcodeScanner(false)
-    }
-  }
-
-  // Detener escáner
-  const stopBarcodeScanner = async () => {
-    if (html5QrcodeRef.current && isScanning) {
-      try {
-        await html5QrcodeRef.current.stop()
-        setIsScanning(false)
-      } catch (error) {
-        console.error('Error al detener escáner:', error)
-      }
-    }
+  // Manejar escaneo de código de barras
+  const handleBarcodeScanned = (barcode: string) => {
+    updateField('barcode', barcode)
+    setShowBarcodeScanner(false)
+    toast({
+      title: "✓ Código escaneado",
+      description: barcode,
+      variant: "default" as any
+    })
   }
 
   // Manejar guardado
@@ -442,99 +381,12 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
         </motion.div>
       </motion.div>
 
-      {/* Modal de Escáner de Código de Barras */}
+      {/* Scanner de Código de Barras */}
       {showBarcodeScanner && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
-          onClick={() => {
-            stopBarcodeScanner()
-            setShowBarcodeScanner(false)
-          }}
-        >
-          <motion.div
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            className="w-full max-w-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Card className="border-2">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Barcode className="w-5 h-5" />
-                    Escanear Código de Barras
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      stopBarcodeScanner()
-                      setShowBarcodeScanner(false)
-                    }}
-                    className="h-8 w-8"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Scanner view */}
-                  {!isScanning && (
-                    <div className="flex flex-col items-center gap-4">
-                      <div id={scannerDivId} className="w-full aspect-video bg-black rounded-lg" />
-                      <Button onClick={startBarcodeScanner} className="w-full">
-                        <Camera className="w-4 h-4 mr-2" />
-                        Activar Cámara
-                      </Button>
-                    </div>
-                  )}
-
-                  {isScanning && (
-                    <div className="relative bg-black rounded-lg overflow-hidden">
-                      <div id={scannerDivId} className="w-full aspect-video" />
-                      <div className="absolute bottom-4 left-0 right-0 px-4">
-                        <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg mx-auto max-w-xs">
-                          <p className="text-sm font-medium text-center text-gray-800">
-                            📷 Enfoca el código de barras
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manual input option */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">O ingrésalo manualmente:</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Ej: 7702004008886"
-                        value={formData.barcode}
-                        onChange={(e) => updateField('barcode', e.target.value)}
-                        className="font-mono"
-                      />
-                      <Button
-                        onClick={() => {
-                          if (formData.barcode) {
-                            stopBarcodeScanner()
-                            setShowBarcodeScanner(false)
-                          }
-                        }}
-                        disabled={!formData.barcode}
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </motion.div>
+        <BarcodeScanner
+          onScan={handleBarcodeScanned}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
       )}
     </AnimatePresence>
   )
