@@ -256,15 +256,13 @@ export class InventoryService {
   }
 
   async getStockValuation(tenantId: string, warehouseId?: string): Promise<any> {
-    // Get all product IDs for this tenant
-    const productIds = await this.dataSource.query(
-      'SELECT id FROM products WHERE "tenantId" = $1',
+    // Get products with their sale prices for this tenant
+    const products = await this.dataSource.query(
+      'SELECT id, "basePrice" FROM products WHERE "tenantId" = $1',
       [tenantId]
     );
 
-    const productIdList = productIds.map((p: any) => p.id);
-
-    if (productIdList.length === 0) {
+    if (products.length === 0) {
       return {
         totalValue: 0,
         totalItems: 0,
@@ -277,6 +275,9 @@ export class InventoryService {
       };
     }
 
+    const productIdList = products.map((p: any) => p.id);
+    const priceMap = new Map(products.map((p: any) => [p.id, Number(p.basePrice || 0)]));
+
     const query = this.stockRepository.createQueryBuilder('stock')
       .where('stock.productId IN (:...productIds)', { productIds: productIdList });
 
@@ -286,7 +287,13 @@ export class InventoryService {
 
     const stocks = await query.getMany();
 
-    const totalValue = stocks.reduce((sum, stock) => sum + Number(stock.totalValue), 0);
+    // Calculate total value based on sale price (basePrice) instead of cost
+    const totalValue = stocks.reduce((sum, stock) => {
+      const salePrice = Number(priceMap.get(stock.productId) || 0);
+      const stockValue = Number(stock.quantity) * salePrice;
+      return sum + stockValue;
+    }, 0);
+
     const totalItems = stocks.reduce((sum, stock) => sum + Number(stock.quantity), 0);
 
     return {
