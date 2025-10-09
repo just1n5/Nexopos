@@ -177,11 +177,13 @@ export class InventoryService {
     }
   }
 
-  async getLowStockProducts(warehouseId?: string): Promise<InventoryStock[]> {
+  async getLowStockProducts(tenantId: string, warehouseId?: string): Promise<InventoryStock[]> {
     const query = this.stockRepository.createQueryBuilder('stock')
-      .where('stock.status IN (:...statuses)', { 
-        statuses: [StockStatus.LOW_STOCK, StockStatus.OUT_OF_STOCK] 
-      });
+      .leftJoin('products', 'product', 'stock.productId = product.id')
+      .where('stock.status IN (:...statuses)', {
+        statuses: [StockStatus.LOW_STOCK, StockStatus.OUT_OF_STOCK]
+      })
+      .andWhere('product.tenantId = :tenantId', { tenantId });
 
     if (warehouseId) {
       query.andWhere('stock.warehouseId = :warehouseId', { warehouseId });
@@ -242,11 +244,13 @@ export class InventoryService {
     return query.orderBy('movement.createdAt', 'DESC').getMany();
   }
 
-  async getStockValuation(warehouseId?: string): Promise<any> {
-    const query = this.stockRepository.createQueryBuilder('stock');
-    
+  async getStockValuation(tenantId: string, warehouseId?: string): Promise<any> {
+    const query = this.stockRepository.createQueryBuilder('stock')
+      .leftJoin('products', 'product', 'stock.productId = product.id')
+      .where('product.tenantId = :tenantId', { tenantId });
+
     if (warehouseId) {
-      query.where('stock.warehouseId = :warehouseId', { warehouseId });
+      query.andWhere('stock.warehouseId = :warehouseId', { warehouseId });
     }
 
     const stocks = await query.getMany();

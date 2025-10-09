@@ -239,9 +239,9 @@ export class ReportsService {
       .sort((a, b) => b.totalSpent - a.totalSpent);
   }
 
-  async getInventoryReport() {
-    const valuation = await this.inventoryService.getStockValuation();
-    const lowStock = await this.inventoryService.getLowStockProducts();
+  async getInventoryReport(tenantId: string) {
+    const valuation = await this.inventoryService.getStockValuation(tenantId);
+    const lowStock = await this.inventoryService.getLowStockProducts(tenantId);
 
     const lowStockProducts = lowStock
       .filter((stock) => stock.status === StockStatus.LOW_STOCK)
@@ -411,6 +411,7 @@ export class ReportsService {
     type: 'sales' | 'products' | 'customers' | 'inventory',
     format: 'csv',
     filters: ReportFilters,
+    tenantId: string,
   ): Promise<ReportFile> {
     switch (type) {
       case 'sales': {
@@ -461,7 +462,7 @@ export class ReportsService {
         };
       }
       case 'inventory': {
-        const data = await this.getInventoryReport();
+        const data = await this.getInventoryReport(tenantId);
         const rows = [...data.lowStockProducts, ...data.outOfStockProducts];
         return {
           content: this.toCsv(rows, ['id', 'name', 'sku', 'stock']),

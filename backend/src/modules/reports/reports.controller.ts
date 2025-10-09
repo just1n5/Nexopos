@@ -11,6 +11,8 @@ import { Buffer } from 'buffer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../users/guards/permissions.guard';
 import { Permissions, Permission } from '../users/decorators/permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 import { ReportsService } from './reports.service';
 
 @ApiTags('Reports')
@@ -59,8 +61,8 @@ export class ReportsController {
   @Get('inventory')
   @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get inventory report' })
-  getInventoryReport() {
-    return this.reportsService.getInventoryReport();
+  getInventoryReport(@CurrentUser() user: User) {
+    return this.reportsService.getInventoryReport(user.tenantId);
   }
 
   @Get('cash-register')
@@ -92,11 +94,12 @@ export class ReportsController {
   @ApiQuery({ name: 'endDate', required: false, type: Date })
   async downloadReport(
     @Param('type') type: 'sales' | 'products' | 'customers' | 'inventory',
+    @CurrentUser() user: User,
     @Query('format') format: 'csv' = 'csv',
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    const file = await this.reportsService.generateReportFile(type, format, this.toFilters(startDate, endDate));
+    const file = await this.reportsService.generateReportFile(type, format, this.toFilters(startDate, endDate), user.tenantId);
     const buffer = Buffer.from(file.content, 'utf8');
     return new StreamableFile(buffer, {
       type: file.mimeType,
