@@ -32,7 +32,7 @@ export class SalesService {
     private customersService: CustomersService,
   ) {}
 
-  async create(createSaleDto: CreateSaleDto, userId: string): Promise<Sale> {
+  async create(createSaleDto: CreateSaleDto, userId: string, tenantId: string): Promise<Sale> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -50,7 +50,7 @@ export class SalesService {
 
     try {
       // Validate and calculate totals
-      const calculations = await this.calculateTotals(createSaleDto.items);
+      const calculations = await this.calculateTotals(createSaleDto.items, tenantId);
 
       // Apply overall discount if provided
       finalTotal = calculations.total;
@@ -97,7 +97,7 @@ export class SalesService {
 
       // Validar stock disponible ANTES de crear la venta
       for (const itemDto of createSaleDto.items) {
-        const productInfo = await this.getProductInfo(itemDto.productId, itemDto.productVariantId);
+        const productInfo = await this.getProductInfo(itemDto.productId, tenantId, itemDto.productVariantId);
 
         if (productInfo.stock < itemDto.quantity) {
           const productName = productInfo.name;
@@ -133,7 +133,7 @@ export class SalesService {
 
       // Create sale items
       for (const itemDto of createSaleDto.items) {
-        const productInfo = await this.getProductInfo(itemDto.productId, itemDto.productVariantId);
+        const productInfo = await this.getProductInfo(itemDto.productId, tenantId, itemDto.productVariantId);
 
         const subtotal = toDecimal(itemDto.quantity * itemDto.unitPrice);
         const itemDiscountAmount = toDecimal(itemDto.discountAmount || (subtotal * (itemDto.discountPercent || 0) / 100));
@@ -306,7 +306,7 @@ export class SalesService {
     }
   }
 
-  async quickSale(quickSaleDto: QuickSaleDto, userId: string): Promise<Sale> {
+  async quickSale(quickSaleDto: QuickSaleDto, userId: string, tenantId: string): Promise<Sale> {
     // Find product by barcode or SKU
     const product = await this.findProductByCode(quickSaleDto.productCode);
     if (!product) {
@@ -326,10 +326,10 @@ export class SalesService {
       }],
     };
 
-    return this.create(createSaleDto, userId);
+    return this.create(createSaleDto, userId, tenantId);
   }
 
-  async calculateTotals(items: any[]) {
+  async calculateTotals(items: any[], tenantId: string) {
     let subtotal = 0;
     let discountAmount = 0;
     let taxAmount = 0;
@@ -337,7 +337,7 @@ export class SalesService {
     for (const item of items) {
       const itemSubtotal = item.quantity * item.unitPrice;
       const itemDiscount = item.discountAmount || (itemSubtotal * (item.discountPercent || 0) / 100);
-      const productInfo = await this.getProductInfo(item.productId, item.productVariantId);
+      const productInfo = await this.getProductInfo(item.productId, tenantId, item.productVariantId);
       const taxableAmount = itemSubtotal - itemDiscount;
       const itemTax = taxableAmount * (productInfo.taxRate / 100);
 
@@ -592,9 +592,9 @@ export class SalesService {
     return `POS-${year}-${sequence.toString().padStart(5, '0')}`;
   }
 
-  private async getProductInfo(productId: string, variantId?: string): Promise<any> {
+  private async getProductInfo(productId: string, tenantId: string, variantId?: string): Promise<any> {
     try {
-      const product = await this.productsService.findOne(productId);
+      const product = await this.productsService.findOne(productId, tenantId);
 
       if (!product) {
         throw new NotFoundException(`Product with ID ${productId} not found`);

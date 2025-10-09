@@ -22,6 +22,8 @@ import {
   ApiQuery
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
@@ -34,29 +36,29 @@ export class SalesController {
   @ApiOperation({ summary: 'Create a new sale' })
   @ApiResponse({ status: 201, description: 'Sale created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  async create(@Body() createSaleDto: CreateSaleDto, @Request() req) {
-    return this.salesService.create(createSaleDto, req.user.id);
+  async create(@Body() createSaleDto: CreateSaleDto, @CurrentUser() user: User) {
+    return this.salesService.create(createSaleDto, user.id, user.tenantId);
   }
 
   @Post('quick')
   @ApiOperation({ summary: 'Create a quick sale (simplified flow)' })
   @ApiResponse({ status: 201, description: 'Quick sale created successfully' })
-  async quickSale(@Body() quickSaleDto: QuickSaleDto, @Request() req) {
-    return this.salesService.quickSale(quickSaleDto, req.user.id);
+  async quickSale(@Body() quickSaleDto: QuickSaleDto, @CurrentUser() user: User) {
+    return this.salesService.quickSale(quickSaleDto, user.id, user.tenantId);
   }
 
   @Post('calculate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Calculate sale totals without creating a sale' })
   @ApiResponse({ status: 200, description: 'Sale totals calculated' })
-  async calculateTotals(@Body() calculateDto: CalculateSaleDto) {
+  async calculateTotals(@Body() calculateDto: CalculateSaleDto, @CurrentUser() user: User) {
     const items = calculateDto.items;
-    const totals = await this.salesService.calculateTotals(items);
-    
+    const totals = await this.salesService.calculateTotals(items, user.tenantId);
+
     // Apply overall discount if provided
     let finalTotal = totals.total;
     let finalDiscountAmount = totals.discountAmount;
-    
+
     if (calculateDto.discountPercent > 0) {
       finalDiscountAmount += totals.subtotal * (calculateDto.discountPercent / 100);
       finalTotal = totals.subtotal - finalDiscountAmount + totals.taxAmount;
