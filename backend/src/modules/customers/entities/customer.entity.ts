@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
   Index
 } from 'typeorm';
 import { CustomerCredit } from './customer-credit.entity';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum CustomerType {
   INDIVIDUAL = 'individual',
@@ -21,13 +24,22 @@ export enum CustomerStatus {
 }
 
 @Entity('customers')
-@Index(['documentType', 'documentNumber'], { unique: true })
+@Index(['tenantId', 'documentType', 'documentNumber'], { unique: true })
+@Index(['tenantId'])
 @Index(['email'])
 @Index(['phone'])
 @Index(['status'])
 export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenantId' })
+  tenant: Tenant;
 
   @Column({ type: 'enum', enum: CustomerType, default: CustomerType.INDIVIDUAL })
   type: CustomerType;

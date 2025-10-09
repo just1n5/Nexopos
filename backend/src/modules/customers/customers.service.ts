@@ -19,10 +19,11 @@ export class CustomersService {
   /**
    * Create a new customer
    */
-  async create(createCustomerDto: CreateCustomerDto): Promise<Customer> {
-    // Check if customer already exists
+  async create(createCustomerDto: CreateCustomerDto, tenantId: string): Promise<Customer> {
+    // Check if customer already exists (for this tenant)
     const existing = await this.customerRepository.findOne({
       where: {
+        tenantId,
         documentType: createCustomerDto.documentType,
         documentNumber: createCustomerDto.documentNumber
       }
@@ -36,6 +37,7 @@ export class CustomersService {
 
     const customer = this.customerRepository.create({
       ...createCustomerDto,
+      tenantId,
       creditAvailable: createCustomerDto.creditLimit || 0
     });
 
@@ -45,13 +47,14 @@ export class CustomersService {
   /**
    * Get all customers
    */
-  async findAll(filters?: {
+  async findAll(tenantId: string, filters?: {
     status?: CustomerStatus;
     type?: CustomerType;
     hasCredit?: boolean;
     hasBalance?: boolean;
   }): Promise<Customer[]> {
-    const query = this.customerRepository.createQueryBuilder('customer');
+    const query = this.customerRepository.createQueryBuilder('customer')
+      .where('customer.tenantId = :tenantId', { tenantId });
 
     if (filters?.status) {
       query.andWhere('customer.status = :status', { status: filters.status });
@@ -76,9 +79,9 @@ export class CustomersService {
   /**
    * Get a customer by ID
    */
-  async findOne(id: string): Promise<Customer> {
+  async findOne(id: string, tenantId: string): Promise<Customer> {
     const customer = await this.customerRepository.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: ['credits']
     });
 
@@ -92,8 +95,8 @@ export class CustomersService {
   /**
    * Update a customer
    */
-  async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
-    const customer = await this.findOne(id);
+  async update(id: string, updateCustomerDto: UpdateCustomerDto, tenantId: string): Promise<Customer> {
+    const customer = await this.findOne(id, tenantId);
 
     console.log('[CustomersService] Updating customer:', {
       id,
@@ -110,7 +113,7 @@ export class CustomersService {
 
     await this.customerRepository.update(id, updateCustomerDto);
 
-    const updated = await this.findOne(id);
+    const updated = await this.findOne(id, tenantId);
     console.log('[CustomersService] Customer updated:', {
       id,
       creditEnabled: updated.creditEnabled,
@@ -127,6 +130,7 @@ export class CustomersService {
     customerId: string,
     amount: number,
     referenceId: string,
+    tenantId: string,
     dueDate?: Date,
     description?: string
   ): Promise<CustomerCredit> {
@@ -135,7 +139,7 @@ export class CustomersService {
     await queryRunner.startTransaction();
 
     try {
-      const customer = await this.findOne(customerId);
+      const customer = await this.findOne(customerId, tenantId);
 
       // Check if credit is enabled
       if (!customer.creditEnabled) {
@@ -193,14 +197,15 @@ export class CustomersService {
   async reduceCredit(
     customerId: string,
     amount: number,
-    paymentId: string
+    paymentId: string,
+    tenantId: string
   ): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const customer = await this.findOne(customerId);
+      const customer = await this.findOne(customerId, tenantId);
       
       if (customer.balance <= 0) {
         throw new BadRequestException(`Customer ${customerId} has no outstanding balance`);
@@ -356,8 +361,8 @@ export class CustomersService {
   /**
    * Send payment reminder via WhatsApp (placeholder)
    */
-  async sendPaymentReminder(customerId: string, creditId?: string): Promise<void> {
-    const customer = await this.findOne(customerId);
+  async sendPaymentReminder(customerId: string, tenantId: string, creditId?: string): Promise<void> {
+    const customer = await this.findOne(customerId, tenantId);
     
     if (!customer.whatsapp) {
       throw new BadRequestException(`Customer ${customerId} has no WhatsApp number`);
@@ -393,9 +398,9 @@ export class CustomersService {
   /**
    * Find all active customers
    */
-  async findActive(): Promise<Customer[]> {
+  async findActive(tenantId: string): Promise<Customer[]> {
     return this.customerRepository.find({
-      where: { status: CustomerStatus.ACTIVE },
+      where: { tenantId, status: CustomerStatus.ACTIVE },
       order: { firstName: 'ASC' }
     });
   }
@@ -403,9 +408,10 @@ export class CustomersService {
   /**
    * Find customers with credit enabled
    */
-  async findWithCredit(): Promise<Customer[]> {
+  async findWithCredit(tenantId: string): Promise<Customer[]> {
     return this.customerRepository.find({
       where: {
+        tenantId,
         creditEnabled: true,
         status: CustomerStatus.ACTIVE
       },
@@ -416,9 +422,9 @@ export class CustomersService {
   /**
    * Find customer by document number
    */
-  async findByDocument(documentNumber: string): Promise<Customer> {
+  async findByDocument(documentNumber: string, tenantId: string): Promise<Customer> {
     const customer = await this.customerRepository.findOne({
-      where: { documentNumber }
+      where: { documentNumber, tenantId }
     });
 
     if (!customer) {
@@ -431,8 +437,8 @@ export class CustomersService {
   /**
    * Remove (deactivate) a customer
    */
-  async remove(id: string): Promise<Customer> {
-    const customer = await this.findOne(id);
+  async remove(id: string, tenantId: string): Promise<Customer> {
+    const customer = await this.findOne(id, tenantId);
     
     // Check if customer has outstanding balance
     if (customer.balance > 0) {
@@ -450,8 +456,8 @@ export class CustomersService {
   /**
    * Get customer credit summary
    */
-  async getCreditSummary(customerId: string): Promise<any> {
-    const customer = await this.findOne(customerId);
+  async getCreditSummary(customerId: string, tenantId: string): Promise<any> {
+    const customer = await this.findOne(customerId, tenantId);
     
     const credits = await this.creditRepository.find({
       where: { customerId },

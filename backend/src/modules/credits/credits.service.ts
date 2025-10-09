@@ -65,10 +65,11 @@ export class CreditsService {
     private readonly cashRegisterService: CashRegisterService,
   ) {}
 
-  async findAll(filters: CreditFilters = {}): Promise<CreditSaleResponse[]> {
+  async findAll(tenantId: string, filters: CreditFilters = {}): Promise<CreditSaleResponse[]> {
     const query = this.creditRepository.createQueryBuilder('credit')
       .leftJoinAndSelect('credit.customer', 'customer')
-      .where('credit.type = :type', { type: CreditType.SALE });
+      .where('credit.type = :type', { type: CreditType.SALE })
+      .andWhere('customer.tenantId = :tenantId', { tenantId });
 
     if (filters.customerId) {
       query.andWhere('credit.customerId = :customerId', { customerId: filters.customerId });
@@ -133,7 +134,7 @@ export class CreditsService {
     return this.getPaymentsForCredit(credit);
   }
 
-  async addPayment(creditId: string, dto: CreateCreditPaymentDto, userId: string): Promise<CreditPaymentResponse> {
+  async addPayment(creditId: string, dto: CreateCreditPaymentDto, userId: string, tenantId: string): Promise<CreditPaymentResponse> {
     const credit = await this.creditRepository.findOne({
       where: { id: creditId },
       relations: ['customer'],
@@ -181,7 +182,7 @@ export class CreditsService {
     }
 
     // Update customer credit balance
-    await this.customersService.reduceCredit(credit.customerId, dto.amount, payment.id);
+    await this.customersService.reduceCredit(credit.customerId, dto.amount, payment.id, tenantId);
 
     // Update customer_credits record
     const newPaidAmount = Number(credit.paidAmount || 0) + dto.amount;
@@ -204,10 +205,12 @@ export class CreditsService {
     return this.mapPayment(payment, creditId);
   }
 
-  async getSummary() {
-    const credits = await this.creditRepository.find({
-      where: { type: CreditType.SALE },
-    });
+  async getSummary(tenantId: string) {
+    const credits = await this.creditRepository.createQueryBuilder('credit')
+      .leftJoin('credit.customer', 'customer')
+      .where('credit.type = :type', { type: CreditType.SALE })
+      .andWhere('customer.tenantId = :tenantId', { tenantId })
+      .getMany();
 
     const pendingCredits = credits.filter((credit) => this.mapCreditStatus(credit.status) === 'pending');
     const overdueCredits = credits.filter((credit) => this.mapCreditStatus(credit.status) === 'overdue');

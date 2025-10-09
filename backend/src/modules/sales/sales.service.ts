@@ -81,7 +81,7 @@ export class SalesService {
 
       // Validar crédito ANTES de crear la venta
       if (createSaleDto.type === SaleType.CREDIT && createSaleDto.customerId) {
-        const customer = await this.customersService.findOne(createSaleDto.customerId);
+        const customer = await this.customersService.findOne(createSaleDto.customerId, tenantId);
 
         if (!customer.creditEnabled) {
           throw new BadRequestException('Credit is not enabled for this customer');
@@ -248,6 +248,7 @@ export class SalesService {
             createSaleDto.customerId,
             creditAmount,
             savedSale.id,
+            tenantId,
             createSaleDto.creditDueDate ? new Date(createSaleDto.creditDueDate) : undefined,
             `Venta a crédito #${savedSale.saleNumber}`
           );

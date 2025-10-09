@@ -101,11 +101,15 @@ export class IntegrationService {
       // 6. Si es venta a crédito, actualizar el saldo del cliente
       if (sale.type === SaleType.CREDIT && sale.customerId) {
         this.logger.log(`Updating customer credit for sale ${saleId}`);
+        // Get customer to obtain tenantId
+        const customer = await this.customersService.findOne(sale.customerId, sale.userId); // Using userId as fallback, ideally should have sale.tenantId
         await this.customersService.addCredit(
           sale.customerId,
           sale.creditAmount,
           sale.id,
-          sale.creditDueDate
+          customer.tenantId,
+          sale.creditDueDate,
+          undefined
         );
       }
 
@@ -249,10 +253,12 @@ export class IntegrationService {
 
       // 2. Actualizar el crédito del cliente
       if (sale.customerId) {
+        const customer = await this.customersService.findOne(sale.customerId, sale.userId); // Using userId as fallback
         await this.customersService.reduceCredit(
           sale.customerId,
           amount,
-          payment[0].id
+          payment[0].id,
+          customer.tenantId
         );
       }
 

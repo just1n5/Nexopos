@@ -12,6 +12,8 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreditsService } from './credits.service';
 import { CreateCreditPaymentDto } from './dto/create-credit-payment.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 @ApiTags('Credits')
 @ApiBearerAuth()
@@ -27,12 +29,13 @@ export class CreditsController {
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })
   findAll(
+    @CurrentUser() user: User,
     @Query('customerId') customerId?: string,
     @Query('status') status?: 'pending' | 'paid' | 'overdue',
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.creditsService.findAll({
+    return this.creditsService.findAll(user.tenantId, {
       customerId,
       status,
       startDate: startDate ? new Date(startDate) : undefined,
@@ -42,8 +45,8 @@ export class CreditsController {
 
   @Get('summary')
   @ApiOperation({ summary: 'Get credit summary' })
-  getSummary() {
-    return this.creditsService.getSummary();
+  getSummary(@CurrentUser() user: User) {
+    return this.creditsService.getSummary(user.tenantId);
   }
 
   @Get(':id')
@@ -63,9 +66,9 @@ export class CreditsController {
   addPayment(
     @Param('id') id: string,
     @Body() dto: CreateCreditPaymentDto,
-    @Request() req,
+    @CurrentUser() user: User,
   ) {
-    return this.creditsService.addPayment(id, dto, req.user?.userId ?? req.user?.id);
+    return this.creditsService.addPayment(id, dto, user.id, user.tenantId);
   }
 
   @Post(':id/reminder')
