@@ -543,24 +543,24 @@ export default function POSView() {
       {/* Panel Derecho - Carrito de Compras */}
       <div className={`w-full lg:w-[450px] bg-white border-l flex flex-col ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header del carrito */}
-        <div className="p-4 border-b bg-primary text-white">
+        <div className="px-3 py-2 border-b bg-primary text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {isMobileCartOpen && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsMobileCartOpen(false)}
-                  className="text-white hover:bg-white/20 lg:hidden"
+                  className="text-white hover:bg-white/20 lg:hidden h-7 w-7"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4" />
                 </Button>
               )}
-              <ShoppingCart className="w-6 h-6" />
-              <h2 className="text-xl font-semibold">Venta Actual</h2>
+              <ShoppingCart className="w-4 h-4" />
+              <h2 className="text-base font-semibold">Venta Actual</h2>
             </div>
-            <Badge className="bg-white text-primary">
-              {cart.length} items
+            <Badge className="bg-white text-primary text-xs px-2 py-0.5">
+              {cart.length}
             </Badge>
           </div>
         </div>
@@ -570,18 +570,18 @@ export default function POSView() {
           <div className="border-b">
             <Button
               variant="ghost"
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
+              className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-gray-50"
               onClick={() => setCustomerSectionExpanded(!customerSectionExpanded)}
             >
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-medium">
-                  {selectedCustomer ? selectedCustomer.name : 'Seleccionar Cliente (Opcional)'}
+              <div className="flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-gray-500" />
+                <span className="text-xs font-medium">
+                  {selectedCustomer ? selectedCustomer.name : 'Cliente (Opcional)'}
                 </span>
               </div>
-              {customerSectionExpanded ? <ChevronUp /> : <ChevronDown />}
+              {customerSectionExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </Button>
-            
+
             <AnimatePresence>
               {customerSectionExpanded && (
                 <motion.div
@@ -590,7 +590,7 @@ export default function POSView() {
                   exit={{ height: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="px-4 pb-4">
+                  <div className="px-2.5 pb-2.5">
                     <CustomerManager
                       selectedCustomer={selectedCustomer}
                       onSelectCustomer={setCustomer}
@@ -604,15 +604,15 @@ export default function POSView() {
         )}
 
         {/* Lista de items del carrito */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-2">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <ShoppingCart className="w-16 h-16 mb-4" />
-              <p className="text-lg">Carrito vacio</p>
-              <p className="text-sm">Agrega productos para comenzar</p>
+              <ShoppingCart className="w-10 h-10 mb-1.5" />
+              <p className="text-sm font-medium">Carrito vacio</p>
+              <p className="text-xs">Agrega productos</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <AnimatePresence>
                 {cart.map(item => (
                   <motion.div
@@ -623,33 +623,33 @@ export default function POSView() {
                     transition={{ duration: 0.2 }}
                   >
                     <Card>
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between mb-2">
+                      <CardContent className="p-2">
+                        <div className="flex items-start justify-between mb-1.5">
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm">{item.product.name}</h4>
+                            <h4 className="font-medium text-xs">{item.product.name}</h4>
                             <p className="text-xs text-gray-500">{formatCurrency(item.price)} c/u</p>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => removeFromCart(item.id)}
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            className="h-6 w-6 text-destructive hover:bg-destructive/10"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                            <span className="w-10 text-center font-medium">
+                            <span className="w-9 text-center font-medium text-xs">
                               {item.isSoldByWeight
                                 ? formatWeight(item.quantity, weightUnit)
                                 : item.quantity
@@ -658,13 +658,13 @@ export default function POSView() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                               <Plus className="w-3 h-3" />
                             </Button>
                           </div>
-                          <span className="font-bold text-primary">
+                          <span className="font-bold text-primary text-sm">
                             {formatCurrency(item.total)}
                           </span>
                         </div>
@@ -678,76 +678,74 @@ export default function POSView() {
         </div>
 
         {/* Resumen y acciones */}
-        <div className="border-t p-4 space-y-4">
+        <div className="border-t p-2.5 space-y-2.5">
           {/* Totales */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-600">Subtotal:</span>
               <span>{formatCurrency(getSubtotal())}</span>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-sm text-green-600">
+              <div className="flex justify-between text-xs text-green-600">
                 <span>Descuento ({discount}%):</span>
                 <span>-{formatCurrency(getSubtotal() * discount / 100)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-600">IVA (19%):</span>
               <span>{formatCurrency(getTotalTax())}</span>
             </div>
-            <Separator />
-            <div className="flex justify-between text-xl font-bold">
+            <Separator className="my-1" />
+            <div className="flex justify-between text-base font-bold pt-0.5">
               <span>Total:</span>
               <span className="text-primary">{formatCurrency(getTotal())}</span>
             </div>
           </div>
 
           {/* Botones de pago */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             <Button
               variant="outline"
-              className="h-12"
+              className="h-10 text-sm"
               onClick={() => {
                 setShowPaymentModal(true)
               }}
               disabled={cart.length === 0 || Boolean(selectedCustomer && !selectedCustomer.creditEnabled)}
               title={selectedCustomer && !selectedCustomer.creditEnabled ? "Este cliente no tiene crédito habilitado" : ""}
             >
-              <UserPlus className="w-5 h-5 mr-2" />
+              <UserPlus className="w-4 h-4 mr-1.5" />
               Fiar
             </Button>
             <Button
-              className="h-12"
+              className="h-10 text-sm"
               onClick={() => {
                 setShowPaymentModal(true)
               }}
               disabled={cart.length === 0}
             >
-              <Banknote className="w-5 h-5 mr-2" />
+              <Banknote className="w-4 h-4 mr-1.5" />
               Pagar
             </Button>
           </div>
-          
+
           {/* Acciones adicionales */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Button
               variant="outline"
-              size="sm"
-              className="flex-1"
+              className="flex-1 h-8 text-xs"
               onClick={() => clearCart()}
               disabled={cart.length === 0}
             >
-              <X className="w-4 h-4 mr-1" />
+              <X className="w-3 h-3 mr-1" />
               Limpiar
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              className="flex-1"
+              className="flex-1 h-8 text-xs"
               onClick={() => setShowDiscountModal(true)}
               disabled={cart.length === 0}
             >
-              <Percent className="w-4 h-4 mr-1" />
+              <Percent className="w-3 h-3 mr-1" />
               Descuento
             </Button>
           </div>
