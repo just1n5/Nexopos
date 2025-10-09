@@ -17,6 +17,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   const [mode, setMode] = useState<'camera' | 'manual'>('manual')
   const [manualCode, setManualCode] = useState('')
   const [isScanning, setIsScanning] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
   const [hasCamera, setHasCamera] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null)
@@ -42,11 +43,19 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
   // Iniciar escáner de códigos de barras
   const startScanner = useCallback(async () => {
+    // Evitar múltiples inicializaciones simultáneas
+    if (isInitializing || isScanning) {
+      console.log('Scanner ya está inicializando o escaneando, saltando...')
+      return
+    }
+
     if (!hasCamera) {
       setCameraError('No se detectó ninguna cámara en este dispositivo')
       setMode('manual')
       return
     }
+
+    setIsInitializing(true)
 
     try {
       setCameraError(null)
@@ -77,7 +86,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             Html5QrcodeSupportedFormats.UPC_E,
             Html5QrcodeSupportedFormats.QR_CODE,
           ],
-          verbose: true
+          verbose: false
         })
       }
 
@@ -105,10 +114,14 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
         // Detener escáner y enviar código
         setTimeout(async () => {
-          if (html5QrcodeRef.current && isScanning) {
+          if (html5QrcodeRef.current) {
             try {
-              await html5QrcodeRef.current.stop()
+              const state = html5QrcodeRef.current.getState()
+              if (state === 2) { // 2 = SCANNING
+                await html5QrcodeRef.current.stop()
+              }
               setIsScanning(false)
+              setIsInitializing(false)
             } catch (err) {
               console.error('Error al detener el escáner:', err)
             }
@@ -132,9 +145,13 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       console.log('Scanner iniciado exitosamente')
       setIsScanning(true)
+      setIsInitializing(false)
     } catch (error: any) {
       console.error('Error al iniciar el escáner:', error)
       console.error('Error detallado:', error.message, error.name, error.stack)
+
+      setIsInitializing(false)
+      setIsScanning(false)
 
       let errorMessage = 'No se pudo acceder a la cámara.'
 
@@ -144,6 +161,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         errorMessage = 'No se encontró ninguna cámara en este dispositivo.'
       } else if (error.message?.includes('NotReadableError') || error.name === 'NotReadableError') {
         errorMessage = 'La cámara está siendo usada por otra aplicación.'
+      } else if (error.message?.includes('Cannot clear while scan is ongoing')) {
+        errorMessage = 'El escáner ya está en uso. Cierra el modal y vuelve a intentar.'
       } else if (error.message) {
         errorMessage = `Error: ${error.message}`
       }
@@ -157,19 +176,29 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         variant: "destructive"
       })
     }
-  }, [hasCamera, lastScannedCode, onScan, onClose, toast, isScanning])
+  }, [hasCamera, lastScannedCode, onScan, onClose, toast, isScanning, isInitializing])
 
   // Detener escáner
   const stopScanner = useCallback(async () => {
-    if (html5QrcodeRef.current && isScanning) {
+    if (html5QrcodeRef.current) {
       try {
-        await html5QrcodeRef.current.stop()
+        const state = html5QrcodeRef.current.getState()
+        if (state === 2) { // 2 = SCANNING
+          console.log('Deteniendo scanner...')
+          await html5QrcodeRef.current.stop()
+          console.log('Scanner detenido exitosamente')
+        } else {
+          console.log('Scanner no está escaneando, estado:', state)
+        }
         setIsScanning(false)
+        setIsInitializing(false)
       } catch (error) {
         console.error('Error al detener el escáner:', error)
+        setIsScanning(false)
+        setIsInitializing(false)
       }
     }
-  }, [isScanning])
+  }, [])
 
   // Cambiar modo
   useEffect(() => {
