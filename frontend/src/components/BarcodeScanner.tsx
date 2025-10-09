@@ -156,17 +156,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       await html5QrcodeRef.current.start(
         { facingMode: 'environment' },
         {
-          fps: 30, // Aumentado a 30 FPS para mejor detección
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            // Área de escaneo MUCHO más grande - 90% del área visible
-            const minEdgePercentage = 0.9
-            const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
-            const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
-            return {
-              width: qrboxSize,
-              height: Math.floor(qrboxSize * 0.6) // Proporción ajustada para códigos de barras
-            }
-          },
+          fps: 10, // FPS reducido para dar más tiempo de procesamiento
+          qrbox: { width: 250, height: 150 }, // Área fija optimizada para códigos de barras
           aspectRatio: 1.777778, // 16:9
           disableFlip: false
         },
