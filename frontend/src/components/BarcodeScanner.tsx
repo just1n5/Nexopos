@@ -153,8 +153,19 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       }
 
       console.log('Iniciando scanner...')
+
+      // Configuración de video con autoenfoque para móviles
+      // @ts-ignore - focusMode no está en tipos de TS pero es soportado por navegadores
+      const videoConstraints: any = {
+        facingMode: 'environment',
+        advanced: [
+          { focusMode: 'continuous' },  // Autoenfoque continuo
+          { focusDistance: 0.2 }         // Enfoque cercano (20cm aprox)
+        ]
+      }
+
       await html5QrcodeRef.current.start(
-        { facingMode: 'environment' },
+        videoConstraints,
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
           qrbox: { width: 250, height: 150 }, // Área fija optimizada para códigos de barras
@@ -471,7 +482,10 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                               📷 Coloca el código dentro del marco
                             </p>
                             <p className="text-xs text-center text-gray-600 mt-1">
-                              Asegúrate de tener buena iluminación
+                              📏 Distancia: 15-25cm • 💡 Buena luz
+                            </p>
+                            <p className="text-xs text-center text-blue-600 mt-1 font-medium">
+                              Espera 1-2 segundos para el autoenfoque
                             </p>
                           </div>
                         </motion.div>
@@ -492,7 +506,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                   <Alert className="border-amber-200 bg-amber-50">
                     <Camera className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="text-amber-800">
-                      <strong>Consejo:</strong> Mantén el código estable y bien iluminado para mejor lectura
+                      <strong>Consejos para móviles:</strong> Mantén el código a 15-25cm de la cámara.
+                      Si se ve borroso, espera 1-2 segundos para que el autoenfoque se ajuste.
+                      Usa buena iluminación natural o artificial.
                     </AlertDescription>
                   </Alert>
                 </motion.div>
