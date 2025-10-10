@@ -24,7 +24,7 @@ export const useCashRegisterStore = create<CashRegisterState>()(
       summary: null,
       currentRegister: null,
       expenses: [],
-      loading: true,
+      loading: false,
       error: null,
 
       // Fetches all essential data for the cash register view
