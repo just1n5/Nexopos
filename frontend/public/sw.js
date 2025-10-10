@@ -1,5 +1,5 @@
 // Service Worker para NexoPOS
-const CACHE_NAME = 'nexopos-v1.0.2';
+const CACHE_NAME = 'nexopos-v1.0.3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -53,6 +53,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Solo cachear peticiones GET - las peticiones HEAD, POST, etc. no se pueden cachear
+  if (event.request.method !== 'GET') {
     return;
   }
 
