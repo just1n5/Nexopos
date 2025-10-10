@@ -200,9 +200,14 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       console.log('Iniciando scanner con deviceId:', selectedCameraId)
 
+      // Obtener información de la cámara seleccionada
+      const selectedCamera = cameras.find(cam => cam.deviceId === selectedCameraId)
+      console.log('Cámara seleccionada:', selectedCamera)
+
       // Usar directamente el deviceId seleccionado por el usuario
+      // html5-qrcode acepta solo el string del deviceId, no un objeto
       await html5QrcodeRef.current.start(
-        { deviceId: { exact: selectedCameraId } },
+        selectedCameraId,  // Pasar el deviceId directamente como string
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
           qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -232,7 +237,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       setIsScanning(true)
       setIsInitializing(false)
 
-      // Intentar configurar autoenfoque después de iniciar
+      // Verificar qué cámara se está usando realmente y configurar autoenfoque
       try {
         // Esperar un momento para que el video se inicialice
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -241,6 +246,25 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         if (videoElement && videoElement.srcObject) {
           const stream = videoElement.srcObject as MediaStream
           const videoTrack = stream.getVideoTracks()[0]
+
+          // Verificar qué cámara se obtuvo realmente
+          const settings = videoTrack.getSettings()
+          console.log('⚠️ CÁMARA EN USO:', {
+            deviceId: settings.deviceId,
+            facingMode: settings.facingMode,
+            label: videoTrack.label,
+            width: settings.width,
+            height: settings.height
+          })
+
+          // Verificar si la cámara obtenida es la que seleccionamos
+          if (settings.deviceId !== selectedCameraId) {
+            console.error('❌ ADVERTENCIA: La cámara obtenida NO es la seleccionada!')
+            console.error('   Seleccionada:', selectedCameraId)
+            console.error('   Obtenida:', settings.deviceId)
+          } else {
+            console.log('✅ Cámara correcta en uso')
+          }
 
           // Verificar capacidades
           const capabilities = videoTrack.getCapabilities() as any
