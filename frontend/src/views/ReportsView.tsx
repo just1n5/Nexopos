@@ -1030,41 +1030,70 @@ export default function ReportsView() {
           </TabsContent>
           
           {/* Tab de Inventario */}
-          <TabsContent value="inventory" className="space-y-4">
+          <TabsContent value="inventory" className="space-y-6">
             {inventoryReport && (
               <>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Estado del Inventario</CardTitle>
-                    <Button size="sm" onClick={() => handleDownloadExcel('inventory')}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Exportar Excel
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Total Productos</p>
-                        <p className="text-2xl font-bold">{inventoryReport.totalProducts}</p>
-                        <p className="text-xs text-gray-500 mt-1">En inventario</p>
+                {/* Header con Botón Exportar */}
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-2xl">Estado del Inventario</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDownloadExcel('inventory')}
+                    className="border border-[#5A31F4] text-[#5A31F4] hover:bg-[#5A31F4] hover:text-white"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar Excel
+                  </Button>
+                </div>
+
+                {/* Tarjetas KPI de Estado */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Tarjeta: Total de Productos */}
+                  <KPICard
+                    title="Total de Productos"
+                    mainValue={String(inventoryReport.totalProducts)}
+                    subLabels={[
+                      { label: 'En inventario', value: '' }
+                    ]}
+                  />
+
+                  {/* Tarjeta: Valor Total del Inventario */}
+                  <KPICard
+                    title="Valor Total del Inventario"
+                    mainValue={formatCurrency(inventoryReport.totalValue)}
+                    subLabels={[
+                      { label: 'Costo total de productos', value: '' }
+                    ]}
+                  />
+
+                  {/* Tarjeta: Productos Críticos (Clickeable con Alerta) */}
+                  <div
+                    onClick={() => window.location.href = '/inventory'}
+                    className="cursor-pointer transition-all hover:scale-[1.02]"
+                  >
+                    <div className="rounded-xl p-6 bg-[#1F2937] border-l-[3px] border-l-red-500 hover:bg-[#374151]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                        <h3 className="text-base font-medium text-gray-400">
+                          Productos Críticos
+                        </h3>
                       </div>
-                      
-                      <div className="p-4 bg-green-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Valor Total</p>
-                        <p className="text-2xl font-bold">{formatCurrency(inventoryReport.totalValue)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Valor del inventario</p>
-                      </div>
-                      
-                      <div className="p-4 bg-red-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Productos Críticos</p>
-                        <p className="text-2xl font-bold">
-                          {inventoryReport.lowStockProducts.length + inventoryReport.outOfStockProducts.length}
+                      <p className="text-[32px] font-bold text-white leading-none mb-2">
+                        {inventoryReport.lowStockProducts.length + inventoryReport.outOfStockProducts.length}
+                      </p>
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm text-gray-400">
+                          Requieren atención
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">Requieren atención</p>
+                        <div className="flex items-center gap-2 text-xs text-[#5A31F4] font-medium">
+                          <span>Click para gestionar</span>
+                          <ArrowUpDown className="w-3 h-3 rotate-90" />
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
                 
                 {/* Productos con Stock Bajo */}
                 {inventoryReport.lowStockProducts.length > 0 && (
