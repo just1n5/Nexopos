@@ -38,7 +38,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       <div className={cn(
-        "relative w-full max-w-lg mx-auto bg-white border shadow-lg rounded-lg p-6 max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200",
+        "relative w-full max-w-lg mx-auto bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-lg rounded-lg p-6 max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200",
         className
       )}>
         {children}
@@ -83,7 +83,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-white",
       className
     )}
     {...props}
