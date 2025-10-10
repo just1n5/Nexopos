@@ -13,6 +13,11 @@ interface BarcodeScannerProps {
   onClose: () => void
 }
 
+interface CameraDevice {
+  deviceId: string
+  label: string
+}
+
 export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   const [mode, setMode] = useState<'camera' | 'manual'>('manual')
   const [manualCode, setManualCode] = useState('')
@@ -22,18 +27,67 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null)
   const [scanSuccess, setScanSuccess] = useState(false)
+  const [cameras, setCameras] = useState<CameraDevice[]>([])
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('')
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
   const scannerDivId = 'barcode-scanner-reader'
   const { toast } = useToast()
   const processingRef = useRef(false)
 
-  // Verificar si hay cámara disponible
+  // Verificar cámaras disponibles y listarlas
   useEffect(() => {
     if ('mediaDevices' in navigator && typeof navigator.mediaDevices.enumerateDevices === 'function') {
-      navigator.mediaDevices.enumerateDevices()
+      // Primero solicitar permisos para obtener labels
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          // Detener el stream inmediatamente
+          stream.getTracks().forEach(track => track.stop())
+
+          // Ahora enumerar dispositivos con labels
+          return navigator.mediaDevices.enumerateDevices()
+        })
         .then((devices) => {
-          const hasVideo = devices.some(device => device.kind === 'videoinput')
-          setHasCamera(hasVideo)
+          const videoDevices = devices.filter(device => device.kind === 'videoinput')
+          setHasCamera(videoDevices.length > 0)
+
+          const cameraList: CameraDevice[] = videoDevices.map((device, index) => {
+            // Crear label amigable
+            let label = device.label || `Cámara ${index + 1}`
+
+            // Detectar si es trasera o frontal
+            const labelLower = label.toLowerCase()
+            if (labelLower.includes('back') || labelLower.includes('rear') ||
+                labelLower.includes('trasera') || labelLower.includes('environment')) {
+              label = `📷 ${label} (Trasera)`
+            } else if (labelLower.includes('front') || labelLower.includes('user') ||
+                       labelLower.includes('frontal')) {
+              label = `🤳 ${label} (Frontal)`
+            }
+
+            return {
+              deviceId: device.deviceId,
+              label
+            }
+          })
+
+          setCameras(cameraList)
+          console.log('Cámaras disponibles:', cameraList)
+
+          // Seleccionar automáticamente la primera cámara trasera si existe
+          const rearCamera = cameraList.find(cam =>
+            cam.label.toLowerCase().includes('back') ||
+            cam.label.toLowerCase().includes('rear') ||
+            cam.label.toLowerCase().includes('trasera')
+          )
+
+          if (rearCamera) {
+            setSelectedCameraId(rearCamera.deviceId)
+            console.log('Cámara trasera preseleccionada:', rearCamera.label)
+          } else if (cameraList.length > 0) {
+            // Si no hay trasera, seleccionar la primera disponible
+            setSelectedCameraId(cameraList[0].deviceId)
+            console.log('Primera cámara seleccionada:', cameraList[0].label)
+          }
         })
         .catch((err) => {
           console.error('Error al enumerar dispositivos:', err)
@@ -56,93 +110,19 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       return
     }
 
+    if (!selectedCameraId) {
+      setCameraError('Por favor selecciona una cámara')
+      return
+    }
+
     setIsInitializing(true)
 
     try {
       // Resetear estado de procesamiento
       processingRef.current = false
-
       setCameraError(null)
 
-      // Detectar si es Safari/iOS
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      console.log('Navegador Safari:', isSafari, 'iOS:', isIOS)
-
-      // Enumerar cámaras disponibles para encontrar la trasera
-      console.log('Enumerando cámaras disponibles...')
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = devices.filter(device => device.kind === 'videoinput')
-      console.log('Cámaras encontradas:', videoDevices.length, videoDevices)
-
-      // Buscar la cámara trasera explícitamente
-      let rearCameraId: string | null = null
-      for (const device of videoDevices) {
-        const label = device.label.toLowerCase()
-        console.log('Analizando cámara:', device.label, 'ID:', device.deviceId)
-
-        // Buscar palabras clave que indiquen cámara trasera
-        if (label.includes('back') || label.includes('rear') || label.includes('trasera') ||
-            label.includes('environment') || label.includes('posterior')) {
-          rearCameraId = device.deviceId
-          console.log('✓ Cámara trasera encontrada:', device.label, 'ID:', rearCameraId)
-          break
-        }
-      }
-
-      // Si no encontramos una cámara trasera por label, usar la última cámara (suele ser la trasera)
-      if (!rearCameraId && videoDevices.length > 1) {
-        rearCameraId = videoDevices[videoDevices.length - 1].deviceId
-        console.log('Usando última cámara como trasera:', videoDevices[videoDevices.length - 1].label)
-      }
-
-      // Primero solicitar permisos explícitamente
-      console.log('Solicitando permisos de cámara...')
-      try {
-        let constraints: MediaStreamConstraints
-
-        // En Safari/iOS, usar deviceId es más confiable que facingMode
-        if ((isSafari || isIOS) && rearCameraId) {
-          console.log('Safari/iOS: Usando deviceId específico:', rearCameraId)
-          constraints = {
-            video: {
-              deviceId: { exact: rearCameraId },
-              width: { ideal: 1920 },
-              height: { ideal: 1080 }
-            }
-          }
-        } else {
-          // En otros navegadores, usar facingMode
-          console.log('Usando facingMode: environment')
-          constraints = {
-            video: { facingMode: { exact: 'environment' } }
-          }
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        console.log('Permisos concedidos con constraints específicas')
-
-        // Verificar qué cámara se obtuvo
-        const videoTrack = stream.getVideoTracks()[0]
-        const settings = videoTrack.getSettings()
-        console.log('Cámara seleccionada:', settings.facingMode, 'DeviceId:', settings.deviceId)
-
-        // Detener el stream de prueba
-        stream.getTracks().forEach(track => track.stop())
-      } catch (permError) {
-        console.error('Error al solicitar permisos con constraints específicas, intentando fallback:', permError)
-        // Fallback: intentar solo con facingMode sin exact
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-          })
-          console.log('Permisos concedidos (fallback)')
-          stream.getTracks().forEach(track => track.stop())
-        } catch (fallbackError) {
-          console.error('Error al solicitar permisos:', fallbackError)
-          throw new Error('No se pudieron obtener permisos de cámara')
-        }
-      }
+      console.log('Usando cámara seleccionada:', selectedCameraId)
 
       if (!html5QrcodeRef.current) {
         console.log('Creando instancia de Html5Qrcode...')
@@ -218,23 +198,11 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         }, 300)
       }
 
-      console.log('Iniciando scanner...')
+      console.log('Iniciando scanner con deviceId:', selectedCameraId)
 
-      // Determinar la configuración de cámara según el navegador
-      let cameraConfig: any
-
-      // En Safari/iOS, usar deviceId si lo tenemos
-      if ((isSafari || isIOS) && rearCameraId) {
-        cameraConfig = { deviceId: { exact: rearCameraId } }
-        console.log('Safari/iOS: Iniciando con deviceId:', rearCameraId)
-      } else {
-        // En otros navegadores, usar facingMode
-        cameraConfig = { facingMode: { exact: 'environment' } }
-        console.log('Iniciando con facingMode: exact environment')
-      }
-
+      // Usar directamente el deviceId seleccionado por el usuario
       await html5QrcodeRef.current.start(
-        cameraConfig,
+        { deviceId: { exact: selectedCameraId } },
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
           qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -257,42 +225,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         qrCodeSuccessCallback,
         () => {
           // Error callback - no hacer nada, errores normales durante escaneo
-          // Solo log si es necesario para debugging
         }
-      ).catch(async (error) => {
-        console.error('Error al iniciar con configuración específica:', error)
-
-        // Si falla con exact o deviceId, reintentar con facingMode básico
-        if (error.message?.includes('exact') || error.message?.includes('OverconstrainedError') ||
-            error.message?.includes('deviceId') || error.message?.includes('NotFoundError')) {
-          console.log('Reintentando con facingMode básico sin exact...')
-          await html5QrcodeRef.current!.start(
-            { facingMode: 'environment' },
-            {
-              fps: 10,
-              qrbox: (viewfinderWidth, viewfinderHeight) => {
-                const minEdgePercentage = 0.85
-                const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
-                const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
-                return {
-                  width: qrboxSize,
-                  height: Math.floor(qrboxSize * 0.5)
-                }
-              },
-              aspectRatio: 1.777778,
-              disableFlip: false,
-              videoConstraints: {
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-              }
-            },
-            qrCodeSuccessCallback,
-            () => {}
-          )
-        } else {
-          throw error
-        }
-      })
+      )
 
       console.log('Scanner iniciado exitosamente')
       setIsScanning(true)
@@ -409,11 +343,19 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     }
   }
 
-  // Cambiar modo
+  // Cambiar modo o cámara seleccionada
   useEffect(() => {
-    if (mode === 'camera') {
-      // Iniciar scanner cuando se cambia a modo cámara
-      startScanner()
+    if (mode === 'camera' && selectedCameraId) {
+      // Detener scanner actual si existe
+      if (html5QrcodeRef.current && isScanning) {
+        stopScanner().then(() => {
+          // Iniciar con la nueva cámara
+          startScanner()
+        })
+      } else {
+        // Iniciar scanner cuando se cambia a modo cámara
+        startScanner()
+      }
     }
 
     return () => {
@@ -426,7 +368,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode])
+  }, [mode, selectedCameraId])
 
   // Limpiar al desmontar
   useEffect(() => {
@@ -564,6 +506,41 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-4"
                 >
+                  {/* Selector de cámara */}
+                  {cameras.length > 1 && !isScanning && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 block">
+                        Seleccionar Cámara
+                      </label>
+                      <select
+                        value={selectedCameraId}
+                        onChange={(e) => setSelectedCameraId(e.target.value)}
+                        className="w-full h-12 px-3 border-2 border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      >
+                        {cameras.map((camera) => (
+                          <option key={camera.deviceId} value={camera.deviceId}>
+                            {camera.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Botón para cambiar cámara mientras escanea */}
+                  {cameras.length > 1 && isScanning && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={async () => {
+                        await stopScanner()
+                        // El useEffect reiniciará con la nueva cámara
+                      }}
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Cambiar Cámara
+                    </Button>
+                  )}
+
                   {/* Escáner */}
                   <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-gray-200">
                     <div
