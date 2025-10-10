@@ -25,6 +25,7 @@ import { usePOSStore } from '@/stores/posStore'
 import { useBusinessStore } from '@/stores/businessStore'
 import POSView from '@/views/POSView'
 import RequireCashRegister from '@/components/RequireCashRegister'
+import RemoteLogger from '@/components/RemoteLogger'
 
 // Lazy load de otros componentes
 const LoginView = lazy(() => import('@/views/LoginView'))
@@ -424,6 +425,8 @@ export default function App() {
         </Suspense>
       </Router>
       <Toaster />
+      {/* Logger remoto para debugging en móviles */}
+      {isAuthenticated && <RemoteLogger />}
     </>
   )
 }
