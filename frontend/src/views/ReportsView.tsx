@@ -15,14 +15,13 @@ import {
   Calculator,
   ArrowUpDown
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { KPICard } from '@/components/reports/KPICard'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
@@ -761,121 +760,221 @@ export default function ReportsView() {
           </TabsContent>
           
           {/* Tab de Productos */}
-          <TabsContent value="products" className="space-y-4">
+          <TabsContent value="products" className="space-y-6">
+            {/* Header Principal con Botón Exportar */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Análisis de Productos Más Vendidos
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Visualización y detalle de rendimiento de productos
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDownloadExcel('products')}
+                className="border border-gray-300 dark:border-gray-600"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar Excel
+              </Button>
+            </div>
+
+            {/* Gráfico de Barras Horizontales */}
             {productReports.length > 0 && (
-              <Card>
+              <Card className="bg-[#1F2937]">
                 <CardHeader>
-                  <CardTitle>Top 10 Productos Más Vendidos</CardTitle>
+                  <CardTitle>Top 10 Productos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
+                  <ResponsiveContainer width="100%" height={450}>
                     <BarChart
                       data={productReports.slice(0, 10).map((report) => ({
-                        name: report.product.name.length > 20
-                          ? report.product.name.substring(0, 20) + '...'
+                        name: report.product.name.length > 25
+                          ? report.product.name.substring(0, 25) + '...'
                           : report.product.name,
-                        ingresos: Number(report.revenue),
-                        cantidad: Number(report.quantity)
+                        ingresos: Number(report.revenue)
                       }))}
                       layout="vertical"
-                      margin={{ left: 100 }}
+                      margin={{ left: 120, right: 80, top: 5, bottom: 5 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                      <YAxis type="category" dataKey="name" width={100} />
-                      <Tooltip
-                        formatter={(value: number, name: string) => [
-                          name === 'ingresos' ? formatCurrency(value) : value,
-                          name === 'ingresos' ? 'Ingresos' : 'Cantidad'
-                        ]}
+                      <defs>
+                        <linearGradient id="barProductGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#A78BFA" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#7C3AED" stopOpacity={1} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="4 4"
+                        stroke="#6B7280"
+                        strokeWidth={1}
+                        opacity={0.3}
+                        horizontal={false}
                       />
-                      <Legend />
-                      <Bar dataKey="ingresos" fill="#3b82f6" name="Ingresos" />
+                      <XAxis
+                        type="number"
+                        tickFormatter={(value) => formatCurrency(value)}
+                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                        axisLine={{ stroke: '#6B7280' }}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={120}
+                        tick={{ fill: '#FFFFFF', fontSize: 12 }}
+                        axisLine={{ stroke: '#6B7280' }}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '12px'
+                        }}
+                        labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
+                        cursor={{ fill: 'rgba(124, 58, 237, 0.1)' }}
+                      />
+                      <Bar
+                        dataKey="ingresos"
+                        fill="url(#barProductGradient)"
+                        radius={[0, 8, 8, 0]}
+                        barSize={20}
+                        label={{
+                          position: 'right',
+                          formatter: (value: any) => formatCurrency(Number(value)),
+                          fill: '#FFFFFF',
+                          fontSize: 11
+                        }}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
             )}
 
+            {/* Tabla Detallada de Productos */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle>Productos Más Vendidos - Detalle</CardTitle>
-                <Button size="sm" onClick={() => handleDownloadExcel('products')}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar Excel
-                </Button>
               </CardHeader>
               <CardContent>
                 {productReports.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No hay datos de productos para mostrar</p>
+                  <div className="text-center py-12 text-gray-500">
+                    <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">No hay datos de productos para mostrar</p>
+                    <p className="text-sm text-gray-400 mt-2">Los productos vendidos aparecerán aquí</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {productReports.slice(0, 10).map((report, index) => (
-                      <div key={report.product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-300">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium dark:text-white">{report.product.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {report.product.sku}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold dark:text-white">{formatCurrency(report.revenue)}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{report.quantity} unidades</p>
-                          {report.profitMargin !== undefined && (
-                            <p className="text-xs text-green-600">
-                              Margen: {report.profitMargin.toFixed(1)}%
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                            Rango
+                          </th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                            Producto
+                          </th>
+                          <th className="text-right p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                            Unidades Vendidas
+                          </th>
+                          <th className="text-right p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                            Ingresos Totales
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productReports.slice(0, 10).map((report, index) => (
+                          <tr
+                            key={report.product.id}
+                            className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <td className="p-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-bold text-sm">
+                                {index + 1}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div>
+                                <p className="font-semibold text-gray-900 dark:text-white">
+                                  {report.product.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  SKU: {report.product.sku}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="p-3 text-right">
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {report.quantity}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                unidades
+                              </p>
+                            </td>
+                            <td className="p-3 text-right">
+                              <p className="font-bold text-lg text-gray-900 dark:text-white">
+                                {formatCurrency(report.revenue)}
+                              </p>
+                              {report.profitMargin !== undefined && (
+                                <p className="text-xs text-green-600 dark:text-green-400">
+                                  Margen: {report.profitMargin.toFixed(1)}%
+                                </p>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>
             </Card>
-            
+
             {/* Alertas de Inventario */}
             {inventoryReport && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Alertas de Inventario</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Alertas de Inventario</CardTitle>
+                    <a
+                      href="/inventory"
+                      className="text-sm font-medium text-[#5A31F4] hover:text-[#7C5BFF] transition-colors flex items-center gap-1"
+                    >
+                      Gestionar Inventario
+                      <ArrowUpDown className="w-4 h-4 rotate-90" />
+                    </a>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {inventoryReport.lowStockProducts.length > 0 && (
-                      <Alert>
-                        <AlertCircle className="w-4 h-4" />
-                        <AlertDescription>
-                          <span className="font-medium">Stock Bajo:</span> {inventoryReport.lowStockProducts.length} productos necesitan reabastecimiento
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {inventoryReport.outOfStockProducts.length > 0 && (
-                      <Alert className="border-red-200 bg-red-50">
-                        <AlertCircle className="w-4 h-4 text-red-600" />
-                        <AlertDescription className="text-red-800">
-                          <span className="font-medium">Sin Stock:</span> {inventoryReport.outOfStockProducts.length} productos están agotados
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Productos</p>
-                        <p className="text-2xl font-bold dark:text-white">{inventoryReport.totalProducts}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Valor Total</p>
-                        <p className="text-2xl font-bold dark:text-white">{formatCurrency(inventoryReport.totalValue)}</p>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Tarjeta: Productos con Alerta */}
+                    <KPICard
+                      title="Productos con Alerta"
+                      mainValue={String(
+                        inventoryReport.lowStockProducts.length +
+                        inventoryReport.outOfStockProducts.length
+                      )}
+                      variant="default"
+                      subLabels={[
+                        { label: 'Stock bajo', value: String(inventoryReport.lowStockProducts.length) },
+                        { label: 'Sin stock', value: String(inventoryReport.outOfStockProducts.length) }
+                      ]}
+                    />
+
+                    {/* Tarjeta: Valor Total en Alertas */}
+                    <KPICard
+                      title="Valor Total en Alertas"
+                      mainValue={formatCurrency(inventoryReport.totalValue)}
+                      variant="default"
+                      subLabels={[
+                        { label: 'Total productos', value: String(inventoryReport.totalProducts) }
+                      ]}
+                    />
                   </div>
                 </CardContent>
               </Card>
