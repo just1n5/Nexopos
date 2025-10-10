@@ -60,10 +60,46 @@ export default function TenantManagementView() {
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const [otpExpiresAt, setOtpExpiresAt] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0); // en segundos
+  const [isOtpExpired, setIsOtpExpired] = useState(false);
 
   useEffect(() => {
     loadTenants();
   }, []);
+
+  // Contador regresivo para OTP
+  useEffect(() => {
+    if (!otpExpiresAt || !otpDialogOpen) {
+      setTimeRemaining(0);
+      setIsOtpExpired(false);
+      return;
+    }
+
+    // Calcular tiempo restante inicial
+    const updateTimeRemaining = () => {
+      const now = new Date().getTime();
+      const expiresTime = new Date(otpExpiresAt).getTime();
+      const remaining = Math.max(0, Math.floor((expiresTime - now) / 1000));
+
+      setTimeRemaining(remaining);
+      setIsOtpExpired(remaining === 0);
+    };
+
+    // Actualizar inmediatamente
+    updateTimeRemaining();
+
+    // Actualizar cada segundo
+    const interval = setInterval(updateTimeRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [otpExpiresAt, otpDialogOpen]);
+
+  // Formatear tiempo restante en mm:ss
+  const formatTimeRemaining = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const loadTenants = async () => {
     if (!token) return;
@@ -76,6 +112,46 @@ export default function TenantManagementView() {
       setError(err.message || 'Error al cargar los tenants');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!token || !user?.email || !selectedTenant || !actionType) return;
+
+    setOtpCode('');
+    setIsOtpExpired(false);
+    setIsRequestingOtp(true);
+
+    try {
+      let response;
+      if (actionType === 'suspend') {
+        response = await tenantManagementService.requestSuspensionOtp(
+          token,
+          selectedTenant.id,
+          user.email,
+        );
+      } else {
+        response = await tenantManagementService.requestDeletionOtp(
+          token,
+          selectedTenant.id,
+          user.email,
+        );
+      }
+
+      setOtpExpiresAt(response.expiresAt);
+
+      toast({
+        title: 'Código reenviado',
+        description: `Se ha enviado un nuevo código de verificación a ${user.email}`,
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Error al reenviar OTP',
+      });
+    } finally {
+      setIsRequestingOtp(false);
     }
   };
 
@@ -529,10 +605,40 @@ export default function TenantManagementView() {
                   placeholder="000000"
                   className="text-center text-2xl font-mono tracking-widest mt-2"
                   autoFocus
+                  disabled={isOtpExpired}
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  El código expira el {otpExpiresAt && new Date(otpExpiresAt).toLocaleTimeString()}
-                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  {isOtpExpired ? (
+                    <p className="text-xs text-red-600 dark:text-red-400">
+                      ⏰ El código ha expirado
+                    </p>
+                  ) : (
+                    <p className={`text-xs ${timeRemaining < 60 ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-muted-foreground'}`}>
+                      ⏱️ Expira en {formatTimeRemaining(timeRemaining)}
+                    </p>
+                  )}
+                  {isOtpExpired && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResendOtp}
+                      disabled={isRequestingOtp}
+                      className="text-xs h-auto py-1"
+                    >
+                      {isRequestingOtp ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Reenviar código
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -540,7 +646,7 @@ export default function TenantManagementView() {
               <Button variant="outline" onClick={() => setOtpDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleVerifyOtp} disabled={otpCode.length !== 6}>
+              <Button onClick={handleVerifyOtp} disabled={otpCode.length !== 6 || isOtpExpired}>
                 Continuar
               </Button>
             </DialogFooter>
