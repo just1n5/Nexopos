@@ -27,6 +27,12 @@
     --input: 220 13% 91%;
     --ring: 250 77% 58%;
     --radius: 0.5rem;
+
+    /* Chart variables for light mode */
+    --tooltip-bg: #ffffff;
+    --tooltip-text: #1F2937;
+    --tooltip-border: #E5E7EB;
+    --chart-text: #1F2937;
   }
 
   .dark {
@@ -49,6 +55,12 @@
     --border: 0 0% 25%;
     --input: 0 0% 25%;
     --ring: 243 75% 59%;
+
+    /* Chart variables for dark mode */
+    --tooltip-bg: #1F2937;
+    --tooltip-text: #FFFFFF;
+    --tooltip-border: #374151;
+    --chart-text: #FFFFFF;
   }
 }
 

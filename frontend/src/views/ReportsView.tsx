@@ -564,9 +564,9 @@ export default function ReportsView() {
                 {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Gráfico de Ventas por Hora */}
-                  <Card className="bg-[#1F2937]">
+                  <Card className="bg-white dark:bg-[#1F2937]">
                     <CardHeader>
-                      <CardTitle>Distribución de Ventas por Hora</CardTitle>
+                      <CardTitle className="text-gray-900 dark:text-white">Distribución de Ventas por Hora</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -601,13 +601,13 @@ export default function ReportsView() {
                           <Tooltip
                             formatter={(value: number) => formatCurrency(value)}
                             contentStyle={{
-                              backgroundColor: '#1F2937',
-                              color: '#FFFFFF',
-                              border: 'none',
+                              backgroundColor: 'var(--tooltip-bg)',
+                              color: 'var(--tooltip-text)',
+                              border: '1px solid var(--tooltip-border)',
                               borderRadius: '4px',
                               padding: '8px'
                             }}
-                            labelStyle={{ color: '#FFFFFF' }}
+                            labelStyle={{ color: 'var(--tooltip-text)' }}
                             cursor={{ fill: 'rgba(124, 58, 237, 0.1)' }}
                           />
                           <Bar
@@ -622,9 +622,9 @@ export default function ReportsView() {
                   </Card>
 
                   {/* Ventas por Método de Pago con Gráfico de Dona */}
-                  <Card>
+                  <Card className="bg-white dark:bg-[#1F2937]">
                     <CardHeader>
-                      <CardTitle>Ventas por Método de Pago</CardTitle>
+                      <CardTitle className="text-gray-900 dark:text-white">Ventas por Método de Pago</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -664,14 +664,14 @@ export default function ReportsView() {
                                 {/* Información del método */}
                                 <div className="flex-1">
                                   <div className="flex items-baseline justify-between gap-2">
-                                    <span className="text-sm text-gray-400">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
                                       {methodLabels[method] || method}
                                     </span>
-                                    <span className="text-base font-bold text-white">
+                                    <span className="text-base font-bold text-gray-900 dark:text-white">
                                       {formatCurrency(Number(amount))}
                                     </span>
                                   </div>
-                                  <div className="text-sm text-gray-400">
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
                                     {percentage}% del total
                                   </div>
                                 </div>
@@ -729,14 +729,14 @@ export default function ReportsView() {
                               <Tooltip
                                 formatter={(value: number, name: string) => [formatCurrency(value), name]}
                                 contentStyle={{
-                                  backgroundColor: '#1F2937',
-                                  color: '#FFFFFF',
-                                  border: 'none',
+                                  backgroundColor: 'var(--tooltip-bg)',
+                                  color: 'var(--tooltip-text)',
+                                  border: '1px solid var(--tooltip-border)',
                                   borderRadius: '8px',
                                   padding: '12px',
                                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
                                 }}
-                                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
+                                labelStyle={{ color: 'var(--tooltip-text)', fontWeight: 'bold' }}
                               />
                             </PieChart>
                           </ResponsiveContainer>
@@ -744,8 +744,8 @@ export default function ReportsView() {
                           {/* Valor Total en el Centro */}
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
-                              <div className="text-xs text-gray-400 mb-1">Total</div>
-                              <div className="text-2xl font-bold text-white">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total</div>
+                              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(salesReport.totalSalesAmount)}
                               </div>
                             </div>
@@ -784,9 +784,9 @@ export default function ReportsView() {
 
             {/* Gráfico de Barras Horizontales */}
             {productReports.length > 0 && (
-              <Card className="bg-[#1F2937]">
+              <Card className="bg-white dark:bg-[#1F2937]">
                 <CardHeader>
-                  <CardTitle>Top 10 Productos</CardTitle>
+                  <CardTitle className="text-gray-900 dark:text-white">Top 10 Productos</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={450}>
@@ -823,19 +823,19 @@ export default function ReportsView() {
                         type="category"
                         dataKey="name"
                         width={120}
-                        tick={{ fill: '#FFFFFF', fontSize: 12 }}
+                        tick={{ fill: 'var(--chart-text)', fontSize: 12 }}
                         axisLine={{ stroke: '#6B7280' }}
                       />
                       <Tooltip
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{
-                          backgroundColor: '#1F2937',
-                          color: '#FFFFFF',
-                          border: 'none',
+                          backgroundColor: 'var(--tooltip-bg)',
+                          color: 'var(--tooltip-text)',
+                          border: '1px solid var(--tooltip-border)',
                           borderRadius: '8px',
                           padding: '12px'
                         }}
-                        labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
+                        labelStyle={{ color: 'var(--tooltip-text)', fontWeight: 'bold' }}
                         cursor={{ fill: 'rgba(124, 58, 237, 0.1)' }}
                       />
                       <Bar
@@ -846,7 +846,7 @@ export default function ReportsView() {
                         label={{
                           position: 'right',
                           formatter: (value: any) => formatCurrency(Number(value)),
-                          fill: '#FFFFFF',
+                          fill: 'var(--chart-text)',
                           fontSize: 11
                         }}
                       />
@@ -1072,18 +1072,18 @@ export default function ReportsView() {
                     onClick={() => window.location.href = '/inventory'}
                     className="cursor-pointer transition-all hover:scale-[1.02]"
                   >
-                    <div className="rounded-xl p-6 bg-[#1F2937] border-l-[3px] border-l-red-500 hover:bg-[#374151]">
+                    <div className="rounded-xl p-6 bg-white dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 border-l-[3px] border-l-red-500 hover:bg-gray-50 dark:hover:bg-[#374151]">
                       <div className="flex items-center gap-2 mb-3">
                         <AlertCircle className="w-5 h-5 text-red-500" />
-                        <h3 className="text-base font-medium text-gray-400">
+                        <h3 className="text-base font-medium text-gray-600 dark:text-gray-400">
                           Productos Críticos
                         </h3>
                       </div>
-                      <p className="text-[32px] font-bold text-white leading-none mb-2">
+                      <p className="text-[32px] font-bold text-gray-900 dark:text-white leading-none mb-2">
                         {inventoryReport.lowStockProducts.length + inventoryReport.outOfStockProducts.length}
                       </p>
                       <div className="mt-4 space-y-2">
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           Requieren atención
                         </p>
                         <div className="flex items-center gap-2 text-xs text-[#5A31F4] font-medium">
