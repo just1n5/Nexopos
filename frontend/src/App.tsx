@@ -67,13 +67,33 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const { config: businessConfig } = useBusinessStore()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode')
+    return saved ? JSON.parse(saved) : false
+  })
   const [notifications] = useState(3) // Mock de notificaciones
+
+  // Inicializar dark mode al montar
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
 
   // Toggle dark mode
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark')
+    setDarkMode((prev) => {
+      const newValue = !prev
+      localStorage.setItem('darkMode', JSON.stringify(newValue))
+      if (newValue) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+      return newValue
+    })
   }
 
   // Manejar atajos de teclado de navegación
