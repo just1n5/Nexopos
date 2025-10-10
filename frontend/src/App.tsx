@@ -84,7 +84,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   // Toggle dark mode
   const toggleDarkMode = () => {
-    setDarkMode((prev) => {
+    setDarkMode((prev: boolean) => {
       const newValue = !prev
       localStorage.setItem('darkMode', JSON.stringify(newValue))
       if (newValue) {
