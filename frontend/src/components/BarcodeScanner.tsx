@@ -158,9 +158,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         { facingMode: 'environment' },
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
-          qrbox: { width: 250, height: 150 }, // Área fija optimizada para códigos de barras
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            // Área más grande para detectar desde más lejos
+            const minEdgePercentage = 0.85 // 85% del área
+            const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
+            const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
+            return {
+              width: qrboxSize,
+              height: Math.floor(qrboxSize * 0.5) // Mantener proporción para códigos de barras
+            }
+          },
           aspectRatio: 1.777778, // 16:9
-          disableFlip: false
+          disableFlip: false,
+          videoConstraints: {
+            width: { ideal: 1920 },  // Resolución más alta
+            height: { ideal: 1080 }
+          }
         },
         qrCodeSuccessCallback,
         () => {
@@ -175,23 +188,44 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       // Intentar configurar autoenfoque después de iniciar
       try {
+        // Esperar un momento para que el video se inicialice
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         const videoElement = document.querySelector(`#${scannerDivId} video`) as HTMLVideoElement
         if (videoElement && videoElement.srcObject) {
           const stream = videoElement.srcObject as MediaStream
           const videoTrack = stream.getVideoTracks()[0]
 
-          // Verificar si soporta autoenfoque
+          // Verificar capacidades
           const capabilities = videoTrack.getCapabilities() as any
-          if (capabilities && capabilities.focusMode) {
-            console.log('Configurando autoenfoque continuo...')
-            await videoTrack.applyConstraints({
-              advanced: [{ focusMode: 'continuous' } as any]
-            })
-            console.log('Autoenfoque configurado')
+          console.log('Capacidades de la cámara:', capabilities)
+
+          // Configurar constraints optimizadas para códigos cercanos
+          const constraints: any = {
+            advanced: []
+          }
+
+          // Autoenfoque continuo
+          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            constraints.advanced.push({ focusMode: 'continuous' })
+            console.log('✓ Autoenfoque continuo habilitado')
+          }
+
+          // Distancia de enfoque para objetos cercanos (10-30cm)
+          if (capabilities.focusDistance) {
+            constraints.advanced.push({ focusDistance: 0.15 }) // ~15cm
+            console.log('✓ Distancia de enfoque configurada: 15cm')
+          }
+
+          // Aplicar constraints si hay alguna
+          if (constraints.advanced.length > 0) {
+            await videoTrack.applyConstraints(constraints)
+            console.log('✅ Autoenfoque optimizado para códigos cercanos')
           }
         }
       } catch (focusError) {
-        console.log('No se pudo configurar autoenfoque (dispositivo puede no soportarlo):', focusError)
+        console.log('⚠️ No se pudo configurar autoenfoque avanzado:', focusError)
+        console.log('El escáner seguirá funcionando con configuración básica')
       }
     } catch (error: any) {
       console.error('Error al iniciar el escáner:', error)
@@ -493,10 +527,10 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                               📷 Coloca el código dentro del marco
                             </p>
                             <p className="text-xs text-center text-gray-600 mt-1">
-                              📏 Distancia: 15-25cm • 💡 Buena luz
+                              📏 Distancia: 10-20cm • 💡 Luz fuerte
                             </p>
                             <p className="text-xs text-center text-blue-600 mt-1 font-medium">
-                              Espera 1-2 segundos para el autoenfoque
+                              Mantén el código quieto 2-3 segundos
                             </p>
                           </div>
                         </motion.div>
@@ -517,9 +551,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                   <Alert className="border-amber-200 bg-amber-50">
                     <Camera className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="text-amber-800">
-                      <strong>Consejos para móviles:</strong> Mantén el código a 15-25cm de la cámara.
-                      Si se ve borroso, espera 1-2 segundos para que el autoenfoque se ajuste.
-                      Usa buena iluminación natural o artificial.
+                      <strong>Tips importantes:</strong> Mantén el código a 10-20cm de la cámara.
+                      Usa iluminación FUERTE y directa. Mantén el código QUIETO 2-3 segundos.
+                      El área de detección es grande, no necesitas acercarlo mucho.
                     </AlertDescription>
                   </Alert>
                 </motion.div>
