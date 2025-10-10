@@ -64,23 +64,79 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       setCameraError(null)
 
-      // Primero solicitar permisos explícitamente y encontrar la cámara trasera
+      // Detectar si es Safari/iOS
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      console.log('Navegador Safari:', isSafari, 'iOS:', isIOS)
+
+      // Enumerar cámaras disponibles para encontrar la trasera
+      console.log('Enumerando cámaras disponibles...')
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      console.log('Cámaras encontradas:', videoDevices.length, videoDevices)
+
+      // Buscar la cámara trasera explícitamente
+      let rearCameraId: string | null = null
+      for (const device of videoDevices) {
+        const label = device.label.toLowerCase()
+        console.log('Analizando cámara:', device.label, 'ID:', device.deviceId)
+
+        // Buscar palabras clave que indiquen cámara trasera
+        if (label.includes('back') || label.includes('rear') || label.includes('trasera') ||
+            label.includes('environment') || label.includes('posterior')) {
+          rearCameraId = device.deviceId
+          console.log('✓ Cámara trasera encontrada:', device.label, 'ID:', rearCameraId)
+          break
+        }
+      }
+
+      // Si no encontramos una cámara trasera por label, usar la última cámara (suele ser la trasera)
+      if (!rearCameraId && videoDevices.length > 1) {
+        rearCameraId = videoDevices[videoDevices.length - 1].deviceId
+        console.log('Usando última cámara como trasera:', videoDevices[videoDevices.length - 1].label)
+      }
+
+      // Primero solicitar permisos explícitamente
       console.log('Solicitando permisos de cámara...')
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: 'environment' } }
-        })
-        console.log('Permisos concedidos, deteniendo stream de prueba')
+        let constraints: MediaStreamConstraints
+
+        // En Safari/iOS, usar deviceId es más confiable que facingMode
+        if ((isSafari || isIOS) && rearCameraId) {
+          console.log('Safari/iOS: Usando deviceId específico:', rearCameraId)
+          constraints = {
+            video: {
+              deviceId: { exact: rearCameraId },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            }
+          }
+        } else {
+          // En otros navegadores, usar facingMode
+          console.log('Usando facingMode: environment')
+          constraints = {
+            video: { facingMode: { exact: 'environment' } }
+          }
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        console.log('Permisos concedidos con constraints específicas')
+
+        // Verificar qué cámara se obtuvo
+        const videoTrack = stream.getVideoTracks()[0]
+        const settings = videoTrack.getSettings()
+        console.log('Cámara seleccionada:', settings.facingMode, 'DeviceId:', settings.deviceId)
+
         // Detener el stream de prueba
         stream.getTracks().forEach(track => track.stop())
       } catch (permError) {
-        console.error('Error al solicitar permisos con "exact", intentando sin exact:', permError)
-        // Si falla con exact, intentar sin exact
+        console.error('Error al solicitar permisos con constraints específicas, intentando fallback:', permError)
+        // Fallback: intentar solo con facingMode sin exact
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }
           })
-          console.log('Permisos concedidos (fallback), deteniendo stream de prueba')
+          console.log('Permisos concedidos (fallback)')
           stream.getTracks().forEach(track => track.stop())
         } catch (fallbackError) {
           console.error('Error al solicitar permisos:', fallbackError)
@@ -164,14 +220,17 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       console.log('Iniciando scanner...')
 
-      // Intentar primero con exact: 'environment' para forzar cámara trasera
+      // Determinar la configuración de cámara según el navegador
       let cameraConfig: any
-      try {
+
+      // En Safari/iOS, usar deviceId si lo tenemos
+      if ((isSafari || isIOS) && rearCameraId) {
+        cameraConfig = { deviceId: { exact: rearCameraId } }
+        console.log('Safari/iOS: Iniciando con deviceId:', rearCameraId)
+      } else {
+        // En otros navegadores, usar facingMode
         cameraConfig = { facingMode: { exact: 'environment' } }
-        console.log('Intentando con exact: environment')
-      } catch {
-        cameraConfig = { facingMode: 'environment' }
-        console.log('Fallback a facingMode sin exact')
+        console.log('Iniciando con facingMode: exact environment')
       }
 
       await html5QrcodeRef.current.start(
@@ -201,9 +260,12 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           // Solo log si es necesario para debugging
         }
       ).catch(async (error) => {
-        // Si falla con exact, reintentar sin exact
-        if (error.message?.includes('exact') || error.message?.includes('OverconstrainedError')) {
-          console.log('Reintentando sin exact constraint...')
+        console.error('Error al iniciar con configuración específica:', error)
+
+        // Si falla con exact o deviceId, reintentar con facingMode básico
+        if (error.message?.includes('exact') || error.message?.includes('OverconstrainedError') ||
+            error.message?.includes('deviceId') || error.message?.includes('NotFoundError')) {
+          console.log('Reintentando con facingMode básico sin exact...')
           await html5QrcodeRef.current!.start(
             { facingMode: 'environment' },
             {
