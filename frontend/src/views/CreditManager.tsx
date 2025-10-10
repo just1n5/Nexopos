@@ -288,13 +288,13 @@ export default function CreditManager() {
   }
 
   return (
-    <div className="h-full bg-gray-50 overflow-auto">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Gestión de Créditos (Fiado)</h1>
-            <p className="text-gray-600">Administra las ventas a crédito y registra los pagos</p>
+            <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">Gestión de Créditos (Fiado)</h1>
+            <p className="text-gray-600 dark:text-gray-400">Administra las ventas a crédito y registra los pagos</p>
           </div>
           <Button onClick={() => setShowCustomerManager(true)}>
             <Users className="w-4 h-4 mr-2" />
@@ -308,9 +308,9 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total en Créditos</p>
-                  <p className="text-2xl font-bold">{formatCurrency(summary.totalCredits)}</p>
-                  <p className="text-xs text-gray-500">{summary.creditsCount} créditos</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total en Créditos</p>
+                  <p className="text-2xl font-bold dark:text-gray-100">{formatCurrency(summary.totalCredits)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.creditsCount} créditos</p>
                 </div>
                 <CreditCard className="w-8 h-8 text-blue-500" />
               </div>
@@ -321,9 +321,9 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Por Cobrar</p>
-                  <p className="text-2xl font-bold text-yellow-600">{formatCurrency(summary.totalPending)}</p>
-                  <p className="text-xs text-gray-500">{summary.pendingCount} pendientes</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Por Cobrar</p>
+                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{formatCurrency(summary.totalPending)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.pendingCount} pendientes</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
               </div>
@@ -334,9 +334,9 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Vencidos</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalOverdue)}</p>
-                  <p className="text-xs text-gray-500">{summary.overdueCount} vencidos</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Vencidos</p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(summary.totalOverdue)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.overdueCount} vencidos</p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-red-500" />
               </div>
@@ -347,14 +347,14 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Tasa de Recuperación</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {summary.totalCredits > 0 
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Tasa de Recuperación</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+                    {summary.totalCredits > 0
                       ? `${Math.round(((summary.totalCredits - summary.totalPending) / summary.totalCredits) * 100)}%`
                       : '0%'
                     }
                   </p>
-                  <p className="text-xs text-gray-500">del total cobrado</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">del total cobrado</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-green-500" />
               </div>
@@ -363,7 +363,7 @@ export default function CreditManager() {
         </div>
 
         {/* Filtros y Búsqueda */}
-        <div className="mb-6 bg-white p-4 rounded-lg shadow">
+        <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -389,17 +389,17 @@ export default function CreditManager() {
         </div>
 
         {/* Lista de Créditos por Cliente */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="p-4 border-b dark:border-gray-700">
+            <h2 className="font-semibold flex items-center gap-2 dark:text-gray-100">
               <Filter className="w-5 h-5" />
               Créditos por Cliente {filterStatus !== 'all' && `(${filterStatus === 'pending' ? 'Pendientes' : filterStatus === 'paid' ? 'Pagados' : 'Vencidos'})`}
             </h2>
           </div>
 
           {customersWithDebt.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p>No hay clientes con deuda pendiente</p>
             </div>
           ) : (
@@ -418,17 +418,17 @@ export default function CreditManager() {
                         <User className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">{customerGroup.customerName}</h3>
+                        <h3 className="font-bold text-lg dark:text-gray-100">{customerGroup.customerName}</h3>
                         {customerGroup.customerPhone && (
-                          <p className="text-sm text-gray-500">{customerGroup.customerPhone}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{customerGroup.customerPhone}</p>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm text-gray-500">Deuda Total</p>
-                        <p className="text-2xl font-bold text-red-600">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Deuda Total</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-500">
                           {formatCurrency(customerGroup.totalDebt)}
                         </p>
                       </div>

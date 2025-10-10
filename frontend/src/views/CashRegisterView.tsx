@@ -123,12 +123,12 @@ export default function CashRegisterView() {
   }
 
   return (
-    <div className="h-full bg-gray-50 overflow-auto">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Gestión de Caja</h1>
+            <h1 className="text-3xl font-bold dark:text-gray-100">Gestión de Caja</h1>
             <Badge variant={isRegisterOpen ? 'success' : 'destructive'} className="text-base px-3 py-1">
               {isRegisterOpen ? (
                 <>
@@ -143,12 +143,12 @@ export default function CashRegisterView() {
               )}
             </Badge>
           </div>
-          <p className="text-gray-600">
-            {new Date().toLocaleDateString('es-CO', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+          <p className="text-gray-600 dark:text-gray-400">
+            {new Date().toLocaleDateString('es-CO', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             })}
           </p>
         </div>
@@ -204,10 +204,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Base Inicial</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Base Inicial</span>
                       <Banknote className="w-4 h-4 text-gray-400" />
                     </div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold dark:text-gray-100">
                       {formatCurrency(summary.openingAmount)}
                     </div>
                   </CardContent>
@@ -216,10 +216,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Ventas Totales</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Ventas Totales</span>
                       <DollarSign className="w-4 h-4 text-green-500" />
                     </div>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-500">
                       {formatCurrency(summary.totalSales)}
                     </div>
                   </CardContent>

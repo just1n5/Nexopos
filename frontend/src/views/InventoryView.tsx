@@ -242,11 +242,11 @@ export default function InventoryView() {
   }, [products, searchQuery]);
 
   return (
-    <div className="h-full bg-gray-50 overflow-auto">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Inventario</h1>
+            <h1 className="text-3xl font-bold dark:text-gray-100">Inventario</h1>
             <div className="flex gap-2">
               <Button
                 onClick={() => setShowAddModal(true)}
@@ -261,7 +261,7 @@ export default function InventoryView() {
               </Button>
             </div>
           </div>
-          <p className="text-gray-600">Administra tu inventario de productos</p>
+          <p className="text-gray-600 dark:text-gray-400">Administra tu inventario de productos</p>
         </div>
 
         <Card className="mb-6">
@@ -296,22 +296,22 @@ export default function InventoryView() {
             {isLoading ? (
               <TableSkeleton rows={8} columns={7} />
             ) : filteredProducts.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
-                <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                <Package className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                 <p>{searchQuery ? 'No se encontraron productos' : 'No hay productos en el inventario'}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 font-medium text-gray-700">Producto</th>
-                      <th className="text-left p-2 font-medium text-gray-700">SKU</th>
-                      <th className="text-right p-2 font-medium text-gray-700">Precio</th>
-                      <th className="text-center p-2 font-medium text-gray-700">Stock Total</th>
-                      <th className="text-center p-2 font-medium text-gray-700">Estado</th>
-                      <th className="text-center p-2 font-medium text-gray-700">Última Actualización</th>
-                      <th className="text-center p-2 font-medium text-gray-700">Acciones</th>
+                    <tr className="border-b dark:border-gray-700">
+                      <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">Producto</th>
+                      <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">SKU</th>
+                      <th className="text-right p-2 font-medium text-gray-700 dark:text-gray-300">Precio</th>
+                      <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Stock Total</th>
+                      <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Estado</th>
+                      <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Última Actualización</th>
+                      <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -320,17 +320,17 @@ export default function InventoryView() {
                       const isOutOfStock = product.totalStock === 0;
 
                       return (
-                        <tr key={product.id} className="border-b hover:bg-gray-50 transition-colors">
+                        <tr key={product.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                           <td className="p-2">
                             <div>
-                              <p className="font-medium">{product.name}</p>
+                              <p className="font-medium dark:text-gray-100">{product.name}</p>
                               {cleanDescription(product.description) && (
-                                <p className="text-sm text-gray-500">{cleanDescription(product.description)}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{cleanDescription(product.description)}</p>
                               )}
                             </div>
                           </td>
-                          <td className="p-2 text-gray-600">{product.sku}</td>
-                          <td className="p-2 text-right font-medium">
+                          <td className="p-2 text-gray-600 dark:text-gray-400">{product.sku}</td>
+                          <td className="p-2 text-right font-medium dark:text-gray-200">
                             {product.saleType === 'WEIGHT'
                               ? `${formatCurrency((product.pricePerGram || 0) * 453.592)}/lb`
                               : formatCurrency(product.price)}
@@ -351,7 +351,7 @@ export default function InventoryView() {
                               {statusLabels[product.status]?.label || product.status}
                             </Badge>
                           </td>
-                          <td className="p-2 text-center text-sm text-gray-500">
+                          <td className="p-2 text-center text-sm text-gray-500 dark:text-gray-400">
                             {product.updatedAt.toLocaleDateString('es-CO')}
                           </td>
                           <td className="p-2 text-center">

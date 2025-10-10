@@ -439,11 +439,11 @@ export default function POSView() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-50 dark:bg-gray-900">
       {/* Panel Izquierdo - Catálogo de Productos */}
       <div className={`flex-1 flex flex-col overflow-hidden ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header de busqueda y categorias */}
-        <div className="bg-white border-b p-4 space-y-4 flex-shrink-0">
+        <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 space-y-4 flex-shrink-0">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -518,10 +518,10 @@ export default function POSView() {
                             </span>
                           </div>
                         )}
-                        <div className="aspect-square bg-gray-100 rounded-md mb-3 flex items-center justify-center">
-                          <Package className="w-12 h-12 text-gray-400" />
+                        <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md mb-3 flex items-center justify-center">
+                          <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
                         </div>
-                        <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.name}</h3>
+                        <h3 className="font-medium text-sm line-clamp-2 mb-1 dark:text-gray-100">{product.name}</h3>
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-primary">
                             {formatCurrency(product.price)}
@@ -541,7 +541,7 @@ export default function POSView() {
       </div>
 
       {/* Panel Derecho - Carrito de Compras */}
-      <div className={`w-full lg:w-[450px] bg-white border-l flex flex-col overflow-hidden ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
+      <div className={`w-full lg:w-[450px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 flex flex-col overflow-hidden ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header del carrito */}
         <div className="px-3 py-2 border-b bg-primary text-white flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -570,7 +570,7 @@ export default function POSView() {
           <div className="border-b flex-shrink-0">
             <Button
               variant="ghost"
-              className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50"
+              className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200"
               onClick={() => setCustomerSectionExpanded(!customerSectionExpanded)}
             >
               <div className="flex items-center gap-2">
@@ -606,7 +606,7 @@ export default function POSView() {
         {/* Lista de items del carrito */}
         <div className="flex-1 overflow-auto p-3">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-4 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-4 text-gray-400 dark:text-gray-500">
               <ShoppingCart className="w-10 h-10 mb-2" />
               <p className="text-sm font-medium">Carrito vacio</p>
               <p className="text-xs">Agrega productos para comenzar</p>
@@ -626,8 +626,8 @@ export default function POSView() {
                       <CardContent className="p-2">
                         <div className="flex items-start justify-between mb-1.5">
                           <div className="flex-1">
-                            <h4 className="font-medium text-xs">{item.product.name}</h4>
-                            <p className="text-xs text-gray-500">{formatCurrency(item.price)} c/u</p>
+                            <h4 className="font-medium text-xs dark:text-gray-100">{item.product.name}</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(item.price)} c/u</p>
                           </div>
                           <Button
                             variant="ghost"
@@ -678,26 +678,26 @@ export default function POSView() {
         </div>
 
         {/* Resumen y acciones */}
-        <div className="border-t p-3 space-y-3 flex-shrink-0">
+        <div className="border-t dark:border-gray-700 p-3 space-y-3 flex-shrink-0">
           {/* Totales */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Subtotal:</span>
-              <span>{formatCurrency(getSubtotal())}</span>
+              <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+              <span className="dark:text-gray-200">{formatCurrency(getSubtotal())}</span>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-sm text-green-600">
+              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                 <span>Descuento ({discount}%):</span>
                 <span>-{formatCurrency(getSubtotal() * discount / 100)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">IVA (19%):</span>
-              <span>{formatCurrency(getTotalTax())}</span>
+              <span className="text-gray-600 dark:text-gray-400">IVA (19%):</span>
+              <span className="dark:text-gray-200">{formatCurrency(getTotalTax())}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-xl font-bold">
-              <span>Total:</span>
+              <span className="dark:text-gray-100">Total:</span>
               <span className="text-primary">{formatCurrency(getTotal())}</span>
             </div>
           </div>
