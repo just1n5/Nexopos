@@ -15,7 +15,7 @@ import {
   Calculator,
   ArrowUpDown
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { KPICard } from '@/components/reports/KPICard'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
@@ -506,101 +507,57 @@ export default function ReportsView() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* IVA 19% */}
                       {salesReport.taxBreakdown.iva19.baseGravable > 0 && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-blue-900">IVA 19%</span>
-                            <TrendingUp className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Base Gravable:</span>
-                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva19.baseGravable)}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">IVA:</span>
-                              <span className="font-bold text-blue-700">{formatCurrency(salesReport.taxBreakdown.iva19.ivaAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
+                        <KPICard
+                          title="IVA 19%"
+                          mainValue={formatCurrency(salesReport.taxBreakdown.iva19.ivaAmount)}
+                          subLabels={[
+                            { label: 'Base Gravable', value: formatCurrency(salesReport.taxBreakdown.iva19.baseGravable) }
+                          ]}
+                        />
                       )}
 
                       {/* IVA 5% */}
                       {salesReport.taxBreakdown.iva5.baseGravable > 0 && (
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-green-900">IVA 5%</span>
-                            <TrendingUp className="w-4 h-4 text-green-600" />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Base Gravable:</span>
-                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva5.baseGravable)}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">IVA:</span>
-                              <span className="font-bold text-green-700">{formatCurrency(salesReport.taxBreakdown.iva5.ivaAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
+                        <KPICard
+                          title="IVA 5%"
+                          mainValue={formatCurrency(salesReport.taxBreakdown.iva5.ivaAmount)}
+                          subLabels={[
+                            { label: 'Base Gravable', value: formatCurrency(salesReport.taxBreakdown.iva5.baseGravable) }
+                          ]}
+                        />
                       )}
 
                       {/* Exento */}
                       {salesReport.taxBreakdown.iva0.baseGravable > 0 && (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">Exento / Sin IVA</span>
-                            <Package className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Base:</span>
-                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.iva0.baseGravable)}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">IVA:</span>
-                              <span className="font-bold text-gray-700">{formatCurrency(0)}</span>
-                            </div>
-                          </div>
-                        </div>
+                        <KPICard
+                          title="Exento / Sin IVA"
+                          mainValue={formatCurrency(0)}
+                          subLabels={[
+                            { label: 'Base', value: formatCurrency(salesReport.taxBreakdown.iva0.baseGravable) }
+                          ]}
+                        />
                       )}
 
                       {/* INC (si aplica) */}
                       {salesReport.taxBreakdown.inc.baseGravable > 0 && (
-                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-purple-900">INC</span>
-                            <AlertCircle className="w-4 h-4 text-purple-600" />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Base:</span>
-                              <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.inc.baseGravable)}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">INC:</span>
-                              <span className="font-bold text-purple-700">{formatCurrency(salesReport.taxBreakdown.inc.incAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
+                        <KPICard
+                          title="INC"
+                          mainValue={formatCurrency(salesReport.taxBreakdown.inc.incAmount)}
+                          subLabels={[
+                            { label: 'Base', value: formatCurrency(salesReport.taxBreakdown.inc.baseGravable) }
+                          ]}
+                        />
                       )}
 
                       {/* Total */}
-                      <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-yellow-900">Total Impuestos</span>
-                          <DollarSign className="w-4 h-4 text-yellow-600" />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Base Total:</span>
-                            <span className="font-semibold">{formatCurrency(salesReport.taxBreakdown.totalBase)}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Impuestos:</span>
-                            <span className="font-bold text-yellow-700 text-base">{formatCurrency(salesReport.taxBreakdown.totalTax)}</span>
-                          </div>
-                        </div>
-                      </div>
+                      <KPICard
+                        title="Total Impuestos"
+                        mainValue={formatCurrency(salesReport.taxBreakdown.totalTax)}
+                        variant="totalizador"
+                        subLabels={[
+                          { label: 'Base Total', value: formatCurrency(salesReport.taxBreakdown.totalBase) }
+                        ]}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -608,7 +565,7 @@ export default function ReportsView() {
                 {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Gráfico de Ventas por Hora */}
-                  <Card>
+                  <Card className="bg-[#1F2937]">
                     <CardHeader>
                       <CardTitle>Distribución de Ventas por Hora</CardTitle>
                     </CardHeader>
@@ -620,53 +577,84 @@ export default function ReportsView() {
                             ventas: Number(amount)
                           }))}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hour" />
-                          <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                          <defs>
+                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#A78BFA" stopOpacity={1} />
+                              <stop offset="100%" stopColor="#7C3AED" stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="4 4"
+                            stroke="#6B7280"
+                            strokeWidth={1}
+                            opacity={0.5}
+                          />
+                          <XAxis
+                            dataKey="hour"
+                            tick={{ fill: '#6B7280', fontSize: 12 }}
+                            axisLine={{ stroke: '#6B7280' }}
+                          />
+                          <YAxis
+                            tickFormatter={(value) => formatCurrency(value)}
+                            tick={{ fill: '#6B7280', fontSize: 12 }}
+                            axisLine={{ stroke: '#6B7280' }}
+                          />
                           <Tooltip
                             formatter={(value: number) => formatCurrency(value)}
-                            labelStyle={{ color: '#000' }}
+                            contentStyle={{
+                              backgroundColor: '#1F2937',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '8px'
+                            }}
+                            labelStyle={{ color: '#FFFFFF' }}
+                            cursor={{ fill: 'rgba(124, 58, 237, 0.1)' }}
                           />
-                          <Bar dataKey="ventas" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                          <Bar
+                            dataKey="ventas"
+                            fill="url(#barGradient)"
+                            radius={[4, 4, 0, 0]}
+                            animationDuration={800}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
 
-                  {/* Gráfico de Métodos de Pago */}
+                  {/* Tarjetas de Métodos de Pago */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Ventas por Método de Pago</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => ({
-                              name: method === 'cash' ? 'Efectivo' :
-                                    method === 'card' ? 'Tarjeta' :
-                                    method === 'bank_transfer' ? 'Transferencia' :
-                                    method === 'wallet' ? 'Billetera Digital' :
-                                    method === 'credit' ? 'Crédito' : method,
-                              value: Number(amount)
-                            }))}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {Object.entries(salesReport.salesByPaymentMethod).map((_entry, index) => {
-                              const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
-                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                            })}
-                          </Pie>
-                          <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
+                          const methodLabels: Record<string, string> = {
+                            cash: 'Efectivo',
+                            card: 'Tarjeta',
+                            bank_transfer: 'Transferencia',
+                            nequi: 'Nequi',
+                            daviplata: 'Daviplata',
+                            credit: 'Crédito'
+                          }
+
+                          const percentage = salesReport.totalSalesAmount > 0
+                            ? Math.round((Number(amount) / salesReport.totalSalesAmount) * 100)
+                            : 0;
+
+                          return (
+                            <KPICard
+                              key={method}
+                              title={methodLabels[method] || method}
+                              mainValue={formatCurrency(Number(amount))}
+                              subLabels={[
+                                { label: 'Del total', value: `${percentage}%` }
+                              ]}
+                            />
+                          );
+                        })}
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
