@@ -622,15 +622,15 @@ export default function ReportsView() {
                     </CardContent>
                   </Card>
 
-                  {/* Tarjetas de Métodos de Pago con Gráfico de Dona */}
+                  {/* Ventas por Método de Pago con Gráfico de Dona */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Ventas por Método de Pago</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Tarjetas KPI - Lado Izquierdo */}
-                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Columna Izquierda: Leyenda/Desglose */}
+                        <div className="space-y-4">
                           {Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
                             const methodLabels: Record<string, string> = {
                               cash: 'Efectivo',
@@ -641,53 +641,50 @@ export default function ReportsView() {
                               credit: 'Crédito'
                             }
 
+                            const colorMap: Record<string, string> = {
+                              cash: '#5A31F4',
+                              card: '#3b82f6',
+                              bank_transfer: '#f59e0b',
+                              nequi: '#ec4899',
+                              daviplata: '#8b5cf6',
+                              credit: '#ef4444'
+                            }
+
                             const percentage = salesReport.totalSalesAmount > 0
                               ? Math.round((Number(amount) / salesReport.totalSalesAmount) * 100)
                               : 0;
 
                             return (
-                              <KPICard
-                                key={method}
-                                title={methodLabels[method] || method}
-                                mainValue={formatCurrency(Number(amount))}
-                                subLabels={[
-                                  { label: 'Del total', value: `${percentage}%` }
-                                ]}
-                              />
+                              <div key={method} className="flex items-center gap-4">
+                                {/* Círculo de color */}
+                                <div
+                                  className="w-3 h-3 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: colorMap[method] || '#6B7280' }}
+                                />
+
+                                {/* Información del método */}
+                                <div className="flex-1">
+                                  <div className="flex items-baseline justify-between gap-2">
+                                    <span className="text-sm text-gray-400">
+                                      {methodLabels[method] || method}
+                                    </span>
+                                    <span className="text-base font-bold text-white">
+                                      {formatCurrency(Number(amount))}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-gray-400">
+                                    {percentage}% del total
+                                  </div>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
 
-                        {/* Gráfico de Dona - Lado Derecho */}
-                        <div className="flex items-center justify-center bg-[#1F2937] rounded-xl p-6">
+                        {/* Columna Derecha: Gráfico de Dona */}
+                        <div className="flex items-center justify-center relative">
                           <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
-                              <defs>
-                                <linearGradient id="cashGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#059669" stopOpacity={1} />
-                                </linearGradient>
-                                <linearGradient id="cardGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#2563eb" stopOpacity={1} />
-                                </linearGradient>
-                                <linearGradient id="transferGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
-                                </linearGradient>
-                                <linearGradient id="nequiGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#ec4899" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#db2777" stopOpacity={1} />
-                                </linearGradient>
-                                <linearGradient id="daviGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={1} />
-                                </linearGradient>
-                                <linearGradient id="creditGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
-                                  <stop offset="100%" stopColor="#dc2626" stopOpacity={1} />
-                                </linearGradient>
-                              </defs>
                               <Pie
                                 data={Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
                                   const methodLabels: Record<string, string> = {
@@ -706,41 +703,54 @@ export default function ReportsView() {
                                 })}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
-                                paddingAngle={2}
+                                innerRadius={70}
+                                outerRadius={110}
+                                paddingAngle={3}
                                 dataKey="value"
+                                stroke="none"
                               >
                                 {Object.entries(salesReport.salesByPaymentMethod).map(([method], index) => {
-                                  const gradientMap: Record<string, string> = {
-                                    cash: 'url(#cashGradient)',
-                                    card: 'url(#cardGradient)',
-                                    bank_transfer: 'url(#transferGradient)',
-                                    nequi: 'url(#nequiGradient)',
-                                    daviplata: 'url(#daviGradient)',
-                                    credit: 'url(#creditGradient)'
+                                  const colorMap: Record<string, string> = {
+                                    cash: '#5A31F4',
+                                    card: '#3b82f6',
+                                    bank_transfer: '#f59e0b',
+                                    nequi: '#ec4899',
+                                    daviplata: '#8b5cf6',
+                                    credit: '#ef4444'
                                   }
                                   return (
                                     <Cell
                                       key={`cell-${index}`}
-                                      fill={gradientMap[method] || '#6B7280'}
+                                      fill={colorMap[method] || '#6B7280'}
+                                      className="transition-opacity hover:opacity-80 cursor-pointer"
                                     />
                                   )
                                 })}
                               </Pie>
                               <Tooltip
-                                formatter={(value: number) => formatCurrency(value)}
+                                formatter={(value: number, name: string) => [formatCurrency(value), name]}
                                 contentStyle={{
                                   backgroundColor: '#1F2937',
                                   color: '#FFFFFF',
                                   border: 'none',
                                   borderRadius: '8px',
-                                  padding: '12px'
+                                  padding: '12px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
                                 }}
                                 labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
                               />
                             </PieChart>
                           </ResponsiveContainer>
+
+                          {/* Valor Total en el Centro */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="text-center">
+                              <div className="text-xs text-gray-400 mb-1">Total</div>
+                              <div className="text-2xl font-bold text-white">
+                                {formatCurrency(salesReport.totalSalesAmount)}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
