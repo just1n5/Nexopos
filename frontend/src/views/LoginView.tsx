@@ -1,22 +1,12 @@
 ﻿import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ShoppingBag, Mail, Lock, Store, ShieldCheck } from 'lucide-react'
+import { ShoppingBag, Mail, Lock, Store } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { useAuthStore, SEED_ACCOUNTS } from '@/stores/authStore'
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Admin',
-  admin: 'Admin',
-  CASHIER: 'Cajero',
-  cashier: 'Cajero',
-  MANAGER: 'Manager',
-  manager: 'Manager'
-}
+import { useAuthStore } from '@/stores/authStore'
 
 export default function LoginView() {
   const navigate = useNavigate()
@@ -73,27 +63,6 @@ export default function LoginView() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="rounded-lg border border-dashed border-muted bg-muted/30 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                  <ShieldCheck className="h-4 w-4" />
-                  Usa estas credenciales demo
-                </div>
-                <div className="space-y-2 text-sm">
-                  {SEED_ACCOUNTS.map(account => (
-                    <div key={account.email} className="flex items-start justify-between gap-2 rounded-md bg-white/70 px-3 py-2 text-left">
-                      <div>
-                        <p className="font-medium text-foreground">{account.name}</p>
-                        <p className="text-muted-foreground">Correo: {account.email}</p>
-                        <p className="text-muted-foreground">Contraseña: {account.password}</p>
-                      </div>
-                      <Badge variant="secondary" className="shrink-0 self-start">
-                        {ROLE_LABELS[account.role] ?? account.role}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
