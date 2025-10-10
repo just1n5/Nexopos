@@ -154,18 +154,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       console.log('Iniciando scanner...')
 
-      // Configuración de video con autoenfoque para móviles
-      // @ts-ignore - focusMode no está en tipos de TS pero es soportado por navegadores
-      const videoConstraints: any = {
-        facingMode: 'environment',
-        advanced: [
-          { focusMode: 'continuous' },  // Autoenfoque continuo
-          { focusDistance: 0.2 }         // Enfoque cercano (20cm aprox)
-        ]
-      }
-
       await html5QrcodeRef.current.start(
-        videoConstraints,
+        { facingMode: 'environment' },
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
           qrbox: { width: 250, height: 150 }, // Área fija optimizada para códigos de barras
@@ -182,6 +172,27 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       console.log('Scanner iniciado exitosamente')
       setIsScanning(true)
       setIsInitializing(false)
+
+      // Intentar configurar autoenfoque después de iniciar
+      try {
+        const videoElement = document.querySelector(`#${scannerDivId} video`) as HTMLVideoElement
+        if (videoElement && videoElement.srcObject) {
+          const stream = videoElement.srcObject as MediaStream
+          const videoTrack = stream.getVideoTracks()[0]
+
+          // Verificar si soporta autoenfoque
+          const capabilities = videoTrack.getCapabilities() as any
+          if (capabilities && capabilities.focusMode) {
+            console.log('Configurando autoenfoque continuo...')
+            await videoTrack.applyConstraints({
+              advanced: [{ focusMode: 'continuous' } as any]
+            })
+            console.log('Autoenfoque configurado')
+          }
+        }
+      } catch (focusError) {
+        console.log('No se pudo configurar autoenfoque (dispositivo puede no soportarlo):', focusError)
+      }
     } catch (error: any) {
       console.error('Error al iniciar el escáner:', error)
       console.error('Error detallado:', error.message, error.name, error.stack)
