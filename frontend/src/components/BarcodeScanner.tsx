@@ -255,22 +255,31 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       await html5QrcodeRef.current.start(
         selectedCameraId,  // Pasar el deviceId directamente como string
         {
-          fps: 10, // FPS reducido para dar más tiempo de procesamiento
+          fps: 5, // REDUCIDO: 5 FPS para dar MÁS tiempo de procesamiento por frame
           qrbox: (viewfinderWidth, viewfinderHeight) => {
-            // Área más grande para detectar desde más lejos
-            const minEdgePercentage = 0.85 // 85% del área
+            // ÁREA MÁXIMA: 95% del área visible para detectar desde lo más lejos posible
+            const minEdgePercentage = 0.95 // 95% del área
             const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
             const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
+
+            console.log('📐 Área de detección:', {
+              viewfinderWidth,
+              viewfinderHeight,
+              qrboxWidth: qrboxSize,
+              qrboxHeight: Math.floor(qrboxSize * 0.4),
+              percentage: '95%'
+            })
+
             return {
               width: qrboxSize,
-              height: Math.floor(qrboxSize * 0.5) // Mantener proporción para códigos de barras
+              height: Math.floor(qrboxSize * 0.4) // Proporción 2.5:1 para códigos de barras estándar
             }
           },
           aspectRatio: 1.777778, // 16:9
           disableFlip: false,
           videoConstraints: {
             deviceId: { exact: selectedCameraId },  // Forzar deviceId aquí también
-            width: { ideal: 1920 },
+            width: { ideal: 1920 },  // Alta resolución para detectar desde lejos
             height: { ideal: 1080 }
           }
         },
@@ -317,27 +326,48 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           const capabilities = videoTrack.getCapabilities() as any
           console.log('Capacidades de la cámara:', capabilities)
 
-          // Configurar constraints optimizadas para códigos cercanos
+          // Configurar constraints optimizadas para detectar desde MÁS LEJOS
           const constraints: any = {
             advanced: []
           }
 
-          // Autoenfoque continuo
+          // Autoenfoque continuo (mejor para objetos en movimiento)
           if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
             constraints.advanced.push({ focusMode: 'continuous' })
             console.log('✓ Autoenfoque continuo habilitado')
           }
 
-          // Distancia de enfoque para objetos cercanos (10-30cm)
+          // CLAVE: Distancia de enfoque para objetos a MEDIA DISTANCIA (30-50cm)
+          // En vez de 0.15 (15cm muy cerca), usar 0.4-0.5 para 40-50cm
           if (capabilities.focusDistance) {
-            constraints.advanced.push({ focusDistance: 0.15 }) // ~15cm
-            console.log('✓ Distancia de enfoque configurada: 15cm')
+            // focusDistance va de 0 (infinito) a 1 (muy cerca)
+            // 0.3-0.4 es bueno para 30-50cm
+            constraints.advanced.push({ focusDistance: 0.35 }) // ~35-40cm
+            console.log('✓ Distancia de enfoque configurada: 35-40cm (media distancia)')
           }
+
+          // Zoom: Si la cámara soporta zoom, hacer un poco de zoom digital
+          // para que el código se vea más grande desde más lejos
+          if (capabilities.zoom && capabilities.zoom.max > 1) {
+            // Usar un zoom moderado (1.5x - 2x)
+            const zoomLevel = Math.min(2, capabilities.zoom.max)
+            constraints.advanced.push({ zoom: zoomLevel })
+            console.log(`✓ Zoom configurado: ${zoomLevel}x`)
+          }
+
+          // Torch/Flash: Si está disponible, encenderlo para mejor iluminación
+          // (solo si es cámara trasera)
+          if (capabilities.torch && settings.facingMode === 'environment') {
+            constraints.advanced.push({ torch: true })
+            console.log('✓ Flash/Torch habilitado')
+          }
+
+          console.log('Constraints a aplicar:', constraints)
 
           // Aplicar constraints si hay alguna
           if (constraints.advanced.length > 0) {
             await videoTrack.applyConstraints(constraints)
-            console.log('✅ Autoenfoque optimizado para códigos cercanos')
+            console.log('✅ Cámara optimizada para detección a media distancia (30-50cm)')
           }
         }
       } catch (focusError) {
@@ -684,13 +714,13 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                         >
                           <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg mx-auto max-w-xs">
                             <p className="text-sm font-medium text-center text-gray-800">
-                              📷 Coloca el código dentro del marco
+                              📷 Coloca el código en cualquier parte del visor
                             </p>
                             <p className="text-xs text-center text-gray-600 mt-1">
-                              📏 Distancia: 10-20cm • 💡 Luz fuerte
+                              📏 Distancia: 30-50cm • 💡 Luz FUERTE
                             </p>
                             <p className="text-xs text-center text-blue-600 mt-1 font-medium">
-                              Mantén el código quieto 2-3 segundos
+                              Mantén QUIETO y espera 3-5 segundos
                             </p>
                           </div>
                         </motion.div>
@@ -711,9 +741,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                   <Alert className="border-amber-200 bg-amber-50">
                     <Camera className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="text-amber-800">
-                      <strong>Tips importantes:</strong> Mantén el código a 10-20cm de la cámara.
-                      Usa iluminación FUERTE y directa. Mantén el código QUIETO 2-3 segundos.
-                      El área de detección es grande, no necesitas acercarlo mucho.
+                      <strong>Tips importantes:</strong> Mantén el código a <strong>30-50cm</strong> de la cámara.
+                      Usa iluminación <strong>MUY FUERTE</strong> y directa. Mantén el código <strong>COMPLETAMENTE QUIETO</strong> por 3-5 segundos.
+                      El área de detección cubre el 95% del visor - NO necesitas acercarlo mucho.
                     </AlertDescription>
                   </Alert>
                 </motion.div>
