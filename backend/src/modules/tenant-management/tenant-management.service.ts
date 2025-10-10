@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { User } from '../users/entities/user.entity';
 import { OtpService } from '../otp/otp.service';
@@ -16,6 +16,7 @@ export class TenantManagementService {
     private userRepository: Repository<User>,
     private otpService: OtpService,
     private emailService: EmailService,
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -181,16 +182,60 @@ export class TenantManagementService {
 
     const businessName = tenant.businessName;
 
-    // Eliminar usuarios del tenant
-    await this.userRepository.delete({ tenantId });
+    // Usar una transacción para eliminar todo en cascada
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Eliminar tenant
-    await this.tenantRepository.remove(tenant);
+    try {
+      // Eliminar todas las entidades relacionadas en orden
+      // IMPORTANTE: El orden importa para respetar las foreign keys
 
-    return {
-      message: `Cuenta ${businessName} eliminada permanentemente`,
-      deletedAt: new Date(),
-    };
+      // 1. Eliminar items de ventas
+      await queryRunner.query(
+        `DELETE FROM sale_item WHERE "saleId" IN (SELECT id FROM sale WHERE "tenantId" = $1)`,
+        [tenantId],
+      );
+
+      // 2. Eliminar ventas
+      await queryRunner.query(`DELETE FROM sale WHERE "tenantId" = $1`, [tenantId]);
+
+      // 3. Eliminar movimientos de inventario
+      await queryRunner.query(`DELETE FROM inventory_movement WHERE "tenantId" = $1`, [tenantId]);
+
+      // 4. Eliminar productos
+      await queryRunner.query(`DELETE FROM product WHERE "tenantId" = $1`, [tenantId]);
+
+      // 5. Eliminar categorías
+      await queryRunner.query(`DELETE FROM category WHERE "tenantId" = $1`, [tenantId]);
+
+      // 6. Eliminar clientes
+      await queryRunner.query(`DELETE FROM customer WHERE "tenantId" = $1`, [tenantId]);
+
+      // 7. Eliminar créditos
+      await queryRunner.query(`DELETE FROM credit WHERE "tenantId" = $1`, [tenantId]);
+
+      // 8. Eliminar registros de caja
+      await queryRunner.query(`DELETE FROM cash_register WHERE "tenantId" = $1`, [tenantId]);
+
+      // 9. Eliminar usuarios
+      await queryRunner.query(`DELETE FROM "user" WHERE "tenantId" = $1`, [tenantId]);
+
+      // 10. Finalmente, eliminar el tenant
+      await queryRunner.query(`DELETE FROM tenant WHERE id = $1`, [tenantId]);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: `Cuenta ${businessName} eliminada permanentemente`,
+        deletedAt: new Date(),
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
