@@ -177,6 +177,25 @@ export class AuthService {
     }
   }
 
+  async checkUserExists(identifier: string): Promise<{ exists: boolean; name?: string; email?: string }> {
+    // Try to find by email first (most common case)
+    let user = await this.usersService.findByEmail(identifier);
+
+    // If not found by email and identifier looks like a phone, try phone lookup
+    // Note: You'll need to implement findByPhone in UsersService if you want phone lookup
+    // For now, we'll just check email
+
+    if (!user) {
+      return { exists: false };
+    }
+
+    return {
+      exists: true,
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+    };
+  }
+
   private generateAccessToken(user: User): string {
     const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
     return this.jwtService.sign(payload);

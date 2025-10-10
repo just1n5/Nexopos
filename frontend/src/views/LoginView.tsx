@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuthStore } from '@/stores/authStore'
+import { usersService } from '@/services/usersService'
 
 type LoginStep = 'identification' | 'authentication'
 type LoginMethod = 'phone' | 'email'
@@ -55,26 +56,27 @@ export default function LoginView() {
       return
     }
 
-    // TODO: Validate if user exists
-    // For now, we'll simulate finding the user
-    // In production, you should call an API to check if the user exists
-
-    // Simulate API call
     try {
-      // Here you would call: const user = await usersService.checkUserExists(identifier)
-      // For now, we'll mock it
-      const mockUserName = 'Javier Torres' // This should come from API
-      setUserName(mockUserName)
+      // Check if user exists in the system
+      const result = await usersService.checkUserExists(identifier)
 
-      // Generate initials
-      const names = mockUserName.split(' ')
+      if (!result.exists) {
+        setError(`No encontramos una cuenta asociada a este ${loginMethod === 'phone' ? 'número' : 'correo'}. ¿Quieres crear una cuenta nueva?`)
+        return
+      }
+
+      // Set user data from API response
+      setUserName(result.name || 'Usuario')
+
+      // Generate initials from name
+      const names = (result.name || '').split(' ')
       const initials = names.map(n => n[0]).join('').toUpperCase().slice(0, 2)
-      setUserInitials(initials)
+      setUserInitials(initials || '??')
 
       // Move to authentication step
       setStep('authentication')
-    } catch (err) {
-      setError(`No encontramos una cuenta asociada a este ${loginMethod === 'phone' ? 'número' : 'correo'}. ¿Quieres crear una cuenta nueva?`)
+    } catch (err: any) {
+      setError(err.message || `Error al verificar ${loginMethod === 'phone' ? 'número' : 'correo'}. Intenta de nuevo.`)
     }
   }
 

@@ -144,6 +144,20 @@ class UsersService {
       throw new Error(error.message || 'Error al cambiar contraseña')
     }
   }
+
+  async checkUserExists(identifier: string): Promise<{ exists: boolean; name?: string; email?: string }> {
+    const response = await apiFetch('/auth/check-user', {
+      method: 'POST',
+      body: JSON.stringify({ identifier })
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Error al verificar usuario')
+    }
+
+    return response.json()
+  }
 }
 
 export const usersService = new UsersService()

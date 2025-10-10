@@ -29,6 +29,13 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post('check-user')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if user exists by email or phone and return basic info' })
+  async checkUser(@Body() body: { identifier: string }) {
+    return this.authService.checkUserExists(body.identifier);
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ description: 'Logs in and returns a JWT.' })
