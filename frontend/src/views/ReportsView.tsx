@@ -15,7 +15,7 @@ import {
   Calculator,
   ArrowUpDown
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts'
 import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -622,38 +622,126 @@ export default function ReportsView() {
                     </CardContent>
                   </Card>
 
-                  {/* Tarjetas de Métodos de Pago */}
+                  {/* Tarjetas de Métodos de Pago con Gráfico de Dona */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Ventas por Método de Pago</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
-                          const methodLabels: Record<string, string> = {
-                            cash: 'Efectivo',
-                            card: 'Tarjeta',
-                            bank_transfer: 'Transferencia',
-                            nequi: 'Nequi',
-                            daviplata: 'Daviplata',
-                            credit: 'Crédito'
-                          }
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Tarjetas KPI - Lado Izquierdo */}
+                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
+                            const methodLabels: Record<string, string> = {
+                              cash: 'Efectivo',
+                              card: 'Tarjeta',
+                              bank_transfer: 'Transferencia',
+                              nequi: 'Nequi',
+                              daviplata: 'Daviplata',
+                              credit: 'Crédito'
+                            }
 
-                          const percentage = salesReport.totalSalesAmount > 0
-                            ? Math.round((Number(amount) / salesReport.totalSalesAmount) * 100)
-                            : 0;
+                            const percentage = salesReport.totalSalesAmount > 0
+                              ? Math.round((Number(amount) / salesReport.totalSalesAmount) * 100)
+                              : 0;
 
-                          return (
-                            <KPICard
-                              key={method}
-                              title={methodLabels[method] || method}
-                              mainValue={formatCurrency(Number(amount))}
-                              subLabels={[
-                                { label: 'Del total', value: `${percentage}%` }
-                              ]}
-                            />
-                          );
-                        })}
+                            return (
+                              <KPICard
+                                key={method}
+                                title={methodLabels[method] || method}
+                                mainValue={formatCurrency(Number(amount))}
+                                subLabels={[
+                                  { label: 'Del total', value: `${percentage}%` }
+                                ]}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        {/* Gráfico de Dona - Lado Derecho */}
+                        <div className="flex items-center justify-center bg-[#1F2937] rounded-xl p-6">
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <defs>
+                                <linearGradient id="cashGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#059669" stopOpacity={1} />
+                                </linearGradient>
+                                <linearGradient id="cardGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#2563eb" stopOpacity={1} />
+                                </linearGradient>
+                                <linearGradient id="transferGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
+                                </linearGradient>
+                                <linearGradient id="nequiGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#ec4899" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#db2777" stopOpacity={1} />
+                                </linearGradient>
+                                <linearGradient id="daviGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={1} />
+                                </linearGradient>
+                                <linearGradient id="creditGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#dc2626" stopOpacity={1} />
+                                </linearGradient>
+                              </defs>
+                              <Pie
+                                data={Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
+                                  const methodLabels: Record<string, string> = {
+                                    cash: 'Efectivo',
+                                    card: 'Tarjeta',
+                                    bank_transfer: 'Transferencia',
+                                    nequi: 'Nequi',
+                                    daviplata: 'Daviplata',
+                                    credit: 'Crédito'
+                                  }
+                                  return {
+                                    name: methodLabels[method] || method,
+                                    value: Number(amount),
+                                    method: method
+                                  }
+                                })}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={100}
+                                paddingAngle={2}
+                                dataKey="value"
+                              >
+                                {Object.entries(salesReport.salesByPaymentMethod).map(([method], index) => {
+                                  const gradientMap: Record<string, string> = {
+                                    cash: 'url(#cashGradient)',
+                                    card: 'url(#cardGradient)',
+                                    bank_transfer: 'url(#transferGradient)',
+                                    nequi: 'url(#nequiGradient)',
+                                    daviplata: 'url(#daviGradient)',
+                                    credit: 'url(#creditGradient)'
+                                  }
+                                  return (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={gradientMap[method] || '#6B7280'}
+                                    />
+                                  )
+                                })}
+                              </Pie>
+                              <Tooltip
+                                formatter={(value: number) => formatCurrency(value)}
+                                contentStyle={{
+                                  backgroundColor: '#1F2937',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '12px'
+                                }}
+                                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
