@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/useToast';
 import { productsService, inventoryService, MovementType } from '@/services';
 import { canWriteInventory } from '@/lib/permissions';
 import AddProductModal, { NewProductData } from '@/components/AddProductModal';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -293,10 +294,7 @@ export default function InventoryView() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="py-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-500">Cargando productos...</p>
-              </div>
+              <TableSkeleton rows={8} columns={7} />
             ) : filteredProducts.length === 0 ? (
               <div className="py-8 text-center text-gray-500">
                 <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
