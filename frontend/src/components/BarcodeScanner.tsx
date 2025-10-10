@@ -204,8 +204,54 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       const selectedCamera = cameras.find(cam => cam.deviceId === selectedCameraId)
       console.log('Cámara seleccionada:', selectedCamera)
 
-      // Usar directamente el deviceId seleccionado por el usuario
-      // html5-qrcode acepta solo el string del deviceId, no un objeto
+      // SOLUCIÓN: Obtener el stream nosotros mismos con constraints exactas
+      // Esto garantiza que el navegador use la cámara correcta
+      console.log('Obteniendo stream con constraints exactas...')
+      const constraints = {
+        video: {
+          deviceId: { exact: selectedCameraId },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      }
+      console.log('Constraints:', constraints)
+
+      try {
+        // Obtener stream directamente con getUserMedia
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        console.log('Stream obtenido exitosamente')
+
+        // Verificar qué cámara se obtuvo
+        const videoTrack = stream.getVideoTracks()[0]
+        const trackSettings = videoTrack.getSettings()
+        console.log('✅ Stream settings:', {
+          deviceId: trackSettings.deviceId,
+          facingMode: trackSettings.facingMode,
+          label: videoTrack.label,
+          width: trackSettings.width,
+          height: trackSettings.height
+        })
+
+        // Verificar coincidencia
+        if (trackSettings.deviceId !== selectedCameraId) {
+          console.error('❌ El navegador ignoró nuestro deviceId!')
+          console.error('   Solicitado:', selectedCameraId)
+          console.error('   Recibido:', trackSettings.deviceId)
+          stream.getTracks().forEach(track => track.stop())
+          throw new Error('El navegador no respeta la selección de cámara')
+        }
+
+        // Detener el stream de prueba - html5-qrcode creará el suyo
+        stream.getTracks().forEach(track => track.stop())
+        console.log('Stream de prueba detenido, iniciando html5-qrcode...')
+
+      } catch (streamError) {
+        console.error('Error al obtener stream:', streamError)
+        throw streamError
+      }
+
+      // Ahora iniciar html5-qrcode con el deviceId
+      // Como ya verificamos que funciona, html5-qrcode debería usar la misma cámara
       await html5QrcodeRef.current.start(
         selectedCameraId,  // Pasar el deviceId directamente como string
         {
@@ -223,7 +269,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           aspectRatio: 1.777778, // 16:9
           disableFlip: false,
           videoConstraints: {
-            width: { ideal: 1920 },  // Resolución más alta
+            deviceId: { exact: selectedCameraId },  // Forzar deviceId aquí también
+            width: { ideal: 1920 },
             height: { ideal: 1080 }
           }
         },
