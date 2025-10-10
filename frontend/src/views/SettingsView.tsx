@@ -243,12 +243,12 @@ export default function SettingsView() {
   )
 
   return (
-    <div className="h-full bg-gray-50 overflow-auto">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Configuración</h1>
-          <p className="text-gray-600">Administra la configuración de tu negocio</p>
+          <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">Configuración</h1>
+          <p className="text-gray-600 dark:text-gray-400">Administra la configuración de tu negocio</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -272,7 +272,7 @@ export default function SettingsView() {
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
                           activeTab === tab.id
                             ? 'bg-primary text-white'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -294,19 +294,19 @@ export default function SettingsView() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Conexión DIAN</span>
+                  <span className="text-sm dark:text-gray-300">Conexión DIAN</span>
                   <Badge variant="success">Activa</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Base de datos</span>
+                  <span className="text-sm dark:text-gray-300">Base de datos</span>
                   <Badge variant="success">OK</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Impresora</span>
+                  <span className="text-sm dark:text-gray-300">Impresora</span>
                   <Badge variant="warning">Sin configurar</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Internet</span>
+                  <span className="text-sm dark:text-gray-300">Internet</span>
                   <Badge variant="success">Conectado</Badge>
                 </div>
               </CardContent>

@@ -252,14 +252,14 @@ export default function ReportsView() {
   }
   
   return (
-    <div className="h-full bg-gray-50 overflow-auto">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold">Reportes y Análisis</h1>
-              <p className="text-gray-600">Analiza el rendimiento de tu negocio</p>
+              <h1 className="text-3xl font-bold dark:text-gray-100">Reportes y Análisis</h1>
+              <p className="text-gray-600 dark:text-gray-400">Analiza el rendimiento de tu negocio</p>
             </div>
             
             <div className="flex items-center gap-4">
@@ -290,14 +290,14 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Total facturado (incluye crédito)">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1" title="Total facturado (incluye crédito)">
                       Ventas del Día
                       <AlertCircle className="w-3 h-3 text-gray-400" />
                     </span>
                     <ShoppingCart className="w-5 h-5 text-blue-500" />
                   </div>
-                  <div className="text-2xl font-bold">{formatCurrency(salesReport.totalSalesAmount)}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-2xl font-bold dark:text-gray-100">{formatCurrency(salesReport.totalSalesAmount)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {salesReport.totalSales} {salesReport.totalSales === 1 ? 'venta' : 'ventas'}
                   </div>
                 </CardContent>
@@ -312,20 +312,20 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Lo que entró en caja (excluye crédito)">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1" title="Lo que entró en caja (excluye crédito)">
                       Ingresos del Día
                       <AlertCircle className="w-3 h-3 text-gray-400" />
                     </span>
                     <DollarSign className="w-5 h-5 text-green-500" />
                   </div>
-                  <div className="text-2xl font-bold text-green-600">{formatCurrency(salesReport.totalIncome)}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(salesReport.totalIncome)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Efectivo, tarjeta, digital
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -334,10 +334,10 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Ticket Promedio</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Ticket Promedio</span>
                     <CreditCard className="w-5 h-5 text-purple-500" />
                   </div>
-                  <div className="text-2xl font-bold">{formatCurrency(salesReport.averageTicket)}</div>
+                  <div className="text-2xl font-bold dark:text-gray-100">{formatCurrency(salesReport.averageTicket)}</div>
                   <div className="flex items-center mt-2">
                     <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
                     <span className="text-sm text-red-600">-3.2%</span>
@@ -355,14 +355,14 @@ export default function ReportsView() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 flex items-center gap-1" title="Saldo a recuperar de ventas a crédito">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1" title="Saldo a recuperar de ventas a crédito">
                       Créditos Pendientes
                       <AlertCircle className="w-3 h-3 text-gray-400" />
                     </span>
                     <Clock className="w-5 h-5 text-yellow-500" />
                   </div>
-                  <div className="text-2xl font-bold text-yellow-600">{formatCurrency(salesReport.creditPending)}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{formatCurrency(salesReport.creditPending)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {salesReport.creditSalesCount} {salesReport.creditSalesCount === 1 ? 'crédito' : 'créditos'}
                   </div>
                 </CardContent>
@@ -374,43 +374,43 @@ export default function ReportsView() {
         {/* Fila adicional con métricas secundarias */}
         {salesReport && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-700 font-medium">Ventas a Crédito</p>
-                    <p className="text-xl font-bold text-blue-900">{formatCurrency(salesReport.totalCreditSales)}</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Ventas a Crédito</p>
+                    <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{formatCurrency(salesReport.totalCreditSales)}</p>
                   </div>
-                  <CreditCard className="w-8 h-8 text-blue-600" />
+                  <CreditCard className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-700 font-medium">Ticket Promedio</p>
-                    <p className="text-xl font-bold text-green-900">{formatCurrency(salesReport.averageTicket)}</p>
+                    <p className="text-sm text-green-700 dark:text-green-300 font-medium">Ticket Promedio</p>
+                    <p className="text-xl font-bold text-green-900 dark:text-green-100">{formatCurrency(salesReport.averageTicket)}</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-600" />
+                  <TrendingUp className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-purple-50 border-purple-200">
+            <Card className="bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-700 font-medium">Reconciliación</p>
-                    <p className="text-xs text-purple-600 mt-1">
+                    <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">Reconciliación</p>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
                       Ventas = Ingresos + Créditos
                     </p>
-                    <p className="text-sm text-purple-800 mt-1">
+                    <p className="text-sm text-purple-800 dark:text-purple-200 mt-1">
                       {formatCurrency(salesReport.totalSalesAmount)} = {formatCurrency(salesReport.totalIncome)} + {formatCurrency(salesReport.totalCreditSales)}
                     </p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-purple-600" />
+                  <AlertCircle className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 </div>
               </CardContent>
             </Card>
@@ -419,7 +419,7 @@ export default function ReportsView() {
         
         {/* Tabs de Contenido */}
         <Tabs defaultValue="sales" className="space-y-4">
-          <TabsList className="bg-white">
+          <TabsList className="bg-white dark:bg-gray-800">
             <TabsTrigger value="sales">
               <TrendingUp className="w-4 h-4 mr-2" />
               Ventas

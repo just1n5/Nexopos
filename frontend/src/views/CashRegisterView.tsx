@@ -228,10 +228,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Gastos</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Gastos</span>
                       <Minus className="w-4 h-4 text-red-500" />
                     </div>
-                    <div className="text-2xl font-bold text-red-600">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-500">
                       {formatCurrency(summary.totalExpenses || 0)}
                     </div>
                   </CardContent>
@@ -240,10 +240,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Efectivo Esperado</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Efectivo Esperado</span>
                       <Calculator className="w-4 h-4 text-blue-500" />
                     </div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-500">
                       {formatCurrency(summary.expectedAmount)}
                     </div>
                   </CardContent>
@@ -263,15 +263,15 @@ export default function CashRegisterView() {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {Object.entries(summary.salesByPaymentMethod).map(([method, amount]) => (
-                      <div key={method} className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-sm text-gray-600 mb-1 capitalize">
-                          {method === 'cash' ? 'Efectivo' : 
+                      <div key={method} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1 capitalize">
+                          {method === 'cash' ? 'Efectivo' :
                            method === 'card' ? 'Tarjeta' :
                            method === 'nequi' ? 'Nequi' :
                            method === 'daviplata' ? 'Daviplata' :
                            method === 'credit' ? 'Crédito' : method}
                         </div>
-                        <div className="text-lg font-bold">
+                        <div className="text-lg font-bold dark:text-gray-100">
                           {formatCurrency(amount as number)}
                         </div>
                       </div>
@@ -295,7 +295,7 @@ export default function CashRegisterView() {
               </CardHeader>
               <CardContent>
                 {showExpenseForm && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                  <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Input
                         type="number"
@@ -311,7 +311,7 @@ export default function CashRegisterView() {
                       <select
                         value={expenseCategory}
                         onChange={(e) => setExpenseCategory(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-md"
+                        className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                       >
                         <option value="supplies">Insumos</option>
                         <option value="utilities">Servicios</option>
