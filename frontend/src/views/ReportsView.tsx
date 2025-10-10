@@ -242,10 +242,10 @@ export default function ReportsView() {
   
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
+      <div className="h-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Cargando reportes...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="dark:text-white">Cargando reportes...</p>
         </div>
       </div>
     )
@@ -474,14 +474,14 @@ export default function ReportsView() {
                         }
                         
                         return (
-                          <div key={method} className="text-center p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-600 mb-1">
+                          <div key={method} className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                               {methodLabels[method] || method}
                             </p>
-                            <p className="text-xl font-bold">
+                            <p className="text-xl font-bold dark:text-white">
                               {formatCurrency(amount)}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {salesReport.totalSalesAmount > 0
                                 ? `${Math.round((amount / salesReport.totalSalesAmount) * 100)}%`
                                 : '0%'
@@ -546,10 +546,10 @@ export default function ReportsView() {
 
                       {/* Exento */}
                       {salesReport.taxBreakdown.iva0.baseGravable > 0 && (
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900">Exento / Sin IVA</span>
-                            <Package className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">Exento / Sin IVA</span>
+                            <Package className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </div>
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
@@ -728,19 +728,19 @@ export default function ReportsView() {
                 ) : (
                   <div className="space-y-4">
                     {productReports.slice(0, 10).map((report, index) => (
-                      <div key={report.product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={report.product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-300">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-medium">{report.product.name}</p>
-                            <p className="text-sm text-gray-500">SKU: {report.product.sku}</p>
+                            <p className="font-medium dark:text-white">{report.product.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {report.product.sku}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">{formatCurrency(report.revenue)}</p>
-                          <p className="text-sm text-gray-500">{report.quantity} unidades</p>
+                          <p className="font-bold dark:text-white">{formatCurrency(report.revenue)}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{report.quantity} unidades</p>
                           {report.profitMargin !== undefined && (
                             <p className="text-xs text-green-600">
                               Margen: {report.profitMargin.toFixed(1)}%
@@ -781,13 +781,13 @@ export default function ReportsView() {
                     )}
                     
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Total Productos</p>
-                        <p className="text-2xl font-bold">{inventoryReport.totalProducts}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Productos</p>
+                        <p className="text-2xl font-bold dark:text-white">{inventoryReport.totalProducts}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">Valor Total</p>
-                        <p className="text-2xl font-bold">{formatCurrency(inventoryReport.totalValue)}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Valor Total</p>
+                        <p className="text-2xl font-bold dark:text-white">{formatCurrency(inventoryReport.totalValue)}</p>
                       </div>
                     </div>
                   </div>
@@ -815,21 +815,21 @@ export default function ReportsView() {
                 ) : (
                   <div className="space-y-4">
                     {customerReports.slice(0, 10).map((report, index) => (
-                      <div key={report.customerId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={report.customerId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm font-bold text-green-600">
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center text-sm font-bold text-green-600 dark:text-green-300">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-medium">{report.customerName}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="font-medium dark:text-white">{report.customerName}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               {report.totalPurchases} compras
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">{formatCurrency(report.totalSpent)}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-bold dark:text-white">{formatCurrency(report.totalSpent)}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Promedio: {formatCurrency(report.averagePurchase)}
                           </p>
                           <p className="text-xs text-gray-400">
@@ -1026,7 +1026,7 @@ export default function ReportsView() {
                         </thead>
                         <tbody>
                           {cashRegisterReport.arqueos.map((arqueo) => (
-                            <tr key={arqueo.sessionId} className="border-b hover:bg-gray-50">
+                            <tr key={arqueo.sessionId} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                               <td className="p-2">
                                 <div className="font-medium">{arqueo.sessionNumber}</div>
                                 <div className="text-xs text-gray-500">
@@ -1191,7 +1191,7 @@ export default function ReportsView() {
                         </thead>
                         <tbody>
                           {movementsReport.movements.slice(0, 100).map((movement) => (
-                            <tr key={movement.id} className="border-b hover:bg-gray-50">
+                            <tr key={movement.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                               <td className="p-2 text-sm">
                                 {new Date(movement.createdAt).toLocaleDateString('es-CO', {
                                   day: '2-digit',
