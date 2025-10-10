@@ -64,18 +64,28 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       setCameraError(null)
 
-      // Primero solicitar permisos explícitamente
+      // Primero solicitar permisos explícitamente y encontrar la cámara trasera
       console.log('Solicitando permisos de cámara...')
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
+          video: { facingMode: { exact: 'environment' } }
         })
         console.log('Permisos concedidos, deteniendo stream de prueba')
         // Detener el stream de prueba
         stream.getTracks().forEach(track => track.stop())
       } catch (permError) {
-        console.error('Error al solicitar permisos:', permError)
-        throw new Error('No se pudieron obtener permisos de cámara')
+        console.error('Error al solicitar permisos con "exact", intentando sin exact:', permError)
+        // Si falla con exact, intentar sin exact
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+          })
+          console.log('Permisos concedidos (fallback), deteniendo stream de prueba')
+          stream.getTracks().forEach(track => track.stop())
+        } catch (fallbackError) {
+          console.error('Error al solicitar permisos:', fallbackError)
+          throw new Error('No se pudieron obtener permisos de cámara')
+        }
       }
 
       if (!html5QrcodeRef.current) {
@@ -154,8 +164,18 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       console.log('Iniciando scanner...')
 
+      // Intentar primero con exact: 'environment' para forzar cámara trasera
+      let cameraConfig: any
+      try {
+        cameraConfig = { facingMode: { exact: 'environment' } }
+        console.log('Intentando con exact: environment')
+      } catch {
+        cameraConfig = { facingMode: 'environment' }
+        console.log('Fallback a facingMode sin exact')
+      }
+
       await html5QrcodeRef.current.start(
-        { facingMode: 'environment' },
+        cameraConfig,
         {
           fps: 10, // FPS reducido para dar más tiempo de procesamiento
           qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -180,7 +200,37 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           // Error callback - no hacer nada, errores normales durante escaneo
           // Solo log si es necesario para debugging
         }
-      )
+      ).catch(async (error) => {
+        // Si falla con exact, reintentar sin exact
+        if (error.message?.includes('exact') || error.message?.includes('OverconstrainedError')) {
+          console.log('Reintentando sin exact constraint...')
+          await html5QrcodeRef.current!.start(
+            { facingMode: 'environment' },
+            {
+              fps: 10,
+              qrbox: (viewfinderWidth, viewfinderHeight) => {
+                const minEdgePercentage = 0.85
+                const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
+                const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
+                return {
+                  width: qrboxSize,
+                  height: Math.floor(qrboxSize * 0.5)
+                }
+              },
+              aspectRatio: 1.777778,
+              disableFlip: false,
+              videoConstraints: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+              }
+            },
+            qrCodeSuccessCallback,
+            () => {}
+          )
+        } else {
+          throw error
+        }
+      })
 
       console.log('Scanner iniciado exitosamente')
       setIsScanning(true)
