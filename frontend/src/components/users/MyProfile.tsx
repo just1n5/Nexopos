@@ -167,10 +167,10 @@ export default function MyProfile() {
               {user.firstName[0]}{user.lastName[0]}
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {user.firstName} {user.lastName}
               </h2>
-              <p className="text-gray-600">{user.email}</p>
+              <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge className={roleBadge.color}>
                   {roleBadge.icon} {roleBadge.label}
