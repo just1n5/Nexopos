@@ -378,7 +378,7 @@ export default function CreditManager() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-4 py-2 border rounded-md"
+              className="px-4 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
             >
               <option value="all">Todos</option>
               <option value="pending">Pendientes</option>
