@@ -439,7 +439,7 @@ export default function POSView() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col lg:flex-row h-screen bg-background dark:bg-gray-900">
       {/* Panel Izquierdo - Catálogo de Productos */}
       <div className={`flex-1 flex flex-col overflow-hidden ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header de busqueda y categorias */}
@@ -491,7 +491,7 @@ export default function POSView() {
 
         {/* Grid de productos */}
         <div className="flex-1 overflow-auto p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             <AnimatePresence>
               {filteredProducts.map(product => {
                 const isOutOfStock = product.stock <= 0;
@@ -506,11 +506,11 @@ export default function POSView() {
                     <Card
                       className={`${isOutOfStock
                         ? 'opacity-50 cursor-not-allowed'
-                        : 'cursor-pointer hover:shadow-lg transition-all hover:scale-105 active:scale-95'
+                        : 'cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] active:scale-95'
                       }`}
                       onClick={() => !isOutOfStock && handleProductClick(product)}
                     >
-                      <CardContent className="p-4 relative">
+                      <CardContent className="p-5 relative">
                         {isOutOfStock && (
                           <div className="absolute inset-0 bg-black bg-opacity-10 rounded-md flex items-center justify-center z-10">
                             <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold">

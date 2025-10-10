@@ -243,7 +243,7 @@ export default function SettingsView() {
   )
 
   return (
-    <div className="h-full bg-gray-50 dark:bg-gray-900 overflow-auto">
+    <div className="h-full bg-background dark:bg-gray-900 overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6">
