@@ -300,7 +300,7 @@ export class TenantManagementService {
       console.log('[TenantManagement] ✓ Auditorías de usuarios eliminadas');
 
       // 19. Eliminar OTPs relacionados con el tenant
-      await queryRunner.query(`DELETE FROM otp WHERE "tenantId" = $1`, [tenantId]);
+      await queryRunner.query(`DELETE FROM otp_codes WHERE "relatedTenantId" = $1`, [tenantId]);
       console.log('[TenantManagement] ✓ OTPs eliminados');
 
       // 20. Eliminar usuarios
