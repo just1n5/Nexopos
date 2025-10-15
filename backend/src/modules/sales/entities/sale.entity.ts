@@ -53,7 +53,7 @@ export class Sale {
   @Column({ nullable: true })
   customerId: string;
 
-  @ManyToOne('Customer', { nullable: true })
+  @ManyToOne('Customer', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'customerId' })
   customer: any;
 
