@@ -341,10 +341,10 @@ export default function CashRegisterView() {
                 {expenses.length > 0 ? (
                   <div className="space-y-2">
                     {expenses.map((expense) => (
-                      <div key={expense.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div key={expense.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                         <div className="flex-1">
-                          <p className="font-medium">{expense.description}</p>
-                          <p className="text-sm text-gray-500 capitalize">{expense.category}</p>
+                          <p className="font-medium dark:text-gray-200">{expense.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{expense.category}</p>
                         </div>
                         <div className="text-red-600 font-bold">
                           -{formatCurrency(expense.amount)}
