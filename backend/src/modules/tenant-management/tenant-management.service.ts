@@ -250,7 +250,7 @@ export class TenantManagementService {
       // 10. Eliminar sesiones de caja (si existe la tabla)
       try {
         await queryRunner.query(
-          `DELETE FROM "cash_register_sessions" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
+          `DELETE FROM "cash_register_sessions" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1)`,
           [tenantId],
         );
         console.log('[TenantManagement] ✓ Sesiones de caja eliminadas');
