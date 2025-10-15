@@ -266,7 +266,10 @@ export class TenantManagementService {
       console.log('[TenantManagement] ✓ Stock de inventario eliminado');
 
       // 12. Eliminar movimientos de inventario
-      await queryRunner.query(`DELETE FROM "inventory_movements" WHERE "tenantId" = $1`, [tenantId]);
+      await queryRunner.query(
+        `DELETE FROM "inventory_movements" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
+        [tenantId],
+      );
       console.log('[TenantManagement] ✓ Movimientos de inventario eliminados');
 
       // 13. Eliminar variantes de productos
