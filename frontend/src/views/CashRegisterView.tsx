@@ -24,6 +24,7 @@ export default function CashRegisterView() {
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expenseDescription, setExpenseDescription] = useState('')
   const [expenseCategory, setExpenseCategory] = useState('other')
+  const [showInsufficientFundsModal, setShowInsufficientFundsModal] = useState(false)
 
   // State from the global store
   const {
@@ -99,7 +100,11 @@ export default function CashRegisterView() {
       setShowExpenseForm(false)
       toast({ title: 'Gasto Registrado', description: 'El gasto ha sido registrado exitosamente' })
     } catch (e: any) {
-      toast({ title: 'Error al Registrar Gasto', description: e.message, variant: 'destructive' })
+      if (e.message === 'Insufficient funds in cash register') {
+        setShowInsufficientFundsModal(true)
+      } else {
+        toast({ title: 'Error al Registrar Gasto', description: e.message, variant: 'destructive' })
+      }
     }
   }
 
@@ -456,6 +461,26 @@ export default function CashRegisterView() {
               </CardContent>
             </Card>
           </>
+        )}
+
+        {showInsufficientFundsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-card text-card-foreground rounded-lg max-w-md w-full p-6 text-center">
+              <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
+              <h2 className="text-xl font-bold mb-2">Fondos Insuficientes</h2>
+              <p className="text-muted-foreground mb-6">
+                El efectivo actual en caja es insuficiente para registrar este gasto. Por favor, verifique el monto o ajuste el efectivo en caja.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button onClick={() => setShowInsufficientFundsModal(false)} className="flex-1">
+                  Aceptar
+                </Button>
+                <Button onClick={() => setShowInsufficientFundsModal(false)} variant="destructive" className="flex-1">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
