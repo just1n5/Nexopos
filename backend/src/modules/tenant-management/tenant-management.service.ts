@@ -221,12 +221,6 @@ export class TenantManagementService {
       );
       console.log('[TenantManagement] ✓ Ventas eliminadas');
       
-      // 5. Eliminar pagos de créditos de clientes
-      await queryRunner.query(
-        `DELETE FROM "customer_credit_payments" WHERE "creditId" IN (SELECT id FROM "customer_credits" WHERE "customerId" IN (SELECT id FROM "customers" WHERE "tenantId" = $1))`,
-        [tenantId],
-      );
-      console.log('[TenantManagement] ✓ Pagos de créditos eliminados');
 
       // 6. Eliminar créditos de clientes
       await queryRunner.query(
