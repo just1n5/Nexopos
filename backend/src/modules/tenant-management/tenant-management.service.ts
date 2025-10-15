@@ -235,14 +235,14 @@ export class TenantManagementService {
 
       // 8. Eliminar conteos de caja
       await queryRunner.query(
-        `DELETE FROM "cash_counts" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
+        `DELETE FROM "cash_counts" WHERE "sessionId" IN (SELECT id FROM "cash_register_sessions" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Conteos de caja eliminados');
 
       // 9. Eliminar movimientos de caja
       await queryRunner.query(
-        `DELETE FROM "cash_movements" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
+        `DELETE FROM "cash_movements" WHERE "cashRegisterId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Movimientos de caja eliminados');
