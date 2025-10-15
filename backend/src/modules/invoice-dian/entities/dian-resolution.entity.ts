@@ -4,13 +4,16 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index
+  Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum ResolutionStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
-  EXPIRED = 'EXPIRED'
+  EXPIRED = 'EXPIRED',
 }
 
 @Entity('dian_resolutions')
@@ -19,6 +22,13 @@ export enum ResolutionStatus {
 export class DianResolution {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ nullable: true })
+  tenantId: string;
+
+  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenantId' })
+  tenant: Tenant;
 
   // Resolution Information
   @Column()
