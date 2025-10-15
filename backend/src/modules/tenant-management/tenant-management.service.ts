@@ -193,60 +193,70 @@ export class TenantManagementService {
 
       console.log(`[TenantManagement] Iniciando eliminación del tenant ${tenantId}`);
 
-      // 1. Eliminar pagos de ventas
+      // 1. Eliminar facturas DIAN
       await queryRunner.query(
-        `DELETE FROM "payments" WHERE "saleId" IN (SELECT id FROM "sales" WHERE "tenantId" = $1)`,
+        `DELETE FROM "invoices_dian" WHERE "saleId" IN (SELECT id FROM "sales" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
+        [tenantId],
+      );
+      console.log('[TenantManagement] ✓ Facturas DIAN eliminadas');
+
+      // 2. Eliminar pagos de ventas
+      await queryRunner.query(
+        `DELETE FROM "payments" WHERE "saleId" IN (SELECT id FROM "sales" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Pagos eliminados');
 
-      // 2. Eliminar items de ventas
+      // 3. Eliminar items de ventas
       await queryRunner.query(
-        `DELETE FROM "sale_items" WHERE "saleId" IN (SELECT id FROM "sales" WHERE "tenantId" = $1)`,
+        `DELETE FROM "sale_items" WHERE "saleId" IN (SELECT id FROM "sales" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Items de ventas eliminados');
 
-      // 3. Eliminar ventas
-      await queryRunner.query(`DELETE FROM "sales" WHERE "tenantId" = $1`, [tenantId]);
+      // 4. Eliminar ventas
+      await queryRunner.query(
+        `DELETE FROM "sales" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1)`,
+        [tenantId],
+      );
       console.log('[TenantManagement] ✓ Ventas eliminadas');
-
-      // 4. Eliminar pagos de créditos de clientes
+      
+      // 5. Eliminar pagos de créditos de clientes
       await queryRunner.query(
         `DELETE FROM "customer_credit_payments" WHERE "creditId" IN (SELECT id FROM "customer_credits" WHERE "customerId" IN (SELECT id FROM "customers" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Pagos de créditos eliminados');
 
-      // 5. Eliminar créditos de clientes
+      // 6. Eliminar créditos de clientes
       await queryRunner.query(
         `DELETE FROM "customer_credits" WHERE "customerId" IN (SELECT id FROM "customers" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Créditos de clientes eliminados');
 
-      // 6. Eliminar clientes
+      // 7. Eliminar clientes
       await queryRunner.query(`DELETE FROM "customers" WHERE "tenantId" = $1`, [tenantId]);
       console.log('[TenantManagement] ✓ Clientes eliminados');
 
-      // 7. Eliminar conteos de caja
+      // 8. Eliminar conteos de caja
       await queryRunner.query(
-        `DELETE FROM "cash_counts" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "tenantId" = $1)`,
+        `DELETE FROM "cash_counts" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Conteos de caja eliminados');
 
-      // 8. Eliminar movimientos de caja
+      // 9. Eliminar movimientos de caja
       await queryRunner.query(
-        `DELETE FROM "cash_movements" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "tenantId" = $1)`,
+        `DELETE FROM "cash_movements" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Movimientos de caja eliminados');
 
-      // 9. Eliminar sesiones de caja (si existe la tabla)
+      // 10. Eliminar sesiones de caja (si existe la tabla)
       try {
         await queryRunner.query(
-          `DELETE FROM "cash_register_sessions" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "tenantId" = $1)`,
+          `DELETE FROM "cash_register_sessions" WHERE "registerId" IN (SELECT id FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1))`,
           [tenantId],
         );
         console.log('[TenantManagement] ✓ Sesiones de caja eliminadas');
@@ -254,42 +264,41 @@ export class TenantManagementService {
         console.log('[TenantManagement] ⚠ Tabla cash_register_sessions no existe o está vacía');
       }
 
-      // 10. Eliminar registros de caja
-      await queryRunner.query(`DELETE FROM "cash_registers" WHERE "tenantId" = $1`, [tenantId]);
+      // 11. Eliminar registros de caja
+      await queryRunner.query(
+        `DELETE FROM "cash_registers" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1)`,
+        [tenantId],
+      );
       console.log('[TenantManagement] ✓ Registros de caja eliminados');
 
-      // 11. Eliminar stock de inventario
+      // 12. Eliminar stock de inventario
       await queryRunner.query(
         `DELETE FROM "inventory_stocks" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Stock de inventario eliminado');
 
-      // 12. Eliminar movimientos de inventario
+      // 13. Eliminar movimientos de inventario
       await queryRunner.query(
         `DELETE FROM "inventory_movements" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Movimientos de inventario eliminados');
 
-      // 13. Eliminar variantes de productos
+      // 14. Eliminar variantes de productos
       await queryRunner.query(
         `DELETE FROM "product_variants" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Variantes de productos eliminadas');
 
-      // 14. Eliminar productos
+      // 15. Eliminar productos
       await queryRunner.query(`DELETE FROM "products" WHERE "tenantId" = $1`, [tenantId]);
       console.log('[TenantManagement] ✓ Productos eliminados');
 
-      // 15. Eliminar categorías
+      // 16. Eliminar categorías
       await queryRunner.query(`DELETE FROM "categories" WHERE "tenantId" = $1`, [tenantId]);
       console.log('[TenantManagement] ✓ Categorías eliminadas');
-
-      // 16. Eliminar facturas DIAN
-      await queryRunner.query(`DELETE FROM "invoice_dian" WHERE "tenantId" = $1`, [tenantId]);
-      console.log('[TenantManagement] ✓ Facturas DIAN eliminadas');
 
       // 17. Eliminar resoluciones DIAN
       await queryRunner.query(`DELETE FROM "dian_resolutions" WHERE "tenantId" = $1`, [tenantId]);
