@@ -67,7 +67,7 @@ export class Product {
 
   // Multi-tenancy: cada producto pertenece a un tenant específico
   @Index()
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   tenantId: string;
 
   @ManyToOne(() => Tenant)
