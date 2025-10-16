@@ -65,11 +65,10 @@ export class AuthService {
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
         role: UserRole.ADMIN,
-        tenantId: tenant.id,
         isOwner: true,
         documentId: registerDto.documentId,
         phoneNumber: registerDto.phoneNumber,
-      });
+      }, tenant.id);
 
       // 3. Marcar beta key como usada
       await this.betaKeysService.markAsUsed(registerDto.betaKey, tenant.id);
@@ -77,7 +76,7 @@ export class AuthService {
       await queryRunner.commitTransaction();
 
       // Generar token JWT
-      const safeUser = await this.usersService.findById(user.id);
+      const safeUser = await this.usersService.findById(user.id, tenant.id);
       const accessToken = this.generateAccessToken(safeUser);
 
       // Enviar email de bienvenida (async, no bloquea el registro)
@@ -200,7 +199,7 @@ export class AuthService {
   }
 
   private generateAccessToken(user: User): string {
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
+    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId };
     return this.jwtService.sign(payload);
   }
 }

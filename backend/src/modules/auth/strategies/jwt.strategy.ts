@@ -17,7 +17,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     try {
-      return await this.usersService.findById(payload.sub);
+      // The user should be validated against its tenant on every request
+      const user = await this.usersService.findById(payload.sub, payload.tenantId);
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+      return user; // This user object (including tenantId) will be attached to req.user
     } catch (error) {
       throw new UnauthorizedException();
     }

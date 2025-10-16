@@ -61,7 +61,7 @@ export class UsersController {
     type: UserResponseDto
   })
   async getProfile(@Request() req): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(req.user.id);
+    const user = await this.usersService.findById(req.user.id, req.user.tenantId);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     });
