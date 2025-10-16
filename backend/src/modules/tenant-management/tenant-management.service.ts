@@ -274,7 +274,7 @@ export class TenantManagementService {
 
       // 13. Eliminar movimientos de inventario
       await queryRunner.query(
-        `DELETE FROM "inventory_movements" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
+        `DELETE FROM "inventory_movements" WHERE "productId"::uuid IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Movimientos de inventario eliminados');
