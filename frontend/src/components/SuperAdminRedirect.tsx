@@ -7,22 +7,27 @@ interface SuperAdminRedirectProps {
   children: React.ReactNode;
 }
 
-const TENANT_ROUTES = ['/', '/inventory', '/credit', '/cash-register', '/dashboard', '/settings'];
+const TENANT_ROUTES = ['/', '/inventory', '/credit', '/cash-register', '/dashboard'];
 
 export default function SuperAdminRedirect({ children }: SuperAdminRedirectProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    if (user?.role === UserRole.SUPER_ADMIN) {
-      // If the super admin is on a tenant-specific route, redirect them
-      if (TENANT_ROUTES.includes(location.pathname)) {
-        navigate('/admin/tenants', { replace: true });
-      }
-    }
-  }, [user, location, navigate]);
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  // Check if the current path is a tenant-specific route. Note: /settings is allowed for Super Admin.
+  const onTenantRoute = TENANT_ROUTES.includes(location.pathname);
 
-  // For non-super-admins, or super-admins on their correct pages, render the children
+  useEffect(() => {
+    if (isSuperAdmin && onTenantRoute) {
+      navigate('/admin/tenants', { replace: true });
+    }
+  }, [isSuperAdmin, onTenantRoute, navigate]);
+
+  // While the redirect is pending, render nothing to prevent flashing the wrong content.
+  if (isSuperAdmin && onTenantRoute) {
+    return null;
+  }
+
   return <>{children}</>;
 }
