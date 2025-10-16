@@ -24,7 +24,7 @@ export class UsersService {
     return Number.isSafeInteger(configuredSaltRounds) && configuredSaltRounds > 0 ? configuredSaltRounds : 12;
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto, tenantId: string): Promise<User> {
     const existing = await this.usersRepository.findOne({ where: { email: createUserDto.email } });
     if (existing) {
       throw new ConflictException('Email is already registered.');
@@ -32,12 +32,13 @@ export class UsersService {
 
     // Validar límites de usuarios por rol
     const role = createUserDto.role ?? UserRole.CASHIER;
-    await this.validateUserLimits(role);
+    await this.validateUserLimits(role, tenantId);
 
     const passwordHash = await bcrypt.hash(createUserDto.password, this.resolveSaltRounds());
 
     const user = this.usersRepository.create({
       ...createUserDto,
+      tenantId, // Asignar tenantId
       password: passwordHash,
       role
     });
@@ -45,10 +46,10 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  private async validateUserLimits(role: UserRole): Promise<void> {
+  private async validateUserLimits(role: UserRole, tenantId: string): Promise<void> {
     if (role === UserRole.MANAGER) {
       const managersCount = await this.usersRepository.count({
-        where: { role: UserRole.MANAGER }
+        where: { role: UserRole.MANAGER, tenantId }
       });
 
       if (managersCount >= 1) {
@@ -58,7 +59,7 @@ export class UsersService {
 
     if (role === UserRole.CASHIER) {
       const cashiersCount = await this.usersRepository.count({
-        where: { role: UserRole.CASHIER }
+        where: { role: UserRole.CASHIER, tenantId }
       });
 
       if (cashiersCount >= 2) {
@@ -71,8 +72,8 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { email } });
   }
 
-  async findById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id, tenantId } });
     if (!user) {
       throw new NotFoundException('User not found.');
     }
@@ -87,12 +88,12 @@ export class UsersService {
       .getOne();
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findById(id);
+  async update(id: string, updateUserDto: UpdateUserDto, tenantId: string): Promise<User> {
+    const user = await this.findById(id, tenantId);
 
     // Si se está cambiando el rol, validar límites
     if (updateUserDto.role && updateUserDto.role !== user.role) {
-      await this.validateUserLimitsForUpdate(id, user.role, updateUserDto.role);
+      await this.validateUserLimitsForUpdate(id, user.role, updateUserDto.role, tenantId);
     }
 
     if (updateUserDto.password) {
@@ -106,12 +107,13 @@ export class UsersService {
   private async validateUserLimitsForUpdate(
     userId: string,
     currentRole: UserRole,
-    newRole: UserRole
+    newRole: UserRole,
+    tenantId: string
   ): Promise<void> {
     // Validar límites del nuevo rol (excluyendo el usuario actual)
     if (newRole === UserRole.MANAGER) {
       const managersCount = await this.usersRepository.count({
-        where: { role: UserRole.MANAGER }
+        where: { role: UserRole.MANAGER, tenantId }
       });
 
       if (managersCount >= 1) {
@@ -121,7 +123,7 @@ export class UsersService {
 
     if (newRole === UserRole.CASHIER) {
       const cashiersCount = await this.usersRepository.count({
-        where: { role: UserRole.CASHIER }
+        where: { role: UserRole.CASHIER, tenantId }
       });
 
       if (cashiersCount >= 2) {
@@ -141,24 +143,25 @@ export class UsersService {
     return bcrypt.compare(password, hash);
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(tenantId: string): Promise<User[]> {
     return this.usersRepository.find({
+      where: { tenantId },
       order: { createdAt: 'DESC' }
     });
   }
 
-  async toggleActive(id: string, requestingUserId: string): Promise<User> {
-    const user = await this.findById(id);
+  async toggleActive(id: string, requestingUser: User): Promise<User> {
+    const user = await this.findById(id, requestingUser.tenantId);
 
     // No se puede desactivar a sí mismo
-    if (id === requestingUserId) {
+    if (id === requestingUser.id) {
       throw new BadRequestException('Cannot deactivate your own account');
     }
 
     // Validar que no sea el último admin activo
     if (user.role === UserRole.ADMIN && user.isActive) {
       const activeAdminsCount = await this.usersRepository.count({
-        where: { role: UserRole.ADMIN, isActive: true }
+        where: { role: UserRole.ADMIN, isActive: true, tenantId: requestingUser.tenantId }
       });
 
       if (activeAdminsCount <= 1) {
@@ -210,7 +213,7 @@ export class UsersService {
 
       // Si es edición, validar que el usuario target sea cajero
       if (targetUserId) {
-        const targetUser = await this.findById(targetUserId);
+        const targetUser = await this.findById(targetUserId, requestingUser.tenantId);
         if (targetUser.role !== UserRole.CASHIER) {
           throw new ForbiddenException('Managers can only manage cashiers');
         }
@@ -223,7 +226,7 @@ export class UsersService {
   }
 
   async removeWithValidation(id: string, requestingUser: User): Promise<void> {
-    const userToDelete = await this.findById(id);
+    const userToDelete = await this.findById(id, requestingUser.tenantId);
 
     // No se puede eliminar a sí mismo
     if (id === requestingUser.id) {

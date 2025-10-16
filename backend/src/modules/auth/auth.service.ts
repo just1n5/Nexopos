@@ -102,7 +102,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<{ user: User; tenant: any; accessToken: string }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    const safeUser = await this.usersService.findById(user.id);
+    const safeUser = await this.usersService.findById(user.id, user.tenantId);
     const accessToken = this.generateAccessToken(safeUser);
 
     // Obtener información del tenant

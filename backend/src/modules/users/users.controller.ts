@@ -46,8 +46,8 @@ export class UsersController {
     description: 'Lista de usuarios obtenida exitosamente',
     type: [UserResponseDto]
   })
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.usersService.findAll();
+  async findAll(@Request() req): Promise<UserResponseDto[]> {
+    const users = await this.usersService.findAll(req.user.tenantId);
     return users.map(user => plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     }));
@@ -77,8 +77,8 @@ export class UsersController {
     type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(id);
+  async findOne(@Param('id') id: string, @Request() req): Promise<UserResponseDto> {
+    const user = await this.usersService.findById(id, req.user.tenantId);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     });
@@ -105,7 +105,7 @@ export class UsersController {
       createUserDto.role
     );
 
-    const user = await this.usersService.create(createUserDto);
+    const user = await this.usersService.create(createUserDto, req.user.tenantId);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     });
@@ -138,7 +138,7 @@ export class UsersController {
       );
     }
 
-    const user = await this.usersService.update(id, updateUserDto);
+    const user = await this.usersService.update(id, updateUserDto, req.user.tenantId);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     });
@@ -173,7 +173,7 @@ export class UsersController {
     // Validar permisos para modificar este usuario
     await this.usersService.validateUserCanManage(req.user, id);
 
-    const user = await this.usersService.toggleActive(id, req.user.id);
+    const user = await this.usersService.toggleActive(id, req.user);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true
     });
