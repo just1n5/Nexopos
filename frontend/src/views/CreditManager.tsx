@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign,
@@ -259,11 +259,11 @@ export default function CreditManager() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+        return <Badge variant="success">Pagado</Badge>
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">Vencido</Badge>
+        return <Badge variant="destructive">Vencido</Badge>
       default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendiente</Badge>
+        return <Badge variant="warning">Pendiente</Badge>
     }
   }
 
@@ -278,9 +278,9 @@ export default function CreditManager() {
 
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
+      <div className="h-full bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Cargando información de créditos...</p>
         </div>
       </div>
@@ -288,13 +288,13 @@ export default function CreditManager() {
   }
 
   return (
-    <div className="h-full bg-background dark:bg-gray-900 overflow-auto">
+    <div className="h-full bg-background overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">Gestión de Créditos (Fiado)</h1>
-            <p className="text-gray-600 dark:text-gray-400">Administra las ventas a crédito y registra los pagos</p>
+            <h1 className="text-3xl font-bold mb-2 text-foreground">Gestión de Créditos (Fiado)</h1>
+            <p className="text-muted-foreground">Administra las ventas a crédito y registra los pagos</p>
           </div>
           <Button onClick={() => setShowCustomerManager(true)}>
             <Users className="w-4 h-4 mr-2" />
@@ -308,11 +308,11 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total en Créditos</p>
-                  <p className="text-2xl font-bold dark:text-gray-100">{formatCurrency(summary.totalCredits)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.creditsCount} créditos</p>
+                  <p className="text-sm text-muted-foreground">Total en Créditos</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCurrency(summary.totalCredits)}</p>
+                  <p className="text-xs text-muted-foreground">{summary.creditsCount} créditos</p>
                 </div>
-                <CreditCard className="w-8 h-8 text-blue-500" />
+                <CreditCard className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
@@ -321,9 +321,9 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Por Cobrar</p>
-                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{formatCurrency(summary.totalPending)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.pendingCount} pendientes</p>
+                  <p className="text-sm text-muted-foreground">Por Cobrar</p>
+                  <p className="text-2xl font-bold text-yellow-500">{formatCurrency(summary.totalPending)}</p>
+                  <p className="text-xs text-muted-foreground">{summary.pendingCount} pendientes</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
               </div>
@@ -334,11 +334,11 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Vencidos</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(summary.totalOverdue)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{summary.overdueCount} vencidos</p>
+                  <p className="text-sm text-muted-foreground">Vencidos</p>
+                  <p className="text-2xl font-bold text-destructive">{formatCurrency(summary.totalOverdue)}</p>
+                  <p className="text-xs text-muted-foreground">{summary.overdueCount} vencidos</p>
                 </div>
-                <AlertCircle className="w-8 h-8 text-red-500" />
+                <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
             </CardContent>
           </Card>
@@ -347,26 +347,26 @@ export default function CreditManager() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Tasa de Recuperación</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+                  <p className="text-sm text-muted-foreground">Tasa de Recuperación</p>
+                  <p className="text-2xl font-bold text-success">
                     {summary.totalCredits > 0
                       ? `${Math.round(((summary.totalCredits - summary.totalPending) / summary.totalCredits) * 100)}%`
                       : '0%'
                     }
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">del total cobrado</p>
+                  <p className="text-xs text-muted-foreground">del total cobrado</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-green-500" />
+                <TrendingUp className="w-8 h-8 text-success" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filtros y Búsqueda */}
-        <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <div className="mb-6 bg-card p-4 rounded-lg shadow">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Buscar por cliente o teléfono..."
                 value={searchQuery}
@@ -378,7 +378,7 @@ export default function CreditManager() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-4 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+              className="px-4 py-2 border rounded-md bg-card border-border text-foreground"
             >
               <option value="all">Todos</option>
               <option value="pending">Pendientes</option>
@@ -389,17 +389,17 @@ export default function CreditManager() {
         </div>
 
         {/* Lista de Créditos por Cliente */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="p-4 border-b dark:border-gray-700">
-            <h2 className="font-semibold flex items-center gap-2 dark:text-gray-100">
+        <div className="bg-card rounded-lg shadow">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-semibold flex items-center gap-2 text-foreground">
               <Filter className="w-5 h-5" />
               Créditos por Cliente {filterStatus !== 'all' && `(${filterStatus === 'pending' ? 'Pendientes' : filterStatus === 'paid' ? 'Pagados' : 'Vencidos'})`}
             </h2>
           </div>
 
           {customersWithDebt.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+            <div className="p-8 text-center text-muted-foreground">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p>No hay clientes con deuda pendiente</p>
             </div>
           ) : (
@@ -414,21 +414,21 @@ export default function CreditManager() {
                   {/* Encabezado del Cliente */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-accent-foreground" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg dark:text-gray-100">{customerGroup.customerName}</h3>
+                        <h3 className="font-bold text-lg text-foreground">{customerGroup.customerName}</h3>
                         {customerGroup.customerPhone && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{customerGroup.customerPhone}</p>
+                          <p className="text-sm text-muted-foreground">{customerGroup.customerPhone}</p>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Deuda Total</p>
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-500">
+                        <p className="text-sm text-muted-foreground">Deuda Total</p>
+                        <p className="text-2xl font-bold text-destructive">
                           {formatCurrency(customerGroup.totalDebt)}
                         </p>
                       </div>
@@ -459,20 +459,20 @@ export default function CreditManager() {
                         return (
                           <div
                             key={sale.id}
-                            className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                            className="bg-muted rounded-lg p-3 border border-border"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-gray-700">
+                                  <span className="font-medium text-foreground">
                                     {sale.saleNumber ? `Venta #${sale.saleNumber}` : 'Venta sin número'}
                                   </span>
-                                  <span className="text-sm text-gray-500">
+                                  <span className="text-sm text-muted-foreground">
                                     {formatDate(sale.saleDate)}
                                   </span>
                                   {getStatusBadge(sale.status)}
                                   {daysOverdue > 0 && (
-                                    <Badge className="bg-red-100 text-red-800 text-xs">
+                                    <Badge variant="destructive" className="text-xs">
                                       {daysOverdue} días vencido
                                     </Badge>
                                   )}
@@ -480,16 +480,16 @@ export default function CreditManager() {
 
                                 <div className="grid grid-cols-3 gap-4 text-sm">
                                   <div>
-                                    <span className="text-gray-500">Total:</span>
+                                    <span className="text-muted-foreground">Total:</span>
                                     <p className="font-semibold">{formatCurrency(sale.totalAmount)}</p>
                                   </div>
                                   <div>
-                                    <span className="text-gray-500">Pagado:</span>
-                                    <p className="font-semibold text-green-600">{formatCurrency(sale.paidAmount)}</p>
+                                    <span className="text-muted-foreground">Pagado:</span>
+                                    <p className="font-semibold text-success">{formatCurrency(sale.paidAmount)}</p>
                                   </div>
                                   <div>
-                                    <span className="text-gray-500">Pendiente:</span>
-                                    <p className="font-semibold text-red-600">{formatCurrency(sale.remainingBalance)}</p>
+                                    <span className="text-muted-foreground">Pendiente:</span>
+                                    <p className="font-semibold text-destructive">{formatCurrency(sale.remainingBalance)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -529,7 +529,7 @@ export default function CreditManager() {
                   initial={{ scale: 0.95, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.95, opacity: 0 }}
-                  className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-card rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -545,19 +545,19 @@ export default function CreditManager() {
 
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-gray-600">Cliente</p>
+                      <p className="text-sm text-muted-foreground">Cliente</p>
                       <p className="font-semibold text-lg">{selectedCustomer.name}</p>
                     </div>
 
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <p className="text-sm text-gray-600 mb-1">Deuda Total</p>
-                      <p className="text-3xl font-bold text-red-600">
+                    <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/20">
+                      <p className="text-sm text-muted-foreground mb-1">Deuda Total</p>
+                      <p className="text-3xl font-bold text-destructive">
                         {formatCurrency(customersWithDebt.find(c => c.customerId === selectedCustomer.id)?.totalDebt || 0)}
                       </p>
                     </div>
 
-                  <Alert className="bg-blue-50 border-blue-200">
-                    <AlertDescription className="text-sm text-blue-800">
+                  <Alert className="bg-accent border-accent">
+                    <AlertDescription className="text-sm text-accent-foreground">
                       El pago se aplicará automáticamente a las deudas más antiguas primero (FIFO)
                     </AlertDescription>
                   </Alert>
@@ -567,7 +567,7 @@ export default function CreditManager() {
                       Monto a Abonar
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                       <Input
                         type="number"
                         value={paymentAmount}
@@ -606,9 +606,9 @@ export default function CreditManager() {
                   </div>
 
                   {paymentAmount && parseFloat(paymentAmount) === (customersWithDebt.find(c => c.customerId === selectedCustomer.id)?.totalDebt || 0) && (
-                    <Alert className="bg-green-50 border-green-200">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <AlertDescription className="text-green-800">
+                    <Alert className="bg-success/10 border-success/20">
+                      <Check className="w-4 h-4 text-success" />
+                      <AlertDescription className="text-success">
                         Este pago liquidará completamente todas las deudas
                       </AlertDescription>
                     </Alert>
@@ -650,7 +650,7 @@ export default function CreditManager() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -668,46 +668,46 @@ export default function CreditManager() {
                   {/* Información General */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">Número de Venta</p>
+                      <p className="text-sm text-muted-foreground">Número de Venta</p>
                       <p className="font-semibold">
                         {selectedSaleForDetails.saleNumber || 'Sin número'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Fecha</p>
+                      <p className="text-sm text-muted-foreground">Fecha</p>
                       <p className="font-semibold">
                         {formatDate(selectedSaleForDetails.saleDate)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Cliente</p>
+                      <p className="text-sm text-muted-foreground">Cliente</p>
                       <p className="font-semibold">
                         {selectedSaleForDetails.customer?.name || 'Sin nombre'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Estado</p>
+                      <p className="text-sm text-muted-foreground">Estado</p>
                       <div>{getStatusBadge(selectedSaleForDetails.status)}</div>
                     </div>
                   </div>
 
                   {/* Montos */}
-                  <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
                     <div>
-                      <p className="text-sm text-gray-600">Total de la Venta</p>
+                      <p className="text-sm text-muted-foreground">Total de la Venta</p>
                       <p className="text-xl font-bold">
                         {formatCurrency(selectedSaleForDetails.totalAmount)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Total Pagado</p>
-                      <p className="text-xl font-bold text-green-600">
+                      <p className="text-sm text-muted-foreground">Total Pagado</p>
+                      <p className="text-xl font-bold text-success">
                         {formatCurrency(selectedSaleForDetails.paidAmount)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Saldo Pendiente</p>
-                      <p className="text-xl font-bold text-red-600">
+                      <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
+                      <p className="text-xl font-bold text-destructive">
                         {formatCurrency(selectedSaleForDetails.remainingBalance)}
                       </p>
                     </div>
@@ -722,12 +722,12 @@ export default function CreditManager() {
                       </h3>
                       <div className="border rounded-lg overflow-hidden">
                         <table className="w-full">
-                          <thead className="bg-gray-50">
+                          <thead className="bg-muted">
                             <tr>
-                              <th className="text-left p-3 text-sm font-medium text-gray-600">Producto</th>
-                              <th className="text-right p-3 text-sm font-medium text-gray-600">Cant.</th>
-                              <th className="text-right p-3 text-sm font-medium text-gray-600">Precio</th>
-                              <th className="text-right p-3 text-sm font-medium text-gray-600">Subtotal</th>
+                              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Producto</th>
+                              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Cant.</th>
+                              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Precio</th>
+                              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Subtotal</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y">
@@ -758,19 +758,19 @@ export default function CreditManager() {
                         {selectedSaleForDetails.payments.map((payment) => (
                           <div
                             key={payment.id}
-                            className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+                            className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/20"
                           >
                             <div>
-                              <p className="font-medium text-green-800">
+                              <p className="font-medium text-success">
                                 {formatDate(payment.date)}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {payment.paymentMethod === 'cash' ? 'Efectivo' :
                                  payment.paymentMethod === 'transfer' ? 'Transferencia' : 'Tarjeta'}
                                 {payment.notes && ` - ${payment.notes}`}
                               </p>
                             </div>
-                            <p className="text-xl font-bold text-green-600">
+                            <p className="text-xl font-bold text-success">
                               {formatCurrency(payment.amount)}
                             </p>
                           </div>
@@ -804,7 +804,7 @@ export default function CreditManager() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-auto"
+                className="bg-card rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -819,7 +819,7 @@ export default function CreditManager() {
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     Aquí puedes ver y gestionar todos los clientes registrados en el sistema.
                     Los clientes con límite de crédito pueden hacer compras a crédito (fiado) desde el punto de venta.
                   </p>
@@ -836,6 +836,3 @@ export default function CreditManager() {
     </div>
   )
 }
-
-
-
