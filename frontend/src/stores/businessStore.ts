@@ -18,6 +18,7 @@ interface BusinessState {
   config: BusinessConfig
   updateConfig: (config: Partial<BusinessConfig>) => void
   setLogo: (logo: string) => void
+  resetConfig: () => void
 }
 
 const DEFAULT_CONFIG: BusinessConfig = {
@@ -43,7 +44,9 @@ export const useBusinessStore = create<BusinessState>()(
       setLogo: (logo) =>
         set((state) => ({
           config: { ...state.config, logo }
-        }))
+        })),
+
+      resetConfig: () => set({ config: DEFAULT_CONFIG })
     }),
     {
       name: 'business-config'

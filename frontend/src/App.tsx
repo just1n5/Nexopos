@@ -152,7 +152,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h1 className={`font-bold text-gray-900 dark:text-white truncate ${(businessConfig.name || '').length > 20 ? 'text-base' : 'text-lg'}`}>
                   {businessConfig.name || 'NexoPOS'}
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">

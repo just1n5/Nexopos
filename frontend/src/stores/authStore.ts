@@ -3,6 +3,8 @@ import { devtools, persist } from 'zustand/middleware';
 import type { Business, DianResolution, User } from '@/types';
 import { UserRole } from '@/types';
 import { apiFetch } from '@/lib/api';
+import { useBusinessStore } from './businessStore';
+
 
 interface AuthState {
   user: User | null;
@@ -182,6 +184,16 @@ export const useAuthStore = create<AuthState>()(
             const user = toUser(payload.user);
             const business = payload.tenant ? toBusiness(payload.tenant) : createDefaultBusiness();
 
+            if (payload.tenant) {
+              useBusinessStore.getState().updateConfig({
+                name: payload.tenant.businessName,
+                nit: payload.tenant.nit,
+                address: payload.tenant.address,
+                phone: payload.tenant.phone,
+                email: payload.tenant.email,
+              });
+            }
+
             set({
               user,
               business,
@@ -211,6 +223,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             error: null,
           });
+          useBusinessStore.getState().resetConfig();
         },
 
         setUser: (user) => {

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, ChevronRight, ChevronLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, XCircle } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import type { RegisterFormData, BusinessType } from '@/types';
@@ -32,6 +32,7 @@ export default function RegisterView() {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<RegisterFormData>({
     betaKey: '',
@@ -50,8 +51,31 @@ export default function RegisterView() {
     phoneNumber: '',
   });
 
+  const validatePassword = (password: string) => {
+    const errors: string[] = [];
+    if (password.length < 8) {
+      errors.push('Mínimo 8 caracteres');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Una minúscula');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Una mayúscula');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('Un número');
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      errors.push('Un carácter especial');
+    }
+    setPasswordErrors(errors);
+  };
+
   const updateField = (field: keyof RegisterFormData, value: string | BusinessType) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'password') {
+      validatePassword(value as string);
+    }
   };
 
   const validateBetaKey = async (key: string) => {
@@ -101,7 +125,7 @@ export default function RegisterView() {
   const canProceedStep4 =
     formData.firstName.trim().length > 0 &&
     formData.lastName.trim().length > 0 &&
-    formData.password.length >= 8 &&
+    passwordErrors.length === 0 &&
     formData.password === formData.confirmPassword &&
     formData.documentId.trim().length > 0 &&
     formData.phoneNumber.trim().length > 0;
@@ -449,9 +473,15 @@ export default function RegisterView() {
                     onChange={(e) => updateField('password', e.target.value)}
                     placeholder="Mínimo 8 caracteres"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Debe incluir mayúscula, minúscula, número y carácter especial
-                  </p>
+                  {formData.password.length > 0 && (
+                    <div className="text-xs text-gray-500 mt-2 space-y-1">
+                      <p className={passwordErrors.includes('Mínimo 8 caracteres') ? 'text-red-500' : 'text-green-500'}>Mínimo 8 caracteres</p>
+                      <p className={passwordErrors.includes('Una mayúscula') ? 'text-red-500' : 'text-green-500'}>Una mayúscula</p>
+                      <p className={passwordErrors.includes('Una minúscula') ? 'text-red-500' : 'text-green-500'}>Una minúscula</p>
+                      <p className={passwordErrors.includes('Un número') ? 'text-red-500' : 'text-green-500'}>Un número</p>
+                      <p className={passwordErrors.includes('Un carácter especial') ? 'text-red-500' : 'text-green-500'}>Un carácter especial</p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -463,6 +493,11 @@ export default function RegisterView() {
                     onChange={(e) => updateField('confirmPassword', e.target.value)}
                     placeholder="Repite la contraseña"
                   />
+                  {formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center">
+                      <XCircle className="h-4 w-4 mr-1" /> Las contraseñas no coinciden
+                    </p>
+                  )}
                 </div>
 
                 <div>
