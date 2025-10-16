@@ -164,3 +164,4 @@ export class BetaKeysService {
       return { db_connection: false, count: 0 };
     }
   }
+}
