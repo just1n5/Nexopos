@@ -142,10 +142,10 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Información Personal */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Información Personal</h3>
+            <h3 className="text-sm font-semibold mb-3 dark:text-gray-200">Información Personal</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Nombre *</label>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Nombre *</label>
                 <Input
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
@@ -158,7 +158,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Apellido *</label>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Apellido *</label>
                 <Input
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -175,10 +175,10 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
 
           {/* Credenciales de Acceso */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Credenciales de Acceso</h3>
+            <h3 className="text-sm font-semibold mb-3 dark:text-gray-200">Credenciales de Acceso</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Email *</label>
                 <Input
                   type="email"
                   value={formData.email}
@@ -193,7 +193,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
                   Contraseña {user && '(dejar vacío para no cambiar)'}
                 </label>
                 <div className="relative">
@@ -207,7 +207,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -216,7 +216,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                   <p className="text-xs text-red-600 mt-1">{errors.password}</p>
                 )}
                 {!user && (
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     Mínimo 8 caracteres
                   </p>
@@ -227,7 +227,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
 
           {/* Rol del Sistema */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Rol del Sistema</h3>
+            <h3 className="text-sm font-semibold mb-3 dark:text-gray-200">Rol del Sistema</h3>
             <div className="space-y-2">
               {availableRoles.map((role) => {
                 const available = isRoleAvailable(role)
@@ -238,10 +238,10 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                     key={role}
                     className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
                       !available && !isCurrentRole
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50'
                         : formData.role === role
                         ? 'border-primary bg-primary/5 cursor-pointer'
-                        : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer'
                     }`}
                   >
                     <input
@@ -254,12 +254,12 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <div className="font-medium text-sm flex items-center gap-2">
+                      <div className="font-medium text-sm flex items-center gap-2 dark:text-gray-200">
                         {role === UserRole.ADMIN && '🔴 Administrador'}
                         {role === UserRole.MANAGER && (
                           <>
                             🟡 Manager
-                            <span className="text-xs font-normal text-gray-500">
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
                               ({managersCount}/1)
                             </span>
                           </>
@@ -267,13 +267,13 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                         {role === UserRole.CASHIER && (
                           <>
                             🟢 Cajero
-                            <span className="text-xs font-normal text-gray-500">
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
                               ({cashiersCount}/2)
                             </span>
                           </>
                         )}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         {roleDescriptions[role]}
                       </p>
                       {!available && !isCurrentRole && (
@@ -289,8 +289,8 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
             </div>
 
             {currentUserRole === UserRole.MANAGER && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-800 flex items-start gap-2">
+              <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-lg">
+                <p className="text-xs text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   Como Manager, solo puedes crear usuarios con rol de Cajero.
                 </p>
@@ -299,7 +299,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
           </div>
 
           {/* Botones */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
