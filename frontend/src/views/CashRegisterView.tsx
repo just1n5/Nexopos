@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Calculator, DollarSign, CreditCard, Lock, Unlock, AlertTriangle, Banknote, Plus, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -118,9 +118,9 @@ export default function CashRegisterView() {
 
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Cargando información de caja...</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function CashRegisterView() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold dark:text-gray-100">Gestión de Caja</h1>
+            <h1 className="text-3xl font-bold text-foreground">Gestión de Caja</h1>
             <Badge variant={isRegisterOpen ? 'success' : 'destructive'} className="text-base px-3 py-1">
               {isRegisterOpen ? (
                 <>
@@ -148,7 +148,7 @@ export default function CashRegisterView() {
               )}
             </Badge>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-muted-foreground">
             {new Date().toLocaleDateString('es-CO', {
               weekday: 'long',
               year: 'numeric',
@@ -173,7 +173,7 @@ export default function CashRegisterView() {
                   Monto de Apertura
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                   <Input
                     type="number"
                     placeholder="Ej: 100000"
@@ -209,10 +209,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Base Inicial</span>
-                      <Banknote className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-muted-foreground">Base Inicial</span>
+                      <Banknote className="w-4 h-4 text-muted-foreground" />
                     </div>
-                    <div className="text-2xl font-bold dark:text-gray-100">
+                    <div className="text-2xl font-bold text-foreground">
                       {formatCurrency(summary.openingAmount)}
                     </div>
                   </CardContent>
@@ -221,10 +221,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Ventas Totales</span>
-                      <DollarSign className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-muted-foreground">Ventas Totales</span>
+                      <DollarSign className="w-4 h-4 text-success" />
                     </div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-500">
+                    <div className="text-2xl font-bold text-success">
                       {formatCurrency(summary.totalSales)}
                     </div>
                   </CardContent>
@@ -233,10 +233,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Gastos</span>
-                      <Minus className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-muted-foreground">Gastos</span>
+                      <Minus className="w-4 h-4 text-destructive" />
                     </div>
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-500">
+                    <div className="text-2xl font-bold text-destructive">
                       {formatCurrency(summary.totalExpenses || 0)}
                     </div>
                   </CardContent>
@@ -245,10 +245,10 @@ export default function CashRegisterView() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Efectivo Esperado</span>
-                      <Calculator className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm text-muted-foreground">Efectivo Esperado</span>
+                      <Calculator className="w-4 h-4 text-primary" />
                     </div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-500">
+                    <div className="text-2xl font-bold text-primary">
                       {formatCurrency(summary.expectedAmount)}
                     </div>
                   </CardContent>
@@ -268,15 +268,15 @@ export default function CashRegisterView() {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {Object.entries(summary.salesByPaymentMethod).map(([method, amount]) => (
-                      <div key={method} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1 capitalize">
+                      <div key={method} className="text-center p-3 bg-muted rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1 capitalize">
                           {method === 'cash' ? 'Efectivo' :
                            method === 'card' ? 'Tarjeta' :
                            method === 'nequi' ? 'Nequi' :
                            method === 'daviplata' ? 'Daviplata' :
                            method === 'credit' ? 'Crédito' : method}
                         </div>
-                        <div className="text-lg font-bold dark:text-gray-100">
+                        <div className="text-lg font-bold text-foreground">
                           {formatCurrency(amount as number)}
                         </div>
                       </div>
@@ -300,7 +300,7 @@ export default function CashRegisterView() {
               </CardHeader>
               <CardContent>
                 {showExpenseForm && (
-                  <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
+                  <div className="mb-4 p-4 bg-muted rounded-lg space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Input
                         type="number"
@@ -316,7 +316,7 @@ export default function CashRegisterView() {
                       <select
                         value={expenseCategory}
                         onChange={(e) => setExpenseCategory(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                        className="w-full px-3 py-2 border rounded-md bg-card border-border text-foreground"
                       >
                         <option value="supplies">Insumos</option>
                         <option value="utilities">Servicios</option>
@@ -346,12 +346,12 @@ export default function CashRegisterView() {
                 {expenses.length > 0 ? (
                   <div className="space-y-2">
                     {expenses.map((expense) => (
-                      <div key={expense.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                      <div key={expense.id} className="flex items-center justify-between p-2 bg-muted rounded">
                         <div className="flex-1">
-                          <p className="font-medium dark:text-gray-200">{expense.description}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{expense.category}</p>
+                          <p className="font-medium text-foreground">{expense.description}</p>
+                          <p className="text-sm text-muted-foreground capitalize">{expense.category}</p>
                         </div>
-                        <div className="text-red-600 font-bold">
+                        <div className="text-destructive font-bold">
                           -{formatCurrency(expense.amount)}
                         </div>
                       </div>
@@ -359,13 +359,13 @@ export default function CashRegisterView() {
                     <Separator className="my-2" />
                     <div className="flex items-center justify-between font-bold">
                       <span>Total Gastos</span>
-                      <span className="text-red-600">
+                      <span className="text-destructive">
                         -{formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0))}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">
+                  <p className="text-muted-foreground text-center py-4">
                     No hay gastos registrados hoy
                   </p>
                 )}
@@ -394,7 +394,7 @@ export default function CashRegisterView() {
                     <label className="block text-sm font-medium mb-2">
                       Efectivo Esperado
                     </label>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-primary">
                       {formatCurrency(summary?.expectedAmount || 0)}
                     </div>
                   </div>
@@ -404,7 +404,7 @@ export default function CashRegisterView() {
                       Efectivo Real Contado
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                       <Input
                         type="number"
                         placeholder="0"
@@ -417,19 +417,19 @@ export default function CashRegisterView() {
                 </div>
 
                 {actualCash && (
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-muted rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Diferencia</span>
                       <span className={`text-xl font-bold ${
-                        Math.abs(calculateDifference()) < 0.01 ? 'text-gray-600' :
-                        calculateDifference() > 0 ? 'text-green-600' : 'text-red-600'
+                        Math.abs(calculateDifference()) < 0.01 ? 'text-muted-foreground' :
+                        calculateDifference() > 0 ? 'text-success' : 'text-destructive'
                       }`}>
                         {calculateDifference() > 0 ? '+' : ''}
                         {formatCurrency(calculateDifference())}
                       </span>
                     </div>
                     {Math.abs(calculateDifference()) >= 0.01 && (
-                      <p className="text-sm text-gray-600 mt-2">
+                      <p className="text-sm text-muted-foreground mt-2">
                         {calculateDifference() > 0
                           ? 'Hay un sobrante en caja'
                           : 'Hay un faltante en caja'}
@@ -486,5 +486,3 @@ export default function CashRegisterView() {
     </div>
   )
 }
-
-
