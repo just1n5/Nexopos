@@ -152,4 +152,15 @@ export class BetaKeysService {
     betaKey.notes = notes;
     return this.betaKeyRepository.save(betaKey);
   }
-}
+
+  /**
+   * Devuelve un conteo simple para verificar la conexión a la BD
+   */
+  async getHealthCheck(): Promise<{ db_connection: boolean; count: number }> {
+    try {
+      const count = await this.betaKeyRepository.count();
+      return { db_connection: true, count };
+    } catch (error) {
+      return { db_connection: false, count: 0 };
+    }
+  }

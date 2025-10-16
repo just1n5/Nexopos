@@ -33,6 +33,12 @@ export class BetaKeysController {
     return this.betaKeysService.validateBetaKey(key);
   }
 
+  @Get('health-check')
+  @ApiOperation({ summary: 'DB connection health check' })
+  async healthCheck() {
+    return this.betaKeysService.getHealthCheck();
+  }
+
   /**
    * Endpoints protegidos (solo SUPER_ADMIN puede gestionar beta keys)
    */
