@@ -628,7 +628,7 @@ export default function SettingsView() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>👥 Gestión de Usuarios</CardTitle>
+                        <CardTitle className="flex items-center"><UsersIcon className="w-6 h-6 mr-3" />Gestión de Usuarios</CardTitle>
                         <CardDescription>
                           Administra los usuarios que tienen acceso al sistema
                         </CardDescription>
