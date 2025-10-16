@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { X, Eye, EyeOff, AlertCircle, UserPlus, Edit, Save, Shield, UserCog, User as UserIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -130,8 +130,12 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>
-              {user ? '✏️ Editar Usuario' : '✨ Nuevo Usuario'}
+            <DialogTitle className="flex items-center">
+              {user ? (
+                <><Edit className="w-5 h-5 mr-2" /> Editar Usuario</>
+              ) : (
+                <><UserPlus className="w-5 h-5 mr-2" /> Nuevo Usuario</>
+              )}
             </DialogTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -255,10 +259,10 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                     />
                     <div className="flex-1">
                       <div className="font-medium text-sm flex items-center gap-2 dark:text-gray-200">
-                        {role === UserRole.ADMIN && '🔴 Administrador'}
+                        {role === UserRole.ADMIN && <><Shield className="w-4 h-4 text-red-500" /> Administrador</>}
                         {role === UserRole.MANAGER && (
                           <>
-                            🟡 Manager
+                            <UserCog className="w-4 h-4 text-yellow-500" /> Manager
                             <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
                               ({managersCount}/1)
                             </span>
@@ -266,7 +270,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
                         )}
                         {role === UserRole.CASHIER && (
                           <>
-                            🟢 Cajero
+                            <UserIcon className="w-4 h-4 text-green-500" /> Cajero
                             <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
                               ({cashiersCount}/2)
                             </span>
@@ -304,7 +308,14 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user, current
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : user ? '💾 Actualizar' : '💾 Crear Usuario'}
+              {loading ? (
+                'Guardando...'
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {user ? 'Actualizar' : 'Crear Usuario'}
+                </>
+              )}
             </Button>
           </div>
         </form>
