@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Edit, Trash2, Lock, Unlock, Search, X, AlertCircle } from 'lucide-react'
+import { Edit, Trash2, Lock, Unlock, Search, X, AlertCircle, Shield, UserCog, User as UserIcon, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -19,11 +19,11 @@ interface UserTableProps {
 const getRoleBadge = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN:
-      return <Badge className="bg-red-600 text-white hover:bg-red-700">🔴 Admin</Badge>
+      return <Badge className="bg-red-600 text-white hover:bg-red-700 flex items-center"><Shield className="w-3 h-3 mr-1" />Admin</Badge>
     case UserRole.MANAGER:
-      return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700">🟡 Manager</Badge>
+      return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700 flex items-center"><UserCog className="w-3 h-3 mr-1" />Manager</Badge>
     case UserRole.CASHIER:
-      return <Badge className="bg-green-600 text-white hover:bg-green-700">🟢 Cajero</Badge>
+      return <Badge className="bg-green-600 text-white hover:bg-green-700 flex items-center"><UserIcon className="w-3 h-3 mr-1" />Cajero</Badge>
   }
 }
 
@@ -224,10 +224,10 @@ export default function UserTable({
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
                   <td className="px-4 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-4 py-3">
-                                        {user.isActive ? (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-700">✅ Activo</Badge>
+                    {user.isActive ? (
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-700 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" />Activo</Badge>
                     ) : (
-                      <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600">⚪ Inactivo</Badge>
+                      <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 flex items-center"><XCircle className="w-3 h-3 mr-1" />Inactivo</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -316,9 +316,9 @@ export default function UserTable({
             <div className="flex items-center gap-2">
               {getRoleBadge(user.role)}
               {user.isActive ? (
-                <Badge variant="success">✅ Activo</Badge>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-700 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" />Activo</Badge>
               ) : (
-                <Badge variant="secondary">⚪ Inactivo</Badge>
+                <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 flex items-center"><XCircle className="w-3 h-3 mr-1" />Inactivo</Badge>
               )}
             </div>
 
