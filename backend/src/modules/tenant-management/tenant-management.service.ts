@@ -298,12 +298,6 @@ export class TenantManagementService {
       await queryRunner.query(`DELETE FROM "dian_resolutions" WHERE "tenantId" = $1`, [tenantId]);
       console.log('[TenantManagement] ✓ Resoluciones DIAN eliminadas');
 
-      // 18. Eliminar auditorías de usuarios
-      await queryRunner.query(
-        `DELETE FROM "user_audits" WHERE "userId" IN (SELECT id FROM "users" WHERE "tenantId" = $1)`,
-        [tenantId],
-      );
-      console.log('[TenantManagement] ✓ Auditorías de usuarios eliminadas');
 
       // 19. Eliminar OTPs relacionados con el tenant
       await queryRunner.query(`DELETE FROM "otp_codes" WHERE "relatedTenantId" = $1`, [tenantId]);
