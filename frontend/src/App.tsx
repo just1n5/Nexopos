@@ -64,9 +64,9 @@ const baseNavItems = [
 ]
 
 const superAdminNavItems = [
-  { path: '/admin/tenants', label: 'Gestión de Cuentas', icon: Building2 },
-  { path: '/admin/beta-keys', label: 'Beta Keys', icon: Key },
-  { path: '/settings', label: 'Configuración', icon: Settings }
+  { path: '/admin/tenants', label: 'Gestión de Cuentas', icon: Building2, shortcut: '' },
+  { path: '/admin/beta-keys', label: 'Beta Keys', icon: Key, shortcut: '' },
+  { path: '/settings', label: 'Configuración', icon: Settings, shortcut: '' }
 ]
 
 // Layout principal con navegación
