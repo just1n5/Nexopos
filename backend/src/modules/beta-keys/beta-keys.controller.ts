@@ -18,8 +18,6 @@ import { PermissionsGuard } from '../users/guards/permissions.guard';
 
 @ApiTags('Beta Keys')
 @Controller('beta-keys')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class BetaKeysController {
   constructor(private readonly betaKeysService: BetaKeysService) {}
 
@@ -43,6 +41,8 @@ export class BetaKeysController {
    * Endpoints protegidos (solo SUPER_ADMIN puede gestionar beta keys)
    */
   @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Get all beta keys (SUPER_ADMIN only)' })
   async findAll() {
@@ -50,6 +50,8 @@ export class BetaKeysController {
   }
 
   @Get('stats')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Get beta keys statistics (SUPER_ADMIN only)' })
   async getStats() {
@@ -57,6 +59,8 @@ export class BetaKeysController {
   }
 
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Create a new beta key (SUPER_ADMIN only)' })
   @ApiBody({
@@ -72,6 +76,8 @@ export class BetaKeysController {
   }
 
   @Post('bulk')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Create multiple beta keys (SUPER_ADMIN only)' })
   @ApiBody({
@@ -89,6 +95,8 @@ export class BetaKeysController {
   }
 
   @Patch(':id/notes')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Update beta key notes (SUPER_ADMIN only)' })
   @ApiBody({
@@ -108,6 +116,8 @@ export class BetaKeysController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Delete an unused beta key (SUPER_ADMIN only)' })
   async deleteBetaKey(@Param('id', new ParseUUIDPipe()) id: string) {
