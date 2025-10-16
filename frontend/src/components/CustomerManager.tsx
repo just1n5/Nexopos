@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   UserPlus,
@@ -388,7 +388,7 @@ export default function CustomerManager({
           <CardHeader className="pb-4 px-0">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Buscar por nombre, documento o teléfono..."
                   className="pl-9"
@@ -414,12 +414,12 @@ export default function CustomerManager({
             {isLoading ? (
               <div className="py-12 flex flex-col items-center">
                 <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="mt-4 text-sm text-gray-500">Cargando clientes...</p>
+                <p className="mt-4 text-sm text-muted-foreground">Cargando clientes...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-h-[60vh] overflow-auto">
                 {filteredCustomers.length === 0 ? (
-                  <div className="col-span-full py-12 text-center text-gray-500 border border-dashed rounded-lg">
+                  <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg">
                     {searchQuery ? 'No encontramos clientes que coincidan con la búsqueda.' : 'Aún no hay clientes registrados.'}
                   </div>
                 ) : (
@@ -442,7 +442,7 @@ export default function CustomerManager({
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-muted-foreground">
                                 {customer.document && `CC: ${customer.document} · `}
                                 {customer.phone}
                               </p>
@@ -451,16 +451,16 @@ export default function CustomerManager({
                           </div>
 
                           {(customer.email || customer.address) && (
-                            <div className="text-sm text-gray-600 space-y-1">
+                            <div className="text-sm text-muted-foreground space-y-1">
                               {customer.email && (
                                 <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4 text-gray-400" />
+                                  <Mail className="w-4 h-4 text-muted-foreground" />
                                   <span>{customer.email}</span>
                                 </div>
                               )}
                               {customer.address && (
                                 <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-gray-400" />
+                                  <MapPin className="w-4 h-4 text-muted-foreground" />
                                   <span>{customer.address}</span>
                                 </div>
                               )}
@@ -468,18 +468,18 @@ export default function CustomerManager({
                           )}
 
                           {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
-                            <div className="grid grid-cols-3 gap-2 text-sm bg-gray-50 rounded-lg p-3">
+                            <div className="grid grid-cols-3 gap-2 text-sm bg-muted rounded-lg p-3">
                               <div>
-                                <p className="text-gray-500">Límite</p>
+                                <p className="text-muted-foreground">Límite</p>
                                 <p className="font-medium">{formatCurrency(customer.creditLimit)}</p>
                               </div>
                               <div>
-                                <p className="text-gray-500">Deuda</p>
+                                <p className="text-muted-foreground">Deuda</p>
                                 <p className="font-medium">{formatCurrency(customer.currentDebt ?? 0)}</p>
                               </div>
                               <div>
-                                <p className="text-gray-500">Disponible</p>
-                                <p className={`font-medium ${availableCredit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <p className="text-muted-foreground">Disponible</p>
+                                <p className={`font-medium ${availableCredit > 0 ? 'text-success' : 'text-destructive'}`}>
                                   {formatCurrency(availableCredit)}
                                 </p>
                               </div>
@@ -495,7 +495,7 @@ export default function CustomerManager({
 
             <Separator className="my-4" />
 
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               {filteredCustomers.length} cliente{filteredCustomers.length === 1 ? '' : 's'} encontrado{filteredCustomers.length === 1 ? '' : 's'}
             </div>
           </CardContent>
@@ -514,7 +514,7 @@ export default function CustomerManager({
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
               >
                 <Card className="border-0 shadow-none">
                   <CardHeader className="pb-4">
@@ -524,14 +524,14 @@ export default function CustomerManager({
                         <X className="w-5 h-5" />
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Registra un cliente para asociarlo a ventas o habilitar crédito.
                     </p>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Nombre completo</label>
+                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
                       <Input
                         placeholder="Ej. Juan Pérez"
                         value={newCustomer.name}
@@ -541,7 +541,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Documento</label>
+                        <label className="text-sm font-medium text-foreground">Documento</label>
                         <Input
                           placeholder="Número de identificación"
                           value={newCustomer.document}
@@ -549,7 +549,7 @@ export default function CustomerManager({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Teléfono</label>
+                        <label className="text-sm font-medium text-foreground">Teléfono</label>
                         <Input
                           placeholder="Celular o fijo"
                           value={newCustomer.phone}
@@ -560,7 +560,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
+                        <label className="text-sm font-medium text-foreground">Correo electrónico</label>
                         <Input
                           type="email"
                           placeholder="correo@ejemplo.com"
@@ -584,7 +584,7 @@ export default function CustomerManager({
                         </div>
                         {newCustomer.creditEnabled && (
                           <div>
-                            <label className="text-sm font-medium text-gray-700">Límite de Crédito</label>
+                            <label className="text-sm font-medium text-foreground">Límite de Crédito</label>
                             <Input
                               type="number"
                               min="0"
@@ -598,7 +598,7 @@ export default function CustomerManager({
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Dirección</label>
+                      <label className="text-sm font-medium text-foreground">Dirección</label>
                       <Input
                         placeholder="Dirección de contacto"
                         value={newCustomer.address}
@@ -632,7 +632,7 @@ export default function CustomerManager({
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
               >
                 <Card className="border-0 shadow-none">
                   <CardHeader className="pb-4">
@@ -642,14 +642,14 @@ export default function CustomerManager({
                         <X className="w-5 h-5" />
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Actualiza la información del cliente
                     </p>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Nombre completo</label>
+                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
                       <Input
                         placeholder="Ej. Juan Pérez"
                         value={editForm.name}
@@ -659,7 +659,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Documento</label>
+                        <label className="text-sm font-medium text-foreground">Documento</label>
                         <Input
                           placeholder="Número de identificación"
                           value={editForm.document}
@@ -667,7 +667,7 @@ export default function CustomerManager({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Teléfono</label>
+                        <label className="text-sm font-medium text-foreground">Teléfono</label>
                         <Input
                           placeholder="Celular o fijo"
                           value={editForm.phone}
@@ -678,7 +678,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
+                        <label className="text-sm font-medium text-foreground">Correo electrónico</label>
                         <Input
                           type="email"
                           placeholder="correo@ejemplo.com"
@@ -702,7 +702,7 @@ export default function CustomerManager({
                         </div>
                         {editForm.creditEnabled && (
                           <div>
-                            <label className="text-sm font-medium text-gray-700">Límite de Crédito</label>
+                            <label className="text-sm font-medium text-foreground">Límite de Crédito</label>
                             <Input
                               type="number"
                               min="0"
@@ -716,7 +716,7 @@ export default function CustomerManager({
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Dirección</label>
+                      <label className="text-sm font-medium text-foreground">Dirección</label>
                       <Input
                         placeholder="Dirección de contacto"
                         value={editForm.address}
@@ -743,10 +743,10 @@ export default function CustomerManager({
                             Registrar Abono
                           </Button>
                         ) : (
-                          <Card className="border-2 border-blue-200 bg-blue-50">
+                          <Card className="border-2 border-accent bg-accent">
                             <CardContent className="p-4 space-y-3">
                               <div className="flex items-center justify-between">
-                                <h3 className="font-semibold text-blue-900">Registrar Abono</h3>
+                                <h3 className="font-semibold text-accent-foreground">Registrar Abono</h3>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -762,17 +762,17 @@ export default function CustomerManager({
 
                               {loadingCredits ? (
                                 <div className="py-4 text-center">
-                                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                  <p className="text-sm text-gray-600">Cargando ventas a crédito...</p>
+                                  <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                  <p className="text-sm text-muted-foreground">Cargando ventas a crédito...</p>
                                 </div>
                               ) : customerCreditSales.length === 0 ? (
-                                <p className="text-sm text-gray-600 text-center py-4">
+                                <p className="text-sm text-muted-foreground text-center py-4">
                                   No hay ventas a crédito pendientes
                                 </p>
                               ) : (
                                 <>
                                   <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                    <label className="text-sm font-medium text-foreground mb-2 block">
                                       Selecciona la venta a abonar
                                     </label>
                                     <div className="space-y-2 max-h-48 overflow-auto">
@@ -781,8 +781,8 @@ export default function CustomerManager({
                                           key={credit.id}
                                           className={`cursor-pointer transition-all ${
                                             selectedCreditSale?.id === credit.id
-                                              ? 'border-2 border-blue-500 bg-blue-50'
-                                              : 'hover:border-blue-300'
+                                              ? 'border-2 border-accent bg-accent'
+                                              : 'hover:border-accent'
                                           }`}
                                           onClick={() => setSelectedCreditSale(credit)}
                                         >
@@ -792,15 +792,15 @@ export default function CustomerManager({
                                                 <p className="text-sm font-medium">
                                                   Venta {new Date(credit.createdAt).toLocaleDateString('es-CO')}
                                                 </p>
-                                                <p className="text-xs text-gray-600">
+                                                <p className="text-xs text-muted-foreground">
                                                   Total: {formatCurrency(credit.totalAmount)}
                                                 </p>
                                               </div>
                                               <div className="text-right">
-                                                <p className="text-sm font-semibold text-red-600">
+                                                <p className="text-sm font-semibold text-destructive">
                                                   {formatCurrency(credit.remainingBalance)}
                                                 </p>
-                                                <p className="text-xs text-gray-500">Pendiente</p>
+                                                <p className="text-xs text-muted-foreground">Pendiente</p>
                                               </div>
                                             </div>
                                           </CardContent>
@@ -811,11 +811,11 @@ export default function CustomerManager({
 
                                   {selectedCreditSale && (
                                     <div>
-                                      <label className="text-sm font-medium text-gray-700">
+                                      <label className="text-sm font-medium text-foreground">
                                         Monto del Abono
                                       </label>
                                       <div className="relative mt-1">
-                                        <DollarSign className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                        <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                                         <Input
                                           type="number"
                                           placeholder="0"
@@ -826,7 +826,7 @@ export default function CustomerManager({
                                           max={selectedCreditSale.remainingBalance}
                                         />
                                       </div>
-                                      <p className="text-xs text-gray-500 mt-1">
+                                      <p className="text-xs text-muted-foreground mt-1">
                                         Máximo: {formatCurrency(selectedCreditSale.remainingBalance)}
                                       </p>
                                     </div>
@@ -885,22 +885,22 @@ export default function CustomerManager({
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {selectedCustomer.document && `CC: ${selectedCustomer.document} · `}
                   {selectedCustomer.phone}
                 </p>
                 {showCreditInfo && selectedCustomer.creditLimit && selectedCustomer.creditLimit > 0 && (
                   <div className="mt-2 space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Crédito disponible:</span>
+                      <span className="text-muted-foreground">Crédito disponible:</span>
                       <span
-                        className={`font-medium ${getAvailableCredit(selectedCustomer) > 0 ? 'text-green-600' : 'text-red-600'}`}
+                        className={`font-medium ${getAvailableCredit(selectedCustomer) > 0 ? 'text-success' : 'text-destructive'}`}
                       >
                         {formatCurrency(getAvailableCredit(selectedCustomer))}
                       </span>
                     </div>
                     {selectedCustomer.currentDebt && selectedCustomer.currentDebt > 0 && (
-                      <div className="flex justify-between text-sm text-gray-500">
+                      <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Deuda actual:</span>
                         <span>{formatCurrency(selectedCustomer.currentDebt)}</span>
                       </div>
@@ -926,7 +926,7 @@ export default function CustomerManager({
             </div>
             <div>
               <p className="font-medium">Seleccionar cliente</p>
-              <p className="text-sm text-gray-500">Opcional, requerido para ventas a crédito</p>
+              <p className="text-sm text-muted-foreground">Opcional, requerido para ventas a crédito</p>
             </div>
           </div>
         </Button>
@@ -944,14 +944,14 @@ export default function CustomerManager({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+              className="bg-card rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
               <Card className="border-0 shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-2xl">Clientes</CardTitle>
-                      <p className="text-sm text-gray-500">Gestiona los clientes asociados a ventas y créditos</p>
+                      <p className="text-sm text-muted-foreground">Gestiona los clientes asociados a ventas y créditos</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
                       <X className="w-5 h-5" />
@@ -960,7 +960,7 @@ export default function CustomerManager({
 
                   <div className="mt-4 flex flex-col md:flex-row gap-3">
                     <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         placeholder="Buscar por nombre, documento o teléfono..."
                         className="pl-9"
@@ -986,12 +986,12 @@ export default function CustomerManager({
                   {isLoading ? (
                     <div className="py-12 flex flex-col items-center">
                       <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      <p className="mt-4 text-sm text-gray-500">Cargando clientes...</p>
+                      <p className="mt-4 text-sm text-muted-foreground">Cargando clientes...</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       {filteredCustomers.length === 0 ? (
-                        <div className="col-span-full py-12 text-center text-gray-500 border border-dashed rounded-lg">
+                        <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg">
                           {searchQuery ? 'No encontramos clientes que coincidan con la búsqueda.' : 'Aún no hay clientes registrados.'}
                         </div>
                       ) : (
@@ -1014,7 +1014,7 @@ export default function CustomerManager({
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-muted-foreground">
                                       {customer.document && `CC: ${customer.document} · `}
                                       {customer.phone}
                                     </p>
@@ -1023,16 +1023,16 @@ export default function CustomerManager({
                                 </div>
 
                                 {(customer.email || customer.address) && (
-                                  <div className="text-sm text-gray-600 space-y-1">
+                                  <div className="text-sm text-muted-foreground space-y-1">
                                     {customer.email && (
                                       <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-gray-400" />
+                                        <Mail className="w-4 h-4 text-muted-foreground" />
                                         <span>{customer.email}</span>
                                       </div>
                                     )}
                                     {customer.address && (
                                       <div className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 text-gray-400" />
+                                        <MapPin className="w-4 h-4 text-muted-foreground" />
                                         <span>{customer.address}</span>
                                       </div>
                                     )}
@@ -1040,18 +1040,18 @@ export default function CustomerManager({
                                 )}
 
                                 {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
-                                  <div className="grid grid-cols-3 gap-2 text-sm bg-gray-50 rounded-lg p-3">
+                                  <div className="grid grid-cols-3 gap-2 text-sm bg-muted rounded-lg p-3">
                                     <div>
-                                      <p className="text-gray-500">Límite</p>
+                                      <p className="text-muted-foreground">Límite</p>
                                       <p className="font-medium">{formatCurrency(customer.creditLimit)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-gray-500">Deuda</p>
+                                      <p className="text-muted-foreground">Deuda</p>
                                       <p className="font-medium">{formatCurrency(customer.currentDebt ?? 0)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-gray-500">Disponible</p>
-                                      <p className={`font-medium ${availableCredit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <p className="text-muted-foreground">Disponible</p>
+                                      <p className={`font-medium ${availableCredit > 0 ? 'text-success' : 'text-destructive'}`}>
                                         {formatCurrency(availableCredit)}
                                       </p>
                                     </div>
@@ -1068,7 +1068,7 @@ export default function CustomerManager({
                   <Separator className="my-4" />
 
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {filteredCustomers.length} cliente{filteredCustomers.length === 1 ? '' : 's'} encontrados
                     </div>
                     <Button variant="outline" onClick={() => setIsOpen(false)}>
@@ -1094,7 +1094,7 @@ export default function CustomerManager({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-xl"
+              className="bg-card rounded-xl shadow-2xl w-full max-w-xl"
             >
               <Card className="border-0 shadow-none">
                 <CardHeader className="pb-4">
@@ -1104,14 +1104,14 @@ export default function CustomerManager({
                       <X className="w-5 h-5" />
                     </Button>
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Registra un cliente para asociarlo a ventas o habilitar crédito.
                   </p>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Nombre completo</label>
+                    <label className="text-sm font-medium text-foreground">Nombre completo</label>
                     <Input
                       placeholder="Ej. Juan Pérez"
                       value={newCustomer.name}
@@ -1121,7 +1121,7 @@ export default function CustomerManager({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Documento</label>
+                      <label className="text-sm font-medium text-foreground">Documento</label>
                       <Input
                         placeholder="Número de identificación"
                         value={newCustomer.document}
@@ -1129,7 +1129,7 @@ export default function CustomerManager({
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Teléfono</label>
+                      <label className="text-sm font-medium text-foreground">Teléfono</label>
                       <Input
                         placeholder="Celular o fijo"
                         value={newCustomer.phone}
@@ -1140,7 +1140,7 @@ export default function CustomerManager({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
+                      <label className="text-sm font-medium text-foreground">Correo electrónico</label>
                       <Input
                         type="email"
                         placeholder="correo@ejemplo.com"
@@ -1149,7 +1149,7 @@ export default function CustomerManager({
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Crédito máximo</label>
+                      <label className="text-sm font-medium text-foreground">Crédito máximo</label>
                       <Input
                         type="number"
                         min="0"
@@ -1161,7 +1161,7 @@ export default function CustomerManager({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Dirección</label>
+                    <label className="text-sm font-medium text-foreground">Dirección</label>
                     <Input
                       placeholder="Dirección de contacto"
                       value={newCustomer.address}
