@@ -19,11 +19,11 @@ interface UserTableProps {
 const getRoleBadge = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN:
-      return <Badge className="bg-red-600">🔴 Admin</Badge>
+      return <Badge className="bg-red-600 text-white hover:bg-red-700">🔴 Admin</Badge>
     case UserRole.MANAGER:
-      return <Badge className="bg-yellow-600">🟡 Manager</Badge>
+      return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700">🟡 Manager</Badge>
     case UserRole.CASHIER:
-      return <Badge className="bg-green-600">🟢 Cajero</Badge>
+      return <Badge className="bg-green-600 text-white hover:bg-green-700">🟢 Cajero</Badge>
   }
 }
 
@@ -186,16 +186,16 @@ export default function UserTable({
       {/* Tabla Desktop */}
       <div className="hidden md:block border rounded-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Usuario</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Email</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Rol</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Estado</th>
-              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700">Acciones</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Usuario</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Email</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Rol</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y dark:divide-gray-700">
             <AnimatePresence mode="popLayout">
               {filteredUsers.map((user, index) => (
                 <motion.tr
@@ -204,7 +204,7 @@ export default function UserTable({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
                   transition={{ duration: 0.2, delay: index * 0.02 }}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -212,22 +212,22 @@ export default function UserTable({
                         {user.firstName[0]}{user.lastName[0]}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-white">
                           {user.firstName} {user.lastName}
                         </p>
                         {user.id === currentUserId && (
-                          <span className="text-xs text-gray-500">(Tú)</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">(Tú)</span>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
                   <td className="px-4 py-3">{getRoleBadge(user.role)}</td>
                   <td className="px-4 py-3">
-                    {user.isActive ? (
-                      <Badge variant="success">✅ Activo</Badge>
+                                        {user.isActive ? (
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-700">✅ Activo</Badge>
                     ) : (
-                      <Badge variant="secondary">⚪ Inactivo</Badge>
+                      <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600">⚪ Inactivo</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -297,7 +297,7 @@ export default function UserTable({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2, delay: index * 0.02 }}
-              className="border rounded-lg p-4 space-y-3"
+              className="border dark:border-gray-700 rounded-lg p-4 space-y-3"
             >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -305,10 +305,10 @@ export default function UserTable({
                   {user.firstName[0]}{user.lastName[0]}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 dark:text-white">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                 </div>
               </div>
             </div>
@@ -323,7 +323,7 @@ export default function UserTable({
             </div>
 
             {canManageUser(user) && (
-              <div className="flex gap-2 pt-2 border-t">
+              <div className="flex gap-2 pt-2 border-t dark:border-gray-700">
                 <Button
                   size="sm"
                   variant="outline"
@@ -387,15 +387,15 @@ export default function UserTable({
             </DialogTitle>
             <DialogDescription className="pt-4">
               <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800/50">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm text-yellow-900 font-medium">
+                    <p className="text-sm text-yellow-900 dark:text-yellow-200 font-medium">
                       {confirmToggleUser?.isActive
                         ? '¿Desactivar este usuario?'
                         : '¿Activar este usuario?'}
                     </p>
-                    <p className="text-sm text-yellow-700 mt-1">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
                       {confirmToggleUser?.isActive
                         ? 'Este usuario no podrá iniciar sesión hasta que sea reactivado.'
                         : 'Este usuario podrá volver a iniciar sesión en el sistema.'}
@@ -404,16 +404,16 @@ export default function UserTable({
                 </div>
 
                 {confirmToggleUser && (
-                  <div className="p-4 bg-gray-50 rounded-lg border">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
                         {confirmToggleUser.firstName[0]}{confirmToggleUser.lastName[0]}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-gray-900 dark:text-white">
                           {confirmToggleUser.firstName} {confirmToggleUser.lastName}
                         </p>
-                        <p className="text-sm text-gray-600">{confirmToggleUser.email}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{confirmToggleUser.email}</p>
                       </div>
                     </div>
                   </div>
