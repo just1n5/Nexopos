@@ -267,7 +267,7 @@ export class TenantManagementService {
 
       // 12. Eliminar stock de inventario
       await queryRunner.query(
-        `DELETE FROM "inventory_stock" WHERE "productId" IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
+        `DELETE FROM "inventory_stock" WHERE "productId"::uuid IN (SELECT id FROM "products" WHERE "tenantId" = $1)`,
         [tenantId],
       );
       console.log('[TenantManagement] ✓ Stock de inventario eliminado');
