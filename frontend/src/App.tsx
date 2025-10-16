@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense, useState, useEffect } from 'react'
+import React, { lazy, Suspense, useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,7 +15,9 @@ import {
   Sun,
   Moon,
   Bell,
-  User
+  User,
+  Key,
+  Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +27,8 @@ import { usePOSStore } from '@/stores/posStore'
 import { useBusinessStore } from '@/stores/businessStore'
 import POSView from '@/views/POSView'
 import RequireCashRegister from '@/components/RequireCashRegister'
+import SuperAdminRedirect from '@/components/SuperAdminRedirect'
+import { UserRole } from '@/types'
 
 // Lazy load de otros componentes
 const LoginView = lazy(() => import('@/views/LoginView'))
@@ -50,13 +54,19 @@ function LoadingScreen() {
 }
 
 // Navigation items
-const navItems = [
+const baseNavItems = [
   { path: '/', label: 'Venta', icon: ShoppingCart, shortcut: 'F1' },
   { path: '/inventory', label: 'Inventario', icon: Package, shortcut: 'F2' },
   { path: '/credit', label: 'Fiado', icon: CreditCard, shortcut: 'F3' },
   { path: '/cash-register', label: 'Caja', icon: Calculator, shortcut: 'F4' },
   { path: '/dashboard', label: 'Reportes', icon: BarChart3, shortcut: 'F5' },
   { path: '/settings', label: 'Configuración', icon: Settings, shortcut: 'F6' }
+]
+
+const superAdminNavItems = [
+  { path: '/admin/tenants', label: 'Gestión de Cuentas', icon: Building2 },
+  { path: '/admin/beta-keys', label: 'Beta Keys', icon: Key },
+  { path: '/settings', label: 'Configuración', icon: Settings }
 ]
 
 // Layout principal con navegación
@@ -71,6 +81,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     return saved ? JSON.parse(saved) : true
   })
   const [notifications] = useState(3) // Mock de notificaciones
+
+  const navItems = user?.role === UserRole.SUPER_ADMIN ? superAdminNavItems : baseNavItems;
 
   // Inicializar dark mode al montar
   useEffect(() => {
@@ -98,7 +110,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // Manejar atajos de teclado de navegación
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Solo activar si no hay inputs, textareas o modales activos
+      if (user?.role === UserRole.SUPER_ADMIN) return; // No keyboard shortcuts for super admin
+
       const isInputActive =
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA' ||
@@ -106,7 +119,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
       if (isInputActive) return
 
-      // Mapeo de teclas F a rutas
       const keyMap: { [key: string]: string } = {
         'F1': '/',
         'F2': '/inventory',
@@ -125,7 +137,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [navigate])
+  }, [navigate, user])
   
   return (
     <div className="h-screen flex flex-col bg-background transition-colors">
@@ -144,7 +156,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             </Button>
             
             <div className="flex items-center gap-2">
-              {businessConfig.logo ? (
+              {businessConfig.logo && user?.role !== UserRole.SUPER_ADMIN ? (
                 <img src={businessConfig.logo} alt="Logo" className="h-8 w-8 object-contain" />
               ) : (
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -153,11 +165,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               )}
               <div>
                 <h1 className={`font-bold text-gray-900 dark:text-white truncate ${(businessConfig.name || '').length > 20 ? 'text-base' : 'text-lg'}`}>
-                  {businessConfig.name || 'NexoPOS'}
+                  {user?.role === UserRole.SUPER_ADMIN ? 'NexoPOS Super Admin' : (businessConfig.name || 'NexoPOS')}
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                  {business?.name || 'Sistema de Punto de Venta'}
-                </p>
+                {user?.role !== UserRole.SUPER_ADMIN && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                    {business?.name || 'Sistema de Punto de Venta'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -258,7 +272,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             <div className="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl">
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-6">
-                  {businessConfig.logo ? (
+                  {businessConfig.logo && user?.role !== UserRole.SUPER_ADMIN ? (
                     <img src={businessConfig.logo} alt="Logo" className="h-10 w-10 object-contain" />
                   ) : (
                     <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -267,11 +281,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                   )}
                   <div>
                     <h2 className="font-bold text-gray-900 dark:text-white">
-                      {businessConfig.name || 'NexoPOS'}
+                      {user?.role === UserRole.SUPER_ADMIN ? 'NexoPOS Super Admin' : (businessConfig.name || 'NexoPOS')}
                     </h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {business?.name || 'Punto de Venta'}
-                    </p>
+                    {user?.role !== UserRole.SUPER_ADMIN && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {business?.name || 'Punto de Venta'}
+                      </p>
+                    )}
                   </div>
                 </div>
                 
@@ -335,22 +351,24 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       </main>
       
       {/* Footer con atajos de teclado (solo desktop) */}
-      <footer className="hidden md:flex items-center justify-center gap-4 px-4 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-        {navItems.map(item => (
-          <div key={item.path} className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300 font-mono">
-              {item.shortcut}
-            </kbd>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </footer>
+      {user?.role !== UserRole.SUPER_ADMIN && (
+        <footer className="hidden md:flex items-center justify-center gap-4 px-4 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+          {navItems.map(item => (
+            <div key={item.path} className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300 font-mono">
+                {item.shortcut}
+              </kbd>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </footer>
+      )}
     </div>
   )
 }
 
 export default function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
 
   return (
     <>
@@ -359,7 +377,7 @@ export default function App() {
           <Routes>
             {/* Ruta de login */}
             <Route path="/login" element={
-              isAuthenticated ? <Navigate to="/" replace /> : <LoginView />
+              isAuthenticated ? <Navigate to={user?.role === UserRole.SUPER_ADMIN ? '/admin/tenants' : '/'} replace /> : <LoginView />
             } />
 
             {/* Ruta de registro */}
@@ -370,47 +388,57 @@ export default function App() {
             {/* Rutas protegidas */}
             <Route path="/" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <RequireCashRegister>
-                  <MainLayout>
-                    <POSView />
-                  </MainLayout>
-                </RequireCashRegister>
+                <SuperAdminRedirect>
+                  <RequireCashRegister>
+                    <MainLayout>
+                      <POSView />
+                    </MainLayout>
+                  </RequireCashRegister>
+                </SuperAdminRedirect>
               )
             } />
 
             <Route path="/inventory" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <RequireCashRegister>
-                  <MainLayout>
-                    <InventoryView />
-                  </MainLayout>
-                </RequireCashRegister>
+                <SuperAdminRedirect>
+                  <RequireCashRegister>
+                    <MainLayout>
+                      <InventoryView />
+                    </MainLayout>
+                  </RequireCashRegister>
+                </SuperAdminRedirect>
               )
             } />
 
             <Route path="/credit" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <RequireCashRegister>
-                  <MainLayout>
-                    <CreditView />
-                  </MainLayout>
-                </RequireCashRegister>
+                <SuperAdminRedirect>
+                  <RequireCashRegister>
+                    <MainLayout>
+                      <CreditView />
+                    </MainLayout>
+                  </RequireCashRegister>
+                </SuperAdminRedirect>
               )
             } />
 
             <Route path="/cash-register" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <CashRegisterView />
-                </MainLayout>
+                <SuperAdminRedirect>
+                  <MainLayout>
+                    <CashRegisterView />
+                  </MainLayout>
+                </SuperAdminRedirect>
               )
             } />
 
             <Route path="/dashboard" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
-                <MainLayout>
-                  <DashboardView />
-                </MainLayout>
+                <SuperAdminRedirect>
+                  <MainLayout>
+                    <DashboardView />
+                  </MainLayout>
+                </SuperAdminRedirect>
               )
             } />
 
@@ -422,6 +450,7 @@ export default function App() {
               )
             } />
 
+            {/* Rutas de Super Admin */}
             <Route path="/admin/beta-keys" element={
               !isAuthenticated ? <Navigate to="/login" replace /> : (
                 <MainLayout>
@@ -447,4 +476,3 @@ export default function App() {
     </>
   )
 }
-

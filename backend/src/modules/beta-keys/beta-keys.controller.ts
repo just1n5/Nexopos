@@ -13,10 +13,13 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { BetaKeysService } from './beta-keys.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
+import { Permissions, Permission } from '../users/decorators/permissions.decorator';
+import { PermissionsGuard } from '../users/guards/permissions.guard';
 
 @ApiTags('Beta Keys')
 @Controller('beta-keys')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class BetaKeysController {
   constructor(private readonly betaKeysService: BetaKeysService) {}
 
@@ -34,25 +37,21 @@ export class BetaKeysController {
    * Endpoints protegidos (solo SUPER_ADMIN puede gestionar beta keys)
    */
   @Get()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Get all beta keys (SUPER_ADMIN only)' })
-  @ApiOperation({ summary: 'Get all beta keys (admin only)' })
   async findAll() {
     return this.betaKeysService.findAll();
   }
 
   @Get('stats')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Get beta keys statistics (SUPER_ADMIN only)' })
   async getStats() {
     return this.betaKeysService.getStats();
   }
 
   @Post()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Create a new beta key (SUPER_ADMIN only)' })
   @ApiBody({
     schema: {
@@ -67,8 +66,7 @@ export class BetaKeysController {
   }
 
   @Post('bulk')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Create multiple beta keys (SUPER_ADMIN only)' })
   @ApiBody({
     schema: {
@@ -85,8 +83,7 @@ export class BetaKeysController {
   }
 
   @Patch(':id/notes')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Update beta key notes (SUPER_ADMIN only)' })
   @ApiBody({
     schema: {
@@ -105,8 +102,7 @@ export class BetaKeysController {
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
   @ApiOperation({ summary: 'Delete an unused beta key (SUPER_ADMIN only)' })
   async deleteBetaKey(@Param('id', new ParseUUIDPipe()) id: string) {
     await this.betaKeysService.deleteBetaKey(id);

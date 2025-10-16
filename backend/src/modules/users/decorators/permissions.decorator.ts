@@ -29,6 +29,10 @@ export enum Permission {
   // Caja
   CASH_REGISTER_MANAGE = 'cash_register:manage',
   CASH_REGISTER_VIEW = 'cash_register:view',
+
+  // Super Admin
+  TENANTS_MANAGE = 'tenants:manage',
+  BETA_KEYS_MANAGE = 'beta_keys:manage',
 }
 
 export const PERMISSIONS_KEY = 'permissions';

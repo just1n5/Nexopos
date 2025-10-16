@@ -10,13 +10,15 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TenantManagementService } from './tenant-management.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
+import { PermissionsGuard } from '../users/guards/permissions.guard';
+import { Permissions, Permission } from '../users/decorators/permissions.decorator';
 import { RequestOtpDto, VerifyOtpDto } from './dto/tenant-action.dto';
 
 @ApiTags('Tenant Management')
 @Controller('tenant-management')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, SuperAdminGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Permissions(Permission.TENANTS_MANAGE)
 export class TenantManagementController {
   constructor(
     private readonly tenantManagementService: TenantManagementService,

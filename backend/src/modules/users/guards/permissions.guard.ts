@@ -6,24 +6,8 @@ import { UserRole } from '../entities/user.entity';
 // Mapa de permisos por rol
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.SUPER_ADMIN]: [
-    // Super Admin tiene TODOS los permisos + gestión de beta keys
-    Permission.INVENTORY_READ,
-    Permission.INVENTORY_CREATE,
-    Permission.INVENTORY_UPDATE,
-    Permission.INVENTORY_DELETE,
-    Permission.INVENTORY_ADJUST,
-    Permission.PRODUCTS_READ,
-    Permission.PRODUCTS_CREATE,
-    Permission.PRODUCTS_UPDATE,
-    Permission.PRODUCTS_DELETE,
-    Permission.REPORTS_SALES,
-    Permission.REPORTS_INVENTORY,
-    Permission.REPORTS_FINANCIAL,
-    Permission.REPORTS_ALL,
-    Permission.USERS_MANAGE,
-    Permission.CONFIG_MANAGE,
-    Permission.CASH_REGISTER_MANAGE,
-    Permission.CASH_REGISTER_VIEW,
+    Permission.TENANTS_MANAGE,
+    Permission.BETA_KEYS_MANAGE,
   ],
   [UserRole.ADMIN]: [
     // Admin tiene TODOS los permisos (excepto beta keys)
