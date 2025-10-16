@@ -242,7 +242,7 @@ export default function InventoryView() {
   }, [products, searchQuery]);
 
   return (
-    <div className="h-full bg-background dark:bg-gray-900 overflow-auto">
+    <div className="h-full bg-background overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">

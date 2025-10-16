@@ -40,7 +40,7 @@ const TenantManagementView = lazy(() => import('@/views/TenantManagementView'))
 // Loading component
 function LoadingScreen() {
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen w-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
         <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
@@ -128,7 +128,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   }, [navigate])
   
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="h-screen flex flex-col bg-background transition-colors">
       {/* Header/Navbar */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center px-4 shadow-sm">
         <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto">

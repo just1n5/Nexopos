@@ -242,7 +242,7 @@ export default function ReportsView() {
   
   if (loading) {
     return (
-      <div className="h-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
           <p className="dark:text-white">Cargando reportes...</p>
@@ -252,7 +252,7 @@ export default function ReportsView() {
   }
   
   return (
-    <div className="h-full bg-background dark:bg-gray-900 overflow-auto">
+    <div className="h-full bg-background overflow-auto">
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Header */}
         <div className="mb-6">

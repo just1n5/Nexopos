@@ -439,7 +439,7 @@ export default function POSView() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-background dark:bg-gray-900">
+    <div className="flex flex-col lg:flex-row h-screen bg-background">
       {/* Panel Izquierdo - Catálogo de Productos */}
       <div className={`flex-1 flex flex-col overflow-hidden ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
         {/* Header de busqueda y categorias */}
