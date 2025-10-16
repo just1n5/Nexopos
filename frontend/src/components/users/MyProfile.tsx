@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { User as UserIcon, Lock, Eye, EyeOff, Check, AlertCircle, Shield } from 'lucide-react'
+import { User as UserIcon, Lock, Eye, EyeOff, Check, AlertCircle, Shield, UserCog, Crown, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -19,15 +19,15 @@ interface PasswordStrength {
 const getRoleBadge = (role: UserRole) => {
   switch (role) {
     case UserRole.SUPER_ADMIN:
-      return { icon: '👑', label: 'Super Admin', color: 'bg-purple-600' }
+      return <Badge className="bg-purple-600 text-white hover:bg-purple-700 flex items-center"><Crown className="w-3 h-3 mr-1" />Super Admin</Badge>
     case UserRole.ADMIN:
-      return { icon: '🔴', label: 'Administrador', color: 'bg-red-600' }
+      return <Badge className="bg-red-600 text-white hover:bg-red-700 flex items-center"><Shield className="w-3 h-3 mr-1" />Administrador</Badge>
     case UserRole.MANAGER:
-      return { icon: '🟡', label: 'Manager', color: 'bg-yellow-600' }
+      return <Badge className="bg-yellow-600 text-white hover:bg-yellow-700 flex items-center"><UserCog className="w-3 h-3 mr-1" />Manager</Badge>
     case UserRole.CASHIER:
-      return { icon: '🟢', label: 'Cajero', color: 'bg-green-600' }
+      return <Badge className="bg-green-600 text-white hover:bg-green-700 flex items-center"><UserIcon className="w-3 h-3 mr-1" />Cajero</Badge>
     default:
-      return { icon: '❓', label: 'Desconocido', color: 'bg-gray-600' }
+      return <Badge className="bg-gray-600 text-white">Desconocido</Badge>
   }
 }
 
@@ -76,7 +76,6 @@ export default function MyProfile() {
     )
   }
 
-  const roleBadge = getRoleBadge(user.role)
   const passwordStrength = passwordData.newPassword
     ? checkPasswordStrength(passwordData.newPassword)
     : null
@@ -172,13 +171,11 @@ export default function MyProfile() {
               </h2>
               <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge className={roleBadge.color}>
-                  {roleBadge.icon} {roleBadge.label}
-                </Badge>
+                {getRoleBadge(user.role)}
                 {user.isActive ? (
-                  <Badge variant="success">✅ Activo</Badge>
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-700 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" />Activo</Badge>
                 ) : (
-                  <Badge variant="secondary">⚪ Inactivo</Badge>
+                  <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 flex items-center"><XCircle className="w-3 h-3 mr-1" />Inactivo</Badge>
                 )}
               </div>
             </div>
@@ -189,31 +186,31 @@ export default function MyProfile() {
           {/* Información de la cuenta */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nombre
               </label>
               <Input value={user.firstName} disabled />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Apellido
               </label>
               <Input value={user.lastName} disabled />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email
               </label>
               <Input value={user.email} disabled />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Rol
               </label>
-              <Input value={roleBadge.label} disabled />
+              <Input value={getRoleBadge(user.role).props.children.join('')} disabled />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Miembro desde
               </label>
               <Input
@@ -227,9 +224,9 @@ export default function MyProfile() {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-            <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 flex items-start gap-3">
+            <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-900 dark:text-blue-300">
               <p className="font-medium">Información de solo lectura</p>
               <p className="mt-1">
                 Para modificar tus datos personales, contacta con un administrador del sistema.
@@ -265,7 +262,7 @@ export default function MyProfile() {
             <form onSubmit={handleChangePassword} className="space-y-4">
               {/* Contraseña actual */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
                   Contraseña Actual *
                 </label>
                 <div className="relative">
@@ -296,7 +293,7 @@ export default function MyProfile() {
 
               {/* Nueva contraseña */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
                   Nueva Contraseña *
                 </label>
                 <div className="relative">
@@ -328,7 +325,7 @@ export default function MyProfile() {
                 {passwordData.newPassword && passwordStrength && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-600">Fortaleza:</span>
+                      <span className="text-gray-600 dark:text-gray-400">Fortaleza:</span>
                       <span className={`font-medium ${
                         passwordStrength.score <= 1 ? 'text-red-600' :
                         passwordStrength.score === 2 ? 'text-orange-600' :
@@ -338,13 +335,13 @@ export default function MyProfile() {
                         {passwordStrength.label}
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${passwordStrength.color}`}
                         style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
                       />
                     </div>
-                    <div className="mt-2 space-y-1 text-xs text-gray-600">
+                    <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
                       <p className="flex items-center gap-1">
                         {passwordData.newPassword.length >= 8 ? (
                           <Check className="w-3 h-3 text-green-600" />
@@ -384,7 +381,7 @@ export default function MyProfile() {
 
               {/* Confirmar contraseña */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
                   Confirmar Nueva Contraseña *
                 </label>
                 <div className="relative">
