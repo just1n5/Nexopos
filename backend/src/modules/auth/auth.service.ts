@@ -109,6 +109,9 @@ export class AuthService {
     let tenant = null;
     if (safeUser.tenantId) {
       tenant = await this.tenantsService.findOne(safeUser.tenantId);
+      if (tenant && !tenant.isActive) {
+        throw new UnauthorizedException('The business account has been suspended.');
+      }
     }
 
     return { user: safeUser, tenant, accessToken };
@@ -116,8 +119,8 @@ export class AuthService {
 
   private async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmailWithPassword(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials.');
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid credentials or user inactive.');
     }
 
     const isValid = await this.usersService.validatePassword(password, user.password);
