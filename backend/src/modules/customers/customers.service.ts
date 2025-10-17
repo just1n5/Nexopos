@@ -147,8 +147,8 @@ export class CustomersService {
       }
 
       // Check credit limit
-      const newCreditUsed = customer.creditUsed + amount;
-      if (newCreditUsed > customer.creditLimit) {
+      const newCreditUsed = Number(customer.creditUsed) + amount;
+      if (newCreditUsed > Number(customer.creditLimit)) {
         throw new BadRequestException(
           `Credit limit exceeded. Available: ${customer.creditAvailable}, Requested: ${amount}`
         );
