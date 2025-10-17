@@ -363,15 +363,18 @@ export class CashRegisterService {
       query.andWhere('cashRegister.status = :status', { status: filters.status });
     }
 
+    // Si estamos filtrando por sesiones cerradas, usar closedAt, sino usar openedAt
+    const dateField = filters?.status === CashRegisterStatus.CLOSED ? 'closedAt' : 'openedAt';
+
     if (filters?.startDate) {
-      query.andWhere('cashRegister.openedAt >= :startDate', { startDate: filters.startDate });
+      query.andWhere(`cashRegister.${dateField} >= :startDate`, { startDate: filters.startDate });
     }
 
     if (filters?.endDate) {
-      query.andWhere('cashRegister.openedAt <= :endDate', { endDate: filters.endDate });
+      query.andWhere(`cashRegister.${dateField} <= :endDate`, { endDate: filters.endDate });
     }
 
-    return query.orderBy('cashRegister.openedAt', 'DESC').getMany();
+    return query.orderBy(`cashRegister.${dateField}`, 'DESC').getMany();
   }
 
   async findOne(id: string): Promise<CashRegister> {
