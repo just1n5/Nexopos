@@ -1212,19 +1212,19 @@ export default function ReportsView() {
 
           {/* Tab de Arqueos de Caja */}
           <TabsContent value="cash-register" className="space-y-4">
-            {cashRegisterReport && (
+            {cashRegisterReport && cashRegisterReport.arqueos.length > 0 ? (
               <>
                 {/* Resumen de Arqueos */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">
+                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Total Sesiones
                       </CardTitle>
                       <Calendar className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-2xl font-bold dark:text-white">
                         {cashRegisterReport.summary.totalSessions}
                       </div>
                     </CardContent>
@@ -1232,13 +1232,13 @@ export default function ReportsView() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">
+                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Ventas Totales
                       </CardTitle>
                       <DollarSign className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-2xl font-bold dark:text-white">
                         {formatCurrency(cashRegisterReport.summary.totalSales)}
                       </div>
                     </CardContent>
@@ -1246,13 +1246,13 @@ export default function ReportsView() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">
+                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Gastos Totales
                       </CardTitle>
                       <TrendingDown className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-500">
                         {formatCurrency(cashRegisterReport.summary.totalExpenses)}
                       </div>
                     </CardContent>
@@ -1260,16 +1260,16 @@ export default function ReportsView() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">
+                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Tasa de Discrepancias
                       </CardTitle>
                       <AlertCircle className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-2xl font-bold dark:text-white">
                         {cashRegisterReport.summary.discrepancyRate.toFixed(1)}%
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {cashRegisterReport.summary.sessionsWithDiscrepancies} de {cashRegisterReport.summary.totalSessions} sesiones
                       </p>
                     </CardContent>
@@ -1285,68 +1285,68 @@ export default function ReportsView() {
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2 font-medium text-gray-600">Sesión</th>
-                            <th className="text-left p-2 font-medium text-gray-600">Fecha</th>
-                            <th className="text-right p-2 font-medium text-gray-600">Apertura</th>
-                            <th className="text-right p-2 font-medium text-gray-600">Esperado</th>
-                            <th className="text-right p-2 font-medium text-gray-600">Contado</th>
-                            <th className="text-right p-2 font-medium text-gray-600">Diferencia</th>
-                            <th className="text-right p-2 font-medium text-gray-600">Ventas</th>
-                            <th className="text-left p-2 font-medium text-gray-600">Estado</th>
+                          <tr className="border-b dark:border-gray-700">
+                            <th className="text-left p-2 font-medium text-gray-600 dark:text-gray-300">Sesión</th>
+                            <th className="text-left p-2 font-medium text-gray-600 dark:text-gray-300">Fecha</th>
+                            <th className="text-right p-2 font-medium text-gray-600 dark:text-gray-300">Apertura</th>
+                            <th className="text-right p-2 font-medium text-gray-600 dark:text-gray-300">Esperado</th>
+                            <th className="text-right p-2 font-medium text-gray-600 dark:text-gray-300">Contado</th>
+                            <th className="text-right p-2 font-medium text-gray-600 dark:text-gray-300">Diferencia</th>
+                            <th className="text-right p-2 font-medium text-gray-600 dark:text-gray-300">Ventas</th>
+                            <th className="text-left p-2 font-medium text-gray-600 dark:text-gray-300">Estado</th>
                           </tr>
                         </thead>
                         <tbody>
                           {cashRegisterReport.arqueos.map((arqueo) => (
-                            <tr key={arqueo.sessionId} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <tr key={arqueo.sessionId} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
                               <td className="p-2">
-                                <div className="font-medium">{arqueo.sessionNumber}</div>
-                                <div className="text-xs text-gray-500">
+                                <div className="font-medium dark:text-white">{arqueo.sessionNumber}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                   {arqueo.totalTransactions} transacciones
                                 </div>
                               </td>
                               <td className="p-2">
-                                <div className="text-sm">
+                                <div className="text-sm dark:text-white">
                                   {new Date(arqueo.closedAt).toLocaleDateString('es-CO', {
                                     day: '2-digit',
                                     month: 'short',
                                     year: 'numeric'
                                   })}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                   {new Date(arqueo.closedAt).toLocaleTimeString('es-CO', {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                   })}
                                 </div>
                               </td>
-                              <td className="p-2 text-right">
+                              <td className="p-2 text-right dark:text-white">
                                 {formatCurrency(arqueo.openingBalance)}
                               </td>
-                              <td className="p-2 text-right">
+                              <td className="p-2 text-right dark:text-white">
                                 {formatCurrency(arqueo.expectedBalance)}
                               </td>
-                              <td className="p-2 text-right font-medium">
+                              <td className="p-2 text-right font-medium dark:text-white">
                                 {formatCurrency(arqueo.actualBalance)}
                               </td>
                               <td className={`p-2 text-right font-medium ${
                                 Math.abs(arqueo.difference) > 0
                                   ? arqueo.difference > 0
-                                    ? 'text-green-600'
-                                    : 'text-red-600'
-                                  : 'text-gray-600'
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-red-600 dark:text-red-400'
+                                  : 'text-gray-600 dark:text-gray-400'
                               }`}>
                                 {arqueo.difference > 0 && '+'}
                                 {formatCurrency(arqueo.difference)}
                               </td>
-                              <td className="p-2 text-right">
+                              <td className="p-2 text-right dark:text-white">
                                 {formatCurrency(arqueo.totalSales)}
                               </td>
                               <td className="p-2">
                                 <Badge className={
                                   Math.abs(arqueo.difference) > 1000
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-green-100 text-green-800'
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                 }>
                                   {Math.abs(arqueo.difference) > 1000 ? 'Con diferencia' : 'Cuadrado'}
                                 </Badge>
@@ -1359,6 +1359,16 @@ export default function ReportsView() {
                   </CardContent>
                 </Card>
               </>
+            ) : (
+              <div className="text-center py-12">
+                <Calculator className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  No hay arqueos de caja registrados
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                  Los arqueos de caja aparecer án aquí cuando se cierren sesiones de caja registradora en el rango de fechas seleccionado
+                </p>
+              </div>
             )}
           </TabsContent>
 
