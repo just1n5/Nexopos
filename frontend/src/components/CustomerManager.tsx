@@ -84,6 +84,7 @@ export default function CustomerManager({
   const [editForm, setEditForm] = useState<CustomerFormState>(INITIAL_FORM)
   const [showPaymentSection, setShowPaymentSection] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'card'>('cash')
   const [customerCreditSales, setCustomerCreditSales] = useState<any[]>([])
   const [loadingCredits, setLoadingCredits] = useState(false)
   const [selectedCreditSale, setSelectedCreditSale] = useState<any>(null)
@@ -223,6 +224,7 @@ export default function CustomerManager({
     })
     setShowPaymentSection(false)
     setPaymentAmount('')
+    setPaymentMethod('cash')
     setSelectedCreditSale(null)
 
     // Cargar ventas a crédito del cliente si tiene deuda
@@ -341,7 +343,7 @@ export default function CustomerManager({
       const { creditService } = await import('@/services/creditService')
       await creditService.addPayment(selectedCreditSale.id, {
         amount,
-        paymentMethod: 'cash',
+        paymentMethod,
         notes: 'Abono registrado desde gestión de clientes'
       }, token)
 
@@ -356,6 +358,7 @@ export default function CustomerManager({
       }
 
       setPaymentAmount('')
+      setPaymentMethod('cash')
       setSelectedCreditSale(null)
       setShowPaymentSection(false)
 
@@ -753,6 +756,7 @@ export default function CustomerManager({
                                   onClick={() => {
                                     setShowPaymentSection(false)
                                     setPaymentAmount('')
+                                    setPaymentMethod('cash')
                                     setSelectedCreditSale(null)
                                   }}
                                 >
@@ -810,26 +814,43 @@ export default function CustomerManager({
                                   </div>
 
                                   {selectedCreditSale && (
-                                    <div>
-                                      <label className="text-sm font-medium text-foreground dark:text-gray-300">
-                                        Monto del Abono
-                                      </label>
-                                      <div className="relative mt-1">
-                                        <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                                        <Input
-                                          type="number"
-                                          placeholder="0"
-                                          value={paymentAmount}
-                                          onChange={(e) => setPaymentAmount(e.target.value)}
-                                          className="pl-10"
-                                          min="0"
-                                          max={selectedCreditSale.remainingBalance}
-                                        />
+                                    <>
+                                      <div>
+                                        <label className="text-sm font-medium text-foreground dark:text-gray-300">
+                                          Monto del Abono
+                                        </label>
+                                        <div className="relative mt-1">
+                                          <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                                          <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={paymentAmount}
+                                            onChange={(e) => setPaymentAmount(e.target.value)}
+                                            className="pl-10"
+                                            min="0"
+                                            max={selectedCreditSale.remainingBalance}
+                                          />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Máximo: {formatCurrency(selectedCreditSale.remainingBalance)}
+                                        </p>
                                       </div>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        Máximo: {formatCurrency(selectedCreditSale.remainingBalance)}
-                                      </p>
-                                    </div>
+
+                                      <div>
+                                        <label className="text-sm font-medium text-foreground dark:text-gray-300">
+                                          Método de Pago
+                                        </label>
+                                        <select
+                                          value={paymentMethod}
+                                          onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'transfer' | 'card')}
+                                          className="w-full px-3 py-2 mt-1 border rounded-md bg-background text-foreground dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                          <option value="cash">Efectivo</option>
+                                          <option value="transfer">Transferencia</option>
+                                          <option value="card">Tarjeta</option>
+                                        </select>
+                                      </div>
+                                    </>
                                   )}
 
                                   <Button
