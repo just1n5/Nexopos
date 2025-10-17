@@ -172,17 +172,17 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
                 className="h-16 mx-auto mb-2 object-contain"
               />
             )}
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-semibold dark:text-white">
               {businessConfig.name || business?.name || 'NexoPOS'}
             </h2>
             {(businessConfig.address || business?.address) && (
-              <p className="text-xs text-gray-500">{businessConfig.address || business?.address}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{businessConfig.address || business?.address}</p>
             )}
             {(businessConfig.phone || business?.phone) && (
-              <p className="text-xs text-gray-500">Tel: {businessConfig.phone || business?.phone}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Tel: {businessConfig.phone || business?.phone}</p>
             )}
             {(businessConfig.nit || business?.nit) && (
-              <p className="text-xs text-gray-500">NIT: {businessConfig.nit || business?.nit}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">NIT: {businessConfig.nit || business?.nit}</p>
             )}
           </div>
 
@@ -198,21 +198,21 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
             <div className="bold text-xs mb-2">PRODUCTOS</div>
             {sale.items.map((item) => (
               <div key={item.id} className="mb-2">
-                <div className="item-name text-xs font-medium">
+                <div className="item-name text-xs font-medium dark:text-gray-200">
                   {item.product.name}
                   {item.variant && ` - ${item.variant.name}`}
                 </div>
                 <div className="item text-xs">
-                  <span className="text-gray-600">
+                  <span className="text-gray-600 dark:text-gray-400">
                     {item.isSoldByWeight
                       ? `${formatWeight(item.quantity, businessConfig.weightUnit)} x ${formatCurrency(item.price)}`
                       : `${item.quantity} x ${formatCurrency(item.price)}`
                     }
                   </span>
-                  <span className="font-medium">{formatCurrency(item.total)}</span>
+                  <span className="font-medium dark:text-gray-200">{formatCurrency(item.total)}</span>
                 </div>
                 {item.discount > 0 && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     Desc: {item.discount}%
                   </div>
                 )}
@@ -224,82 +224,138 @@ ${cashDetails ? `Recibido: ${formatCurrency(cashDetails.received)}\nCambio: ${fo
 
           <div className="mb-3 text-xs space-y-1">
             <div className="item">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(sale.subtotal)}</span>
+              <span className="dark:text-gray-400">Subtotal:</span>
+              <span className="dark:text-gray-200">{formatCurrency(sale.subtotal)}</span>
             </div>
             {sale.discount > 0 && (
               <div className="item">
-                <span>Descuento:</span>
-                <span>-{formatCurrency(sale.discount)}</span>
+                <span className="dark:text-gray-400">Descuento:</span>
+                <span className="dark:text-gray-200">-{formatCurrency(sale.discount)}</span>
               </div>
             )}
             <div className="item">
-              <span>IVA:</span>
-              <span>{formatCurrency(sale.tax)}</span>
+              <span className="dark:text-gray-400">IVA:</span>
+              <span className="dark:text-gray-200">{formatCurrency(sale.tax)}</span>
             </div>
             <div className="item total text-base">
-              <span>Total:</span>
-              <span>{formatCurrency(sale.total)}</span>
+              <span className="dark:text-white">Total:</span>
+              <span className="text-primary">{formatCurrency(sale.total)}</span>
             </div>
           </div>
 
           <Separator className="divider" />
 
-          <div className="mb-3 text-xs space-y-1">
-            <div className="item">
-              <span>Forma de pago:</span>
-              <span className="font-medium">{primaryPaymentName}</span>
-            </div>
-            {payments.length > 1 && (
-              <div className="text-[10px] text-gray-500 space-y-1">
-                {payments.slice(1).map((payment) => (
-                  <div key={payment.id} className="flex justify-between">
-                    <span>{PAYMENT_LABELS[payment.method] ?? payment.method}:</span>
-                    <span>{formatCurrency(payment.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {cashDetails && (
-              <>
-                <div className="item">
-                  <span>Recibido:</span>
-                  <span>{formatCurrency(cashDetails.received)}</span>
-                </div>
-                <div className="item font-medium">
-                  <span>Cambio:</span>
-                  <span>{formatCurrency(cashDetails.change)}</span>
-                </div>
-              </>
-            )}
-            {(sale.saleType === SaleType.CREDIT || primaryMethod === PaymentMethod.CREDIT || (sale.creditAmount ?? 0) > 0) && (
-              <div className="text-xs text-center mt-2 p-2 bg-yellow-50 rounded">
-                <span className="font-medium">Venta a crédito</span>
-                {sale.creditAmount != null && (
-                  <p>Saldo pendiente: {formatCurrency(sale.creditAmount)}</p>
-                )}
-                {sale.creditDueDate && (
-                  <p>Fecha límite: {formatDateTime(sale.creditDueDate)}</p>
-                )}
-              </div>
-            )}
-          </div>
+                    <div className="mb-3 text-xs space-y-1">
 
-          <Separator className="divider" />
+                      <div className="item">
 
-          <div className="footer">
-            <p className="text-xs mb-2">¡Gracias por su compra!</p>
-            {business?.dianResolution && (
-              <div className="text-[10px] text-gray-500 space-y-1">
-                <p>Resolución DIAN: {business.dianResolution.resolution}</p>
-                <p>
-                  Autorizado del {business.dianResolution.prefix}{business.dianResolution.startNumber}
-                  {' '}al {business.dianResolution.prefix}{business.dianResolution.endNumber}
-                </p>
-              </div>
-            )}
-            <p className="text-[10px] text-gray-400 mt-2">Powered by NexoPOS</p>
-          </div>
+                        <span className="dark:text-gray-400">Forma de pago:</span>
+
+                        <span className="font-medium dark:text-gray-200">{primaryPaymentName}</span>
+
+                      </div>
+
+                      {payments.length > 1 && (
+
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 space-y-1">
+
+                          {payments.slice(1).map((payment) => (
+
+                            <div key={payment.id} className="flex justify-between">
+
+                              <span>{PAYMENT_LABELS[payment.method] ?? payment.method}:</span>
+
+                              <span>{formatCurrency(payment.amount)}</span>
+
+                            </div>
+
+                          ))}
+
+                        </div>
+
+                      )}
+
+                      {cashDetails && (
+
+                        <>
+
+                          <div className="item">
+
+                            <span className="dark:text-gray-400">Recibido:</span>
+
+                            <span className="dark:text-gray-200">{formatCurrency(cashDetails.received)}</span>
+
+                          </div>
+
+                          <div className="item font-medium">
+
+                            <span className="dark:text-gray-300">Cambio:</span>
+
+                            <span className="dark:text-gray-200">{formatCurrency(cashDetails.change)}</span>
+
+                          </div>
+
+                        </>
+
+                      )}
+
+                      {(sale.saleType === SaleType.CREDIT || primaryMethod === PaymentMethod.CREDIT || (sale.creditAmount ?? 0) > 0) && (
+
+                        <div className="text-xs text-center mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800/50">
+
+                          <span className="font-medium text-yellow-900 dark:text-yellow-200">Venta a crédito</span>
+
+                          {sale.creditAmount != null && (
+
+                            <p className="text-yellow-800 dark:text-yellow-300">Saldo pendiente: {formatCurrency(sale.creditAmount)}</p>
+
+                          )}
+
+                          {sale.creditDueDate && (
+
+                            <p className="text-yellow-800 dark:text-yellow-300">Fecha límite: {formatDateTime(sale.creditDueDate)}</p>
+
+                          )}
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+          
+
+                    <Separator className="divider" />
+
+          
+
+                    <div className="footer">
+
+                      <p className="text-xs mb-2 dark:text-gray-300">¡Gracias por su compra!</p>
+
+                      {business?.dianResolution && (
+
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 space-y-1">
+
+                          <p>Resolución DIAN: {business.dianResolution.resolution}</p>
+
+                          <p>
+
+                            Autorizado del {business.dianResolution.prefix}{business.dianResolution.startNumber}
+
+                            {' '}
+
+                            al {business.dianResolution.prefix}{business.dianResolution.endNumber}
+
+                          </p>
+
+                        </div>
+
+                      )}
+
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">Powered by NexoPOS</p>
+
+                    </div>
         </div>
 
         {showActions && (
