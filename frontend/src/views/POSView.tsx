@@ -1147,12 +1147,12 @@ export default function POSView() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto"
+              className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">Seleccionar Cliente</h2>
+                  <h2 className="text-2xl font-bold dark:text-white">Seleccionar Cliente</h2>
                   <Button
                     variant="ghost"
                     size="icon"

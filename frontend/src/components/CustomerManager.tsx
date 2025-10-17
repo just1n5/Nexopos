@@ -419,7 +419,7 @@ export default function CustomerManager({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-h-[60vh] overflow-auto">
                 {filteredCustomers.length === 0 ? (
-                  <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg">
+                  <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg dark:border-gray-700 dark:text-gray-400">
                     {searchQuery ? 'No encontramos clientes que coincidan con la búsqueda.' : 'Aún no hay clientes registrados.'}
                   </div>
                 ) : (
@@ -428,14 +428,14 @@ export default function CustomerManager({
                     return (
                       <Card
                         key={customer.id}
-                        className="hover:shadow-lg transition-shadow cursor-pointer"
+                        className="hover:shadow-lg transition-shadow cursor-pointer bg-white dark:bg-gray-800 dark:border-gray-700"
                         onClick={() => handleSelectCustomer(customer)}
                       >
                         <CardContent className="p-4 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-lg">{customer.name}</h3>
+                                <h3 className="font-semibold text-lg dark:text-white">{customer.name}</h3>
                                 {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
                                   <Badge variant={availableCredit > 0 ? 'success' : 'destructive'}>
                                     Crédito
@@ -468,14 +468,14 @@ export default function CustomerManager({
                           )}
 
                           {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
-                            <div className="grid grid-cols-3 gap-2 text-sm bg-muted rounded-lg p-3">
+                            <div className="grid grid-cols-3 gap-2 text-sm bg-muted dark:bg-gray-700/50 rounded-lg p-3">
                               <div>
                                 <p className="text-muted-foreground">Límite</p>
-                                <p className="font-medium">{formatCurrency(customer.creditLimit)}</p>
+                                <p className="font-medium dark:text-gray-200">{formatCurrency(customer.creditLimit)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Deuda</p>
-                                <p className="font-medium">{formatCurrency(customer.currentDebt ?? 0)}</p>
+                                <p className="font-medium dark:text-gray-200">{formatCurrency(customer.currentDebt ?? 0)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Disponible</p>
@@ -519,7 +519,7 @@ export default function CustomerManager({
                 <Card className="border-0 shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-2xl">Nuevo cliente</CardTitle>
+                      <CardTitle className="text-2xl dark:text-white">Nuevo cliente</CardTitle>
                       <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)}>
                         <X className="w-5 h-5" />
                       </Button>
@@ -531,7 +531,7 @@ export default function CustomerManager({
 
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Nombre completo</label>
                       <Input
                         placeholder="Ej. Juan Pérez"
                         value={newCustomer.name}
@@ -541,7 +541,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground">Documento</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Documento</label>
                         <Input
                           placeholder="Número de identificación"
                           value={newCustomer.document}
@@ -549,7 +549,7 @@ export default function CustomerManager({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-foreground">Teléfono</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Teléfono</label>
                         <Input
                           placeholder="Celular o fijo"
                           value={newCustomer.phone}
@@ -560,7 +560,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground">Correo electrónico</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Correo electrónico</label>
                         <Input
                           type="email"
                           placeholder="correo@ejemplo.com"
@@ -577,14 +577,14 @@ export default function CustomerManager({
                           />
                           <label
                             htmlFor="new-credit-enabled"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
                           >
                             Habilitar Crédito
                           </label>
                         </div>
                         {newCustomer.creditEnabled && (
                           <div>
-                            <label className="text-sm font-medium text-foreground">Límite de Crédito</label>
+                            <label className="text-sm font-medium text-foreground dark:text-gray-300">Límite de Crédito</label>
                             <Input
                               type="number"
                               min="0"
@@ -598,7 +598,7 @@ export default function CustomerManager({
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-foreground">Dirección</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Dirección</label>
                       <Input
                         placeholder="Dirección de contacto"
                         value={newCustomer.address}
@@ -637,7 +637,7 @@ export default function CustomerManager({
                 <Card className="border-0 shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-2xl">Editar cliente</CardTitle>
+                      <CardTitle className="text-2xl dark:text-white">Editar cliente</CardTitle>
                       <Button variant="ghost" size="icon" onClick={() => setEditingCustomer(null)}>
                         <X className="w-5 h-5" />
                       </Button>
@@ -649,7 +649,7 @@ export default function CustomerManager({
 
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Nombre completo</label>
                       <Input
                         placeholder="Ej. Juan Pérez"
                         value={editForm.name}
@@ -659,7 +659,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground">Documento</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Documento</label>
                         <Input
                           placeholder="Número de identificación"
                           value={editForm.document}
@@ -667,7 +667,7 @@ export default function CustomerManager({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-foreground">Teléfono</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Teléfono</label>
                         <Input
                           placeholder="Celular o fijo"
                           value={editForm.phone}
@@ -678,7 +678,7 @@ export default function CustomerManager({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground">Correo electrónico</label>
+                        <label className="text-sm font-medium text-foreground dark:text-gray-300">Correo electrónico</label>
                         <Input
                           type="email"
                           placeholder="correo@ejemplo.com"
@@ -695,14 +695,14 @@ export default function CustomerManager({
                           />
                           <label
                             htmlFor="edit-credit-enabled"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
                           >
                             Habilitar Crédito
                           </label>
                         </div>
                         {editForm.creditEnabled && (
                           <div>
-                            <label className="text-sm font-medium text-foreground">Límite de Crédito</label>
+                            <label className="text-sm font-medium text-foreground dark:text-gray-300">Límite de Crédito</label>
                             <Input
                               type="number"
                               min="0"
@@ -716,7 +716,7 @@ export default function CustomerManager({
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-foreground">Dirección</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Dirección</label>
                       <Input
                         placeholder="Dirección de contacto"
                         value={editForm.address}
@@ -772,14 +772,14 @@ export default function CustomerManager({
                               ) : (
                                 <>
                                   <div>
-                                    <label className="text-sm font-medium text-foreground mb-2 block">
+                                    <label className="text-sm font-medium text-foreground mb-2 block dark:text-gray-300">
                                       Selecciona la venta a abonar
                                     </label>
                                     <div className="space-y-2 max-h-48 overflow-auto">
                                       {customerCreditSales.map((credit) => (
                                         <Card
                                           key={credit.id}
-                                          className={`cursor-pointer transition-all ${
+                                          className={`cursor-pointer transition-all bg-card dark:border-gray-700 ${
                                             selectedCreditSale?.id === credit.id
                                               ? 'border-2 border-accent bg-accent'
                                               : 'hover:border-accent'
@@ -789,7 +789,7 @@ export default function CustomerManager({
                                           <CardContent className="p-3">
                                             <div className="flex justify-between items-start">
                                               <div>
-                                                <p className="text-sm font-medium">
+                                                <p className="text-sm font-medium dark:text-white">
                                                   Venta {new Date(credit.createdAt).toLocaleDateString('es-CO')}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
@@ -811,7 +811,7 @@ export default function CustomerManager({
 
                                   {selectedCreditSale && (
                                     <div>
-                                      <label className="text-sm font-medium text-foreground">
+                                      <label className="text-sm font-medium text-foreground dark:text-gray-300">
                                         Monto del Abono
                                       </label>
                                       <div className="relative mt-1">
@@ -871,14 +871,14 @@ export default function CustomerManager({
     <>
       {selectedCustomer ? (
         <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-md transition-shadow bg-card dark:border-gray-700"
           onClick={() => setIsOpen(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="font-medium">{selectedCustomer.name}</p>
+                  <p className="font-medium dark:text-white">{selectedCustomer.name}</p>
                   {showCreditInfo && selectedCustomer.creditLimit && selectedCustomer.creditLimit > 0 && (
                     <Badge variant={getAvailableCredit(selectedCustomer) > 0 ? 'success' : 'destructive'}>
                       Crédito
@@ -950,7 +950,7 @@ export default function CustomerManager({
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-2xl">Clientes</CardTitle>
+                      <CardTitle className="text-2xl dark:text-white">Clientes</CardTitle>
                       <p className="text-sm text-muted-foreground">Gestiona los clientes asociados a ventas y créditos</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
@@ -991,7 +991,7 @@ export default function CustomerManager({
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       {filteredCustomers.length === 0 ? (
-                        <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg">
+                        <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg dark:border-gray-700 dark:text-gray-400">
                           {searchQuery ? 'No encontramos clientes que coincidan con la búsqueda.' : 'Aún no hay clientes registrados.'}
                         </div>
                       ) : (
@@ -1000,14 +1000,14 @@ export default function CustomerManager({
                           return (
                             <Card
                               key={customer.id}
-                              className="hover:shadow-lg transition-shadow cursor-pointer"
+                              className="hover:shadow-lg transition-shadow cursor-pointer bg-white dark:bg-gray-800 dark:border-gray-700"
                               onClick={() => handleSelectCustomer(customer)}
                             >
                               <CardContent className="p-4 space-y-3">
                                 <div className="flex items-start justify-between">
                                   <div>
                                     <div className="flex items-center gap-2">
-                                      <h3 className="font-semibold text-lg">{customer.name}</h3>
+                                      <h3 className="font-semibold text-lg dark:text-white">{customer.name}</h3>
                                       {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
                                         <Badge variant={availableCredit > 0 ? 'success' : 'destructive'}>
                                           Crédito
@@ -1040,14 +1040,14 @@ export default function CustomerManager({
                                 )}
 
                                 {showCreditInfo && customer.creditLimit && customer.creditLimit > 0 && (
-                                  <div className="grid grid-cols-3 gap-2 text-sm bg-muted rounded-lg p-3">
+                                  <div className="grid grid-cols-3 gap-2 text-sm bg-muted dark:bg-gray-700/50 rounded-lg p-3">
                                     <div>
                                       <p className="text-muted-foreground">Límite</p>
-                                      <p className="font-medium">{formatCurrency(customer.creditLimit)}</p>
+                                      <p className="font-medium dark:text-gray-200">{formatCurrency(customer.creditLimit)}</p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Deuda</p>
-                                      <p className="font-medium">{formatCurrency(customer.currentDebt ?? 0)}</p>
+                                      <p className="font-medium dark:text-gray-200">{formatCurrency(customer.currentDebt ?? 0)}</p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Disponible</p>
@@ -1099,7 +1099,7 @@ export default function CustomerManager({
               <Card className="border-0 shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-2xl">Nuevo cliente</CardTitle>
+                    <CardTitle className="text-2xl dark:text-white">Nuevo cliente</CardTitle>
                     <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)}>
                       <X className="w-5 h-5" />
                     </Button>
@@ -1111,7 +1111,7 @@ export default function CustomerManager({
 
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                    <label className="text-sm font-medium text-foreground dark:text-gray-300">Nombre completo</label>
                     <Input
                       placeholder="Ej. Juan Pérez"
                       value={newCustomer.name}
@@ -1121,7 +1121,7 @@ export default function CustomerManager({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Documento</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Documento</label>
                       <Input
                         placeholder="Número de identificación"
                         value={newCustomer.document}
@@ -1129,7 +1129,7 @@ export default function CustomerManager({
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Teléfono</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Teléfono</label>
                       <Input
                         placeholder="Celular o fijo"
                         value={newCustomer.phone}
@@ -1140,7 +1140,7 @@ export default function CustomerManager({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Correo electrónico</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Correo electrónico</label>
                       <Input
                         type="email"
                         placeholder="correo@ejemplo.com"
@@ -1149,7 +1149,7 @@ export default function CustomerManager({
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Crédito máximo</label>
+                      <label className="text-sm font-medium text-foreground dark:text-gray-300">Crédito máximo</label>
                       <Input
                         type="number"
                         min="0"
@@ -1161,7 +1161,7 @@ export default function CustomerManager({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-foreground">Dirección</label>
+                    <label className="text-sm font-medium text-foreground dark:text-gray-300">Dirección</label>
                     <Input
                       placeholder="Dirección de contacto"
                       value={newCustomer.address}
