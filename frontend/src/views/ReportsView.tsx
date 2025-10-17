@@ -463,33 +463,91 @@ export default function ReportsView() {
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {Object.entries(salesReport.salesByPaymentMethod).map(([method, amount]) => {
-                        const methodLabels: Record<string, string> = {
-                          cash: 'Efectivo',
-                          card: 'Tarjeta',
-                          nequi: 'Nequi',
-                          daviplata: 'Daviplata',
-                          credit: 'Crédito'
-                        }
-                        
-                        return (
-                          <div key={method} className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                              {methodLabels[method] || method}
-                            </p>
-                            <p className="text-xl font-bold dark:text-white">
-                              {formatCurrency(amount)}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {salesReport.totalSalesAmount > 0
-                                ? `${Math.round((amount / salesReport.totalSalesAmount) * 100)}%`
-                                : '0%'
-                              } del total
-                            </p>
-                          </div>
-                        )
-                      })}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {(() => {
+                        const paymentMethods = [
+                          {
+                            key: 'cash',
+                            label: 'Efectivo',
+                            bgLight: 'bg-green-50',
+                            bgDark: 'dark:bg-green-950',
+                            borderLight: 'border-green-200',
+                            borderDark: 'dark:border-green-800',
+                            textLight: 'text-green-700',
+                            textDark: 'dark:text-green-300',
+                            icon: '💵'
+                          },
+                          {
+                            key: 'card',
+                            label: 'Tarjeta',
+                            bgLight: 'bg-blue-50',
+                            bgDark: 'dark:bg-blue-950',
+                            borderLight: 'border-blue-200',
+                            borderDark: 'dark:border-blue-800',
+                            textLight: 'text-blue-700',
+                            textDark: 'dark:text-blue-300',
+                            icon: '💳'
+                          },
+                          {
+                            key: 'nequi',
+                            label: 'Nequi',
+                            bgLight: 'bg-purple-50',
+                            bgDark: 'dark:bg-purple-950',
+                            borderLight: 'border-purple-200',
+                            borderDark: 'dark:border-purple-800',
+                            textLight: 'text-purple-700',
+                            textDark: 'dark:text-purple-300',
+                            icon: '📱'
+                          },
+                          {
+                            key: 'daviplata',
+                            label: 'Daviplata',
+                            bgLight: 'bg-red-50',
+                            bgDark: 'dark:bg-red-950',
+                            borderLight: 'border-red-200',
+                            borderDark: 'dark:border-red-800',
+                            textLight: 'text-red-700',
+                            textDark: 'dark:text-red-300',
+                            icon: '💰'
+                          },
+                          {
+                            key: 'credit',
+                            label: 'Crédito',
+                            bgLight: 'bg-yellow-50',
+                            bgDark: 'dark:bg-yellow-950',
+                            borderLight: 'border-yellow-200',
+                            borderDark: 'dark:border-yellow-800',
+                            textLight: 'text-yellow-700',
+                            textDark: 'dark:text-yellow-300',
+                            icon: '🏦'
+                          }
+                        ]
+
+                        return paymentMethods.map((method) => {
+                          const amount = salesReport.salesByPaymentMethod[method.key] || 0
+                          const percentage = salesReport.totalSalesAmount > 0
+                            ? Math.round((Number(amount) / salesReport.totalSalesAmount) * 100)
+                            : 0
+
+                          return (
+                            <div
+                              key={method.key}
+                              className={`text-center p-4 rounded-lg border ${method.bgLight} ${method.bgDark} ${method.borderLight} ${method.borderDark} transition-all hover:shadow-md`}
+                            >
+                              <div className="text-2xl mb-2">{method.icon}</div>
+                              <p className={`text-sm font-medium mb-2 ${method.textLight} ${method.textDark}`}>
+                                {method.label}
+                              </p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                {formatCurrency(amount)}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {percentage}% del total
+                              </p>
+                            </div>
+                          )
+                        })
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
