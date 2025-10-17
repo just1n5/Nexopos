@@ -580,13 +580,13 @@ export default function CreditManager() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 text-foreground dark:text-gray-300">
                       Método de Pago
                     </label>
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value as any)}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border rounded-md bg-background text-foreground dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       <option value="cash">Efectivo</option>
                       <option value="transfer">Transferencia</option>
