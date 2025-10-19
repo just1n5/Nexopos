@@ -51,6 +51,7 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     TenantsModule,
     ProductsModule,
     CategoriesModule,
+    CategoriesModule,
     CustomersModule,
     InventoryModule,
     CashRegisterModule,

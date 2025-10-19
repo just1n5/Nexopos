@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -18,7 +18,6 @@ export class ProductsService {
     private readonly productsRepository: Repository<Product>,
     @InjectRepository(ProductVariant)
     private readonly variantsRepository: Repository<ProductVariant>,
-    @Inject(forwardRef(() => InventoryService))
     private readonly inventoryService: InventoryService
   ) {}
 
