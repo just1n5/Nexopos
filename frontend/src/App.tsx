@@ -17,7 +17,8 @@ import {
   Bell,
   User,
   Key,
-  Building2
+  Building2,
+  Receipt
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +39,7 @@ const CreditView = lazy(() => import('@/views/CreditView'))
 const CashRegisterView = lazy(() => import('@/views/CashRegisterView'))
 const SettingsView = lazy(() => import('@/views/SettingsView'))
 const DashboardView = lazy(() => import('@/views/DashboardView'))
+const AccountingView = lazy(() => import('@/views/AccountingView'))
 const BetaKeysManagementView = lazy(() => import('@/views/BetaKeysManagementView'))
 const TenantManagementView = lazy(() => import('@/views/TenantManagementView'))
 
@@ -60,6 +62,7 @@ const baseNavItems = [
   { path: '/credit', label: 'Fiado', icon: CreditCard, shortcut: 'F3' },
   { path: '/cash-register', label: 'Caja', icon: Calculator, shortcut: 'F4' },
   { path: '/dashboard', label: 'Reportes', icon: BarChart3, shortcut: 'F5' },
+  { path: '/accounting', label: 'Contabilidad', icon: Receipt, shortcut: 'F7' },
   { path: '/settings', label: 'Configuración', icon: Settings, shortcut: 'F6' }
 ]
 
@@ -437,6 +440,16 @@ export default function App() {
                 <SuperAdminRedirect>
                   <MainLayout>
                     <DashboardView />
+                  </MainLayout>
+                </SuperAdminRedirect>
+              )
+            } />
+
+            <Route path="/accounting" element={
+              !isAuthenticated ? <Navigate to="/login" replace /> : (
+                <SuperAdminRedirect>
+                  <MainLayout>
+                    <AccountingView />
                   </MainLayout>
                 </SuperAdminRedirect>
               )

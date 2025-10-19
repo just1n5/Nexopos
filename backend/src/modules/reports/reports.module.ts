@@ -7,10 +7,11 @@ import { CustomersModule } from '../customers/customers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { CashRegisterModule } from '../cash-register/cash-register.module';
 import { InventoryMovement } from '../inventory/entities/inventory-movement.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([InventoryMovement]),
+    TypeOrmModule.forFeature([InventoryMovement, User]),
     SalesModule,
     InventoryModule,
     CashRegisterModule

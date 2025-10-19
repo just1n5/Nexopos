@@ -9,6 +9,7 @@ import { ProductsModule } from '../products/products.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { CashRegisterModule } from '../cash-register/cash-register.module';
 import { CustomersModule } from '../customers/customers.module';
+import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { CustomersModule } from '../customers/customers.module';
     ProductsModule, // Import ProductsModule to use ProductsService
     InventoryModule, // Import InventoryModule to update stock on sales
     forwardRef(() => CashRegisterModule), // Import CashRegisterModule for payment registration
-    forwardRef(() => CustomersModule) // Import CustomersModule to manage credit
+    forwardRef(() => CustomersModule), // Import CustomersModule to manage credit
+    AccountingModule // Import AccountingModule for automatic journal entries
   ],
   controllers: [SalesController],
   providers: [SalesService],

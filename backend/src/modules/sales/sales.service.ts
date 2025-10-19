@@ -9,6 +9,7 @@ import { ProductsService } from '../products/products.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
 import { CustomersService } from '../customers/customers.service';
+import { JournalEntryService } from '../accounting/services/journal-entry.service';
 import { MovementType } from '../inventory/entities/inventory-movement.entity';
 import { toDecimal } from '../../common/utils';
 import { poundsToGrams } from '../../common/utils/weight.utils';
@@ -30,6 +31,7 @@ export class SalesService {
     private cashRegisterService: CashRegisterService,
     @Inject(forwardRef(() => CustomersService))
     private customersService: CustomersService,
+    private journalEntryService: JournalEntryService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto, userId: string, tenantId: string): Promise<Sale> {
@@ -295,6 +297,40 @@ export class SalesService {
         console.error('[SalesService] Error registering sale in cash register:', error);
         console.error('[SalesService] Error stack:', error.stack);
         // Don't fail the sale if cash register registration fails
+      }
+
+      // Generate automatic journal entry for the sale (CONTABILIDAD INVISIBLE)
+      try {
+        console.log('[SalesService] Creating automatic journal entry for sale:', {
+          saleId: savedSale.id,
+          saleNumber: savedSale.saleNumber,
+          total: savedSale.total,
+          tenantId
+        });
+
+        // Fetch the complete sale with items and payments for the journal entry
+        const saleWithRelations = await this.findOne(savedSale.id);
+
+        const journalEntry = await this.journalEntryService.createSaleEntry(
+          saleWithRelations,
+          tenantId,
+          userId
+        );
+
+        // Update sale with journal entry reference
+        await this.saleRepository.update(savedSale.id, {
+          journalEntryId: journalEntry.id
+        });
+
+        console.log('[SalesService] Journal entry created successfully:', {
+          journalEntryId: journalEntry.id,
+          entryNumber: journalEntry.entryNumber
+        });
+      } catch (error) {
+        console.error('[SalesService] Error creating journal entry:', error);
+        console.error('[SalesService] Error details:', error.message);
+        // Don't fail the sale if journal entry creation fails
+        // The accounting can be fixed later
       }
 
       return this.findOne(savedSale.id);

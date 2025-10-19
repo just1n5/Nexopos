@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SalesService } from '../sales/sales.service';
@@ -9,6 +9,7 @@ import { PaymentMethod } from '../sales/entities/payment.entity';
 import { InventoryStock, StockStatus } from '../inventory/entities/inventory-stock.entity';
 import { InventoryMovement, MovementType } from '../inventory/entities/inventory-movement.entity';
 import { CashRegisterStatus } from '../cash-register/entities/cash-register.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 
 interface ReportFilters {
   startDate?: Date;
@@ -29,6 +30,8 @@ export class ReportsService {
     private readonly cashRegisterService: CashRegisterService,
     @InjectRepository(InventoryMovement)
     private readonly movementRepository: Repository<InventoryMovement>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async getSalesReport(filters: ReportFilters) {
@@ -261,12 +264,91 @@ export class ReportsService {
     };
   }
 
-  async getCashRegisterReport(filters: ReportFilters) {
-    const sessions = await this.cashRegisterService.findAll({
-      startDate: filters.startDate,
-      endDate: filters.endDate,
-      status: CashRegisterStatus.CLOSED, // Solo sesiones cerradas
+  async getCashRegisterReport(user: User, filters: ReportFilters) {
+    // SUPER_ADMIN no puede ver arqueos de caja
+    if (user.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Super Admin no tiene acceso a arqueos de caja');
+    }
+
+    // Determinar qué usuarios puede ver según la jerarquía
+    let allowedUserIds: string[] = [];
+
+    if (user.role === UserRole.ADMIN) {
+      // ADMIN ve arqueos de todos (managers y cajeros)
+      const subordinates = await this.userRepository.find({
+        where: {
+          tenantId: user.tenantId,
+          role: UserRole.MANAGER,
+        },
+      });
+      const cashiers = await this.userRepository.find({
+        where: {
+          tenantId: user.tenantId,
+          role: UserRole.CASHIER,
+        },
+      });
+      allowedUserIds = [...subordinates.map(u => u.id), ...cashiers.map(u => u.id)];
+    } else if (user.role === UserRole.MANAGER) {
+      // MANAGER solo ve arqueos de cajeros
+      const cashiers = await this.userRepository.find({
+        where: {
+          tenantId: user.tenantId,
+          role: UserRole.CASHIER,
+        },
+      });
+      allowedUserIds = cashiers.map(u => u.id);
+    } else if (user.role === UserRole.CASHIER) {
+      // CAJERO solo ve sus propios arqueos
+      allowedUserIds = [user.id];
+    }
+
+    // Ajustar filtros de fecha según rol
+    let dateFilters: { startDate?: Date; endDate?: Date } = {};
+
+    if (user.role === UserRole.CASHIER) {
+      // Cajero: solo hoy
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      dateFilters = {
+        startDate: today,
+        endDate: tomorrow,
+      };
+    } else {
+      // Admin y Manager: usar filtros proporcionados o última semana por defecto
+      if (!filters.startDate && !filters.endDate) {
+        // Por defecto: última semana
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+
+        dateFilters = {
+          startDate: weekAgo,
+          endDate: today,
+        };
+      } else {
+        dateFilters = {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        };
+      }
+    }
+
+    // Obtener sesiones filtradas
+    const allSessions = await this.cashRegisterService.findAll({
+      startDate: dateFilters.startDate,
+      endDate: dateFilters.endDate,
+      status: CashRegisterStatus.CLOSED,
     });
+
+    // Filtrar por usuarios permitidos
+    const sessions = allSessions.filter(session =>
+      allowedUserIds.includes(session.userId)
+    );
 
     const arqueos = sessions.map((session) => ({
       sessionId: session.id,

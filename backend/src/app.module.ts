@@ -20,6 +20,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { EmailModule } from './modules/email/email.module';
 import { TenantManagementModule } from './modules/tenant-management/tenant-management.module';
+import { AccountingModule } from './modules/accounting/accounting.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { TenantManagementModule } from './modules/tenant-management/tenant-manag
     OtpModule,
     EmailModule,
     TenantManagementModule,
+    AccountingModule,
   ],
   controllers: [],
   providers: [],

@@ -128,6 +128,21 @@ export class Sale {
   @Column({ nullable: true })
   invoiceNumber: string;
 
+  // Accounting integration
+  /**
+   * Relación con el asiento contable generado automáticamente
+   * Se crea al confirmar la venta
+   */
+  @Column({ type: 'uuid', nullable: true })
+  journalEntryId: string;
+
+  /**
+   * Relación con retención fiscal (si aplica)
+   * Se usa cuando un cliente hace retención en la fuente
+   */
+  @Column({ type: 'uuid', nullable: true })
+  taxWithholdingId: string;
+
   // Relationships
   @OneToMany(() => SaleItem, saleItem => saleItem.sale, {
     cascade: true,

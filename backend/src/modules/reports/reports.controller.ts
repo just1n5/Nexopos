@@ -66,15 +66,16 @@ export class ReportsController {
   }
 
   @Get('cash-register')
-  @Permissions(Permission.REPORTS_FINANCIAL)
+  @Permissions(Permission.REPORTS_FINANCIAL, Permission.CASH_REGISTER_VIEW)
   @ApiOperation({ summary: 'Get cash register arqueos report' })
   @ApiQuery({ name: 'startDate', required: false, type: Date })
   @ApiQuery({ name: 'endDate', required: false, type: Date })
   getCashRegisterReport(
+    @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportsService.getCashRegisterReport(this.toFilters(startDate, endDate));
+    return this.reportsService.getCashRegisterReport(user, this.toFilters(startDate, endDate));
   }
 
   @Get('inventory-movements')

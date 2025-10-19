@@ -36,6 +36,28 @@ export class ProductVariant {
   @Column({ type: 'integer', default: 0 })
   stock: number;
 
+  /**
+   * Tarifa de IVA aplicable (0, 5, 19)
+   * 0 = Exento, 5 = Reducido, 19 = General
+   */
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 19 })
+  taxRate: number;
+
+  /**
+   * Indica si el precio incluye el IVA
+   * true = precio con IVA incluido
+   * false = precio sin IVA (se suma al total)
+   */
+  @Column({ type: 'boolean', default: true })
+  taxIncluded: boolean;
+
+  /**
+   * Indica si el producto está excluido de IVA
+   * Productos excluidos no generan IVA y no permiten descuento
+   */
+  @Column({ type: 'boolean', default: false })
+  isTaxExcluded: boolean;
+
   @ManyToOne(() => Product, (product) => product.variants, {
     onDelete: 'CASCADE'
   })

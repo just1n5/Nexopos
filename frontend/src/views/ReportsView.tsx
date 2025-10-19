@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 import { reportsService } from '@/services/reportsService'
 import type { ProductReport, SalesReport, CustomerReport, InventoryReport, CashRegisterReport, InventoryMovementsReport } from '@/services/reportsService'
+import { UserRole } from '@/types'
 import {
   getTodayRangeColombia,
   getWeekRangeColombia,
@@ -36,9 +37,18 @@ import {
 } from '@/lib/timezone'
 
 export default function ReportsView() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const { toast } = useToast()
-  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year'>('today')
+
+  // Rango de fechas por defecto según el rol del usuario
+  const getDefaultDateRange = () => {
+    if (user?.role === UserRole.CASHIER) {
+      return 'today' // Cajero solo ve hoy
+    }
+    return 'week' // Admin y Manager ven última semana por defecto
+  }
+
+  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'year'>(getDefaultDateRange())
   const [loading, setLoading] = useState(true)
   
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null)
@@ -263,7 +273,11 @@ export default function ReportsView() {
             </div>
             
             <div className="flex items-center gap-4">
-              <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+              <Select
+                value={dateRange}
+                onValueChange={(value: any) => setDateRange(value)}
+                disabled={user?.role === UserRole.CASHIER}
+              >
                 <SelectTrigger className="w-40">
                   <Calendar className="w-4 h-4 mr-2" />
                   <SelectValue />
@@ -275,6 +289,11 @@ export default function ReportsView() {
                   <SelectItem value="year">Último Año</SelectItem>
                 </SelectContent>
               </Select>
+              {user?.role === UserRole.CASHIER && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Solo puedes ver arqueos del día de hoy
+                </p>
+              )}
             </div>
           </div>
         </div>
