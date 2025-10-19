@@ -16,6 +16,8 @@
     "test:cov": "jest --coverage",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:prod": "node dist/scripts/seed.js",
+    "seed:accounting": "ts-node src/scripts/seed-accounting.ts",
+    "seed:accounting:prod": "node dist/scripts/seed-accounting.js",
     "fix:stock": "ts-node src/scripts/fixes/add-initial-stock.ts",
     "generate:beta-keys": "ts-node -r tsconfig-paths/register src/scripts/generate-beta-keys.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
