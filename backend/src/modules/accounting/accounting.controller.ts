@@ -257,6 +257,46 @@ export class AccountingController {
   }
 
   /**
+   * GET /accounting/reports/balance-sheet/export
+   * Exportar Balance General a Excel
+   */
+  @Get('reports/balance-sheet/export')
+  @ApiOperation({ summary: 'Exportar Balance General a Excel' })
+  @ApiResponse({
+    status: 200,
+    description: 'Archivo Excel generado exitosamente',
+    headers: {
+      'Content-Type': { description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      'Content-Disposition': { description: 'attachment; filename="balance-general.xlsx"' }
+    }
+  })
+  async exportBalanceSheet(
+    @Request() req,
+    @Query('date') date?: string
+  ) {
+    const tenantId = req.user.tenantId;
+    const balanceDate = date ? new Date(date) : new Date();
+
+    // Obtener el reporte
+    const report = await this.reportsService.getBalanceSheet(tenantId, balanceDate);
+
+    // Generar Excel
+    const buffer = await this.excelExportService.exportBalanceSheet(report);
+
+    // Configurar headers para descarga
+    req.res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    req.res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="balance-general-${report.date}.xlsx"`
+    );
+
+    return req.res.send(buffer);
+  }
+
+  /**
    * =====================================================
    * 2. GASTOS Y COMPRAS
    * =====================================================

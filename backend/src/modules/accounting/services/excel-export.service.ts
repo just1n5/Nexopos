@@ -401,6 +401,201 @@ export class ExcelExportService {
 
   /**
    * ========================================
+   * EXPORTAR BALANCE GENERAL
+   * ========================================
+   *
+   * Genera el Balance General en formato Excel
+   * Ecuación contable: Activos = Pasivos + Patrimonio
+   */
+  async exportBalanceSheet(report: any): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Balance General');
+
+    // Metadatos
+    workbook.creator = 'NexoPOS';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Configurar columnas
+    worksheet.columns = [
+      { header: 'A', key: 'col1', width: 5 },
+      { header: 'B', key: 'col2', width: 40 },
+      { header: 'C', key: 'col3', width: 20 }
+    ];
+
+    let currentRow = 1;
+
+    // ========== ENCABEZADO ==========
+    worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+    const titleRow = worksheet.getRow(currentRow);
+    titleRow.getCell('B').value = 'BALANCE GENERAL';
+    titleRow.getCell('B').font = { bold: true, size: 16, color: { argb: 'FF1F4E78' } };
+    titleRow.getCell('B').alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.height = 30;
+    currentRow += 2;
+
+    // Fecha del balance
+    worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+    const dateRow = worksheet.getRow(currentRow);
+    dateRow.getCell('B').value = `Al ${report.date}`;
+    dateRow.getCell('B').font = { bold: true, size: 11 };
+    dateRow.getCell('B').alignment = { horizontal: 'center' };
+    currentRow += 2;
+
+    // ========== ACTIVOS ==========
+    this.addSectionHeader(worksheet, currentRow, '💰 ACTIVOS', 'B', 'C');
+    currentRow++;
+
+    // Activos corrientes
+    currentRow++;
+    const activosItems = [
+      { label: 'Caja', value: report.assets.current.cash },
+      { label: 'Bancos', value: report.assets.current.bank },
+      { label: 'Cuentas por Cobrar', value: report.assets.current.accounts_receivable },
+      { label: 'Inventarios', value: report.assets.current.inventory }
+    ];
+
+    activosItems.forEach(item => {
+      const row = worksheet.getRow(currentRow);
+      row.getCell('B').value = item.label;
+      row.getCell('C').value = item.value;
+      row.getCell('C').numFmt = '"$"#,##0.00';
+      row.getCell('C').alignment = { horizontal: 'right' };
+      currentRow++;
+    });
+
+    // Total activos
+    currentRow++;
+    const totalActivosRow = worksheet.getRow(currentRow);
+    totalActivosRow.getCell('B').value = 'TOTAL ACTIVOS';
+    totalActivosRow.getCell('B').font = { bold: true, size: 11 };
+    totalActivosRow.getCell('C').value = report.assets.total;
+    totalActivosRow.getCell('C').numFmt = '"$"#,##0.00';
+    totalActivosRow.getCell('C').font = { bold: true, size: 11 };
+    totalActivosRow.getCell('C').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE7E6E6' }
+    };
+    totalActivosRow.getCell('C').alignment = { horizontal: 'right' };
+    currentRow += 2;
+
+    // ========== PASIVOS ==========
+    this.addSectionHeader(worksheet, currentRow, '📋 PASIVOS', 'B', 'C');
+    currentRow++;
+
+    // Pasivos corrientes
+    currentRow++;
+    const pasivosItems = [
+      { label: 'Cuentas por Pagar', value: report.liabilities.current.accounts_payable },
+      { label: 'Impuestos por Pagar', value: report.liabilities.current.taxes_payable }
+    ];
+
+    pasivosItems.forEach(item => {
+      const row = worksheet.getRow(currentRow);
+      row.getCell('B').value = item.label;
+      row.getCell('C').value = item.value;
+      row.getCell('C').numFmt = '"$"#,##0.00';
+      row.getCell('C').alignment = { horizontal: 'right' };
+      currentRow++;
+    });
+
+    // Total pasivos
+    currentRow++;
+    const totalPasivosRow = worksheet.getRow(currentRow);
+    totalPasivosRow.getCell('B').value = 'TOTAL PASIVOS';
+    totalPasivosRow.getCell('B').font = { bold: true, size: 11 };
+    totalPasivosRow.getCell('C').value = report.liabilities.total;
+    totalPasivosRow.getCell('C').numFmt = '"$"#,##0.00';
+    totalPasivosRow.getCell('C').font = { bold: true, size: 11 };
+    totalPasivosRow.getCell('C').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE7E6E6' }
+    };
+    totalPasivosRow.getCell('C').alignment = { horizontal: 'right' };
+    currentRow += 2;
+
+    // ========== PATRIMONIO ==========
+    this.addSectionHeader(worksheet, currentRow, '🏦 PATRIMONIO', 'B', 'C');
+    currentRow++;
+
+    currentRow++;
+    const patrimonioItems = [
+      { label: 'Capital', value: report.equity.capital },
+      { label: 'Utilidades Retenidas', value: report.equity.retained_earnings },
+      { label: 'Utilidad del Ejercicio', value: report.equity.current_profit }
+    ];
+
+    patrimonioItems.forEach(item => {
+      const row = worksheet.getRow(currentRow);
+      row.getCell('B').value = item.label;
+      row.getCell('C').value = item.value;
+      row.getCell('C').numFmt = '"$"#,##0.00';
+      row.getCell('C').alignment = { horizontal: 'right' };
+      currentRow++;
+    });
+
+    // Total patrimonio
+    currentRow++;
+    const totalPatrimonioRow = worksheet.getRow(currentRow);
+    totalPatrimonioRow.getCell('B').value = 'TOTAL PATRIMONIO';
+    totalPatrimonioRow.getCell('B').font = { bold: true, size: 11 };
+    totalPatrimonioRow.getCell('C').value = report.equity.total;
+    totalPatrimonioRow.getCell('C').numFmt = '"$"#,##0.00';
+    totalPatrimonioRow.getCell('C').font = { bold: true, size: 11 };
+    totalPatrimonioRow.getCell('C').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE7E6E6' }
+    };
+    totalPatrimonioRow.getCell('C').alignment = { horizontal: 'right' };
+    currentRow += 2;
+
+    // ========== ECUACIÓN CONTABLE ==========
+    currentRow++;
+    const ecuacionRow = worksheet.getRow(currentRow);
+    worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+    ecuacionRow.getCell('B').value = 'ECUACIÓN CONTABLE: Activos = Pasivos + Patrimonio';
+    ecuacionRow.getCell('B').font = { bold: true, italic: true, size: 10, color: { argb: 'FF1F4E78' } };
+    ecuacionRow.getCell('B').alignment = { horizontal: 'center' };
+    ecuacionRow.getCell('B').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD9E1F2' }
+    };
+    currentRow += 2;
+
+    // Validación
+    const pasivosPatrimonio = report.liabilities.total + report.equity.total;
+    const balanceado = Math.abs(report.assets.total - pasivosPatrimonio) < 1;
+
+    const validacionRow = worksheet.getRow(currentRow);
+    worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+    validacionRow.getCell('B').value = balanceado
+      ? '✅ Balance Cuadrado: Los activos igualan a pasivos + patrimonio'
+      : '⚠️ Advertencia: El balance no cuadra. Verificar asientos contables.';
+    validacionRow.getCell('B').font = {
+      bold: true,
+      size: 10,
+      color: { argb: balanceado ? 'FF00B050' : 'FFFF0000' }
+    };
+    validacionRow.getCell('B').alignment = { horizontal: 'center' };
+    currentRow += 2;
+
+    // Footer
+    const footerRow = worksheet.getRow(currentRow);
+    worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+    footerRow.getCell('B').value = `Generado por NexoPOS - ${new Date().toLocaleString('es-CO')}`;
+    footerRow.getCell('B').font = { size: 8, italic: true, color: { argb: 'FF808080' } };
+    footerRow.getCell('B').alignment = { horizontal: 'center' };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  /**
+   * ========================================
    * UTILIDADES DE FORMATO
    * ========================================
    */
