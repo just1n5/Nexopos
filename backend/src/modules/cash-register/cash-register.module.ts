@@ -5,9 +5,12 @@ import { CashRegisterController } from './cash-register.controller';
 import { CashRegister } from './entities/cash-register.entity';
 import { CashMovement } from './entities/cash-movement.entity';
 
+import { AccountingModule } from '../accounting/accounting.module';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CashRegister, CashMovement])
+    TypeOrmModule.forFeature([CashRegister, CashMovement]),
+    AccountingModule
   ],
   controllers: [CashRegisterController],
   providers: [CashRegisterService],
