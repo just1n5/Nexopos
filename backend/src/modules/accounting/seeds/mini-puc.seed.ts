@@ -5,17 +5,20 @@ import { ChartOfAccounts, AccountNature, AccountType } from '../entities/chart-o
  * Mini-PUC (Plan Único de Cuentas) Simplificado para PYMES
  * Basado en el Decreto 2650 de 1993 (Colombia)
  *
- * Contiene las 30-40 cuentas esenciales más utilizadas en:
+ * Contiene 40+ cuentas esenciales más utilizadas en:
  * - Comercio al por mayor y al por menor
  * - Prestación de servicios básicos
+ * - Negocios PYMES colombianos
  *
  * Estructura:
- * 1xxx - ACTIVOS
- * 2xxx - PASIVOS
- * 3xxx - PATRIMONIO
- * 4xxx - INGRESOS
- * 5xxx - GASTOS
- * 6xxx - COSTOS
+ * 1xxx - ACTIVOS (8 cuentas)
+ * 2xxx - PASIVOS (7 cuentas)
+ * 3xxx - PATRIMONIO (3 cuentas)
+ * 4xxx - INGRESOS (3 cuentas)
+ * 5xxx - GASTOS (20 cuentas)
+ * 6xxx - COSTOS (2 cuentas)
+ *
+ * Total: 43 cuentas
  */
 
 interface MiniPUCAccount {
@@ -69,6 +72,30 @@ export const MINI_PUC_ACCOUNTS: MiniPUCAccount[] = [
     type: AccountType.ASSET,
     level: 4
   },
+  {
+    code: '1524',
+    name: 'Equipo de Oficina',
+    description: 'Computadores, impresoras, escritorios, sillas y demás equipos de oficina. Son activos fijos sujetos a depreciación.',
+    nature: AccountNature.DEBIT,
+    type: AccountType.ASSET,
+    level: 4
+  },
+  {
+    code: '1528',
+    name: 'Equipo de Computación y Comunicación',
+    description: 'Equipos tecnológicos, servidores, sistemas POS, tablets, routers. Activos fijos con vida útil de 3-5 años.',
+    nature: AccountNature.DEBIT,
+    type: AccountType.ASSET,
+    level: 4
+  },
+  {
+    code: '1540',
+    name: 'Flota y Equipo de Transporte',
+    description: 'Vehículos utilizados en el negocio (transporte de mercancía, ventas). Activos fijos depreciables.',
+    nature: AccountNature.DEBIT,
+    type: AccountType.ASSET,
+    level: 4
+  },
 
   // ========== PASIVOS (2xxx) ==========
   {
@@ -99,6 +126,30 @@ export const MINI_PUC_ACCOUNTS: MiniPUCAccount[] = [
     code: '2408',
     name: 'Impuesto sobre las Ventas por Pagar (IVA)',
     description: 'IVA neto a pagar a la DIAN. Se calcula como: IVA Generado (ventas) menos IVA Descontable (compras/gastos).',
+    nature: AccountNature.CREDIT,
+    type: AccountType.LIABILITY,
+    level: 4
+  },
+  {
+    code: '2505',
+    name: 'Salarios por Pagar',
+    description: 'Sueldos devengados por empleados pero aún no pagados. Representa la obligación laboral del mes.',
+    nature: AccountNature.CREDIT,
+    type: AccountType.LIABILITY,
+    level: 4
+  },
+  {
+    code: '2510',
+    name: 'Cesantías Consolidadas',
+    description: 'Cesantías acumuladas de los empleados. Prestación social que se paga al final del año o al retiro.',
+    nature: AccountNature.CREDIT,
+    type: AccountType.LIABILITY,
+    level: 4
+  },
+  {
+    code: '2605',
+    name: 'Obligaciones Bancarias Corto Plazo',
+    description: 'Créditos bancarios o préstamos con vencimiento menor a 1 año.',
     nature: AccountNature.CREDIT,
     type: AccountType.LIABILITY,
     level: 4
@@ -301,6 +352,24 @@ export const MINI_PUC_ACCOUNTS: MiniPUCAccount[] = [
     code: '5310',
     name: 'Intereses',
     description: 'Intereses pagados por créditos, préstamos, tarjetas de crédito.',
+    nature: AccountNature.DEBIT,
+    type: AccountType.EXPENSE,
+    level: 4
+  },
+  {
+    code: '5315',
+    name: 'Gastos Extraordinarios',
+    description: 'Pérdidas por siniestros, robos, multas, sanciones y otros eventos no recurrentes.',
+    nature: AccountNature.DEBIT,
+    type: AccountType.EXPENSE,
+    level: 4
+  },
+
+  // ========== GASTOS NO OPERACIONALES (54xx) ==========
+  {
+    code: '5405',
+    name: 'Gastos No Operacionales',
+    description: 'Gastos que no están relacionados con la operación principal del negocio.',
     nature: AccountNature.DEBIT,
     type: AccountType.EXPENSE,
     level: 4
