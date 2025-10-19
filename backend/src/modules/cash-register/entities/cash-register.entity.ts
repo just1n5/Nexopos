@@ -142,6 +142,14 @@ export class CashRegister {
   @Column({ type: 'text', nullable: true })
   discrepancyReason: string;
 
+  // Accounting integration
+  /**
+   * Relación con el asiento contable generado al cerrar la caja
+   * Se crea al confirmar el cierre del arqueo
+   */
+  @Column({ type: 'uuid', nullable: true })
+  journalEntryId: string;
+
   // Relationships
   @OneToMany(() => CashMovement, movement => movement.cashRegister)
   movements: CashMovement[];

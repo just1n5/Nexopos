@@ -232,6 +232,27 @@ export class SalesService {
         );
       }
 
+      // ========================================
+      // CONTABILIDAD: Generar asiento contable automáticamente
+      // ========================================
+      try {
+        const journalEntry = await this.journalEntryService.createSaleEntry(savedSale, tenantId, userId);
+
+        // Actualizar la venta con referencia al asiento contable
+        savedSale.journalEntryId = journalEntry.id;
+        await this.saleRepository.save(savedSale);
+
+        console.log(`[SalesService] Journal entry created for sale ${savedSale.saleNumber}: ${journalEntry.entryNumber}`);
+      } catch (journalError) {
+        // Si falla la creación del asiento, registrarlo pero no fallar la venta
+        console.error('[SalesService] Failed to create journal entry for sale:', {
+          saleId: savedSale.id,
+          saleNumber: savedSale.saleNumber,
+          error: journalError.message
+        });
+        // No lanzar el error para no afectar la venta
+      }
+
       // If it's a credit sale, create CustomerCredit record using CustomersService
       // This must be done AFTER committing the transaction to avoid deadlocks
       if (createSaleDto.type === SaleType.CREDIT && createSaleDto.customerId) {

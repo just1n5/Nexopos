@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CashRegister, CashRegisterStatus } from './entities/cash-register.entity';
@@ -11,6 +11,7 @@ import {
   CashAdjustmentDto,
   CashRegisterSummaryDto
 } from './dto/cash-register.dto';
+import { JournalEntryService } from '../accounting/services/journal-entry.service';
 
 @Injectable()
 export class CashRegisterService {
@@ -20,6 +21,8 @@ export class CashRegisterService {
     @InjectRepository(CashMovement)
     private cashMovementRepository: Repository<CashMovement>,
     private dataSource: DataSource,
+    @Inject(forwardRef(() => JournalEntryService))
+    private journalEntryService: JournalEntryService,
   ) {}
 
   async openCashRegister(dto: OpenCashRegisterDto, userId: string): Promise<CashRegister> {
@@ -148,10 +151,45 @@ export class CashRegisterService {
       }
 
       await queryRunner.manager.save(closingMovement);
-      await queryRunner.manager.save(cashRegister);
+      const savedRegister = await queryRunner.manager.save(cashRegister);
       await queryRunner.commitTransaction();
 
-      return cashRegister;
+      // ========================================
+      // CONTABILIDAD: Generar asiento contable del arqueo de caja
+      // ========================================
+      try {
+        // Recargar el cashRegister con sus relaciones para obtener tenantId del usuario
+        const registerWithRelations = await this.cashRegisterRepository.findOne({
+          where: { id: savedRegister.id },
+          relations: ['user']
+        });
+
+        if (registerWithRelations?.user?.tenantId) {
+          const journalEntry = await this.journalEntryService.createCashRegisterCloseEntry(
+            savedRegister,
+            registerWithRelations.user.tenantId,
+            userId
+          );
+
+          // Actualizar el registro con referencia al asiento contable
+          savedRegister.journalEntryId = journalEntry.id;
+          await this.cashRegisterRepository.save(savedRegister);
+
+          console.log(`[CashRegisterService] Journal entry created for cash register ${savedRegister.sessionNumber}: ${journalEntry.entryNumber}`);
+        } else {
+          console.warn('[CashRegisterService] Could not create journal entry: tenantId not found');
+        }
+      } catch (journalError) {
+        // Si falla la creación del asiento, registrarlo pero no fallar el cierre de caja
+        console.error('[CashRegisterService] Failed to create journal entry for cash register:', {
+          registerId: savedRegister.id,
+          sessionNumber: savedRegister.sessionNumber,
+          error: journalError.message
+        });
+        // No lanzar el error para no afectar el cierre de caja
+      }
+
+      return savedRegister;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
