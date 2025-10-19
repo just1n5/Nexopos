@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Download, Calendar, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { exportProfitAndLossToExcel, downloadBlob } from '@/services/accountingService';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +21,9 @@ import { Label } from '@/components/ui/label';
 
 export const ProfitLossView: React.FC = () => {
   const { profitAndLoss, reportsLoading, loadProfitAndLoss } = useAccountingStore();
+  const { toast } = useToast();
+
+  const [exportLoading, setExportLoading] = useState(false);
 
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -35,8 +40,33 @@ export const ProfitLossView: React.FC = () => {
     loadProfitAndLoss(startDate, endDate);
   };
 
-  const handleExport = () => {
-    alert('Función de exportación próximamente disponible');
+  const handleExport = async () => {
+    try {
+      setExportLoading(true);
+
+      // Llamar al servicio de exportación
+      const blob = await exportProfitAndLossToExcel(startDate, endDate);
+
+      // Generar nombre de archivo con las fechas
+      const filename = `estado-resultados-${startDate}-${endDate}.xlsx`;
+
+      // Descargar el archivo
+      downloadBlob(blob, filename);
+
+      toast({
+        title: 'Reporte Descargado',
+        description: 'El estado de resultados se ha descargado exitosamente en formato Excel',
+      });
+    } catch (error) {
+      console.error('Error al exportar estado de resultados:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo descargar el reporte. Intenta nuevamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   return (
@@ -104,9 +134,23 @@ export const ProfitLossView: React.FC = () => {
                   {new Date(profitAndLoss.period.endDate).toLocaleDateString('es-CO')}
                 </p>
               </div>
-              <Button onClick={handleExport} variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Exportar
+              <Button
+                onClick={handleExport}
+                disabled={exportLoading}
+                variant="outline"
+                className="gap-2"
+              >
+                {exportLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Descargando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Exportar a Excel
+                  </>
+                )}
               </Button>
             </div>
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Download, Calendar, Loader2 } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { exportIVAReportToExcel, downloadBlob } from '@/services/accountingService';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +19,9 @@ import { Label } from '@/components/ui/label';
 
 export const IVAReportView: React.FC = () => {
   const { ivaReport, reportsLoading, loadIVAReport } = useAccountingStore();
+  const { toast } = useToast();
+
+  const [exportLoading, setExportLoading] = useState(false);
 
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -33,9 +38,33 @@ export const IVAReportView: React.FC = () => {
     loadIVAReport(startDate, endDate);
   };
 
-  const handleExport = () => {
-    // TODO: Implementar exportación a Excel/PDF
-    alert('Función de exportación próximamente disponible');
+  const handleExport = async () => {
+    try {
+      setExportLoading(true);
+
+      // Llamar al servicio de exportación
+      const blob = await exportIVAReportToExcel(startDate, endDate);
+
+      // Generar nombre de archivo con las fechas
+      const filename = `reporte-iva-${startDate}-${endDate}.xlsx`;
+
+      // Descargar el archivo
+      downloadBlob(blob, filename);
+
+      toast({
+        title: 'Reporte Descargado',
+        description: 'El reporte de IVA se ha descargado exitosamente en formato Excel',
+      });
+    } catch (error) {
+      console.error('Error al exportar reporte IVA:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo descargar el reporte. Intenta nuevamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   return (
@@ -99,11 +128,21 @@ export const IVAReportView: React.FC = () => {
               </h3>
               <Button
                 onClick={handleExport}
+                disabled={exportLoading}
                 variant="outline"
                 className="gap-2"
               >
-                <Download className="w-4 h-4" />
-                Exportar
+                {exportLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Descargando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Exportar a Excel
+                  </>
+                )}
               </Button>
             </div>
 

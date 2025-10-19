@@ -66,6 +66,54 @@ export const getExpensesByCategory = async (
 };
 
 // ========================================
+// EXPORTACIÓN DE REPORTES A EXCEL
+// ========================================
+
+/**
+ * Descarga el reporte de IVA en formato Excel
+ * Devuelve un Blob que puede ser descargado directamente
+ */
+export const exportIVAReportToExcel = async (
+  startDate: string,
+  endDate: string
+): Promise<Blob> => {
+  const response = await axios.get(`${API_URL}/accounting/reports/iva/export`, {
+    params: { startDate, endDate },
+    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+  });
+  return response.data;
+};
+
+/**
+ * Descarga el estado de resultados (P&L) en formato Excel
+ * Devuelve un Blob que puede ser descargado directamente
+ */
+export const exportProfitAndLossToExcel = async (
+  startDate: string,
+  endDate: string
+): Promise<Blob> => {
+  const response = await axios.get(`${API_URL}/accounting/reports/profit-loss/export`, {
+    params: { startDate, endDate },
+    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+  });
+  return response.data;
+};
+
+/**
+ * Helper function para descargar un Blob como archivo
+ */
+export const downloadBlob = (blob: Blob, filename: string): void => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+// ========================================
 // GASTOS
 // ========================================
 
@@ -250,6 +298,11 @@ export default {
   getProfitAndLoss,
   getBalanceSheet,
   getExpensesByCategory,
+
+  // Exportación Excel
+  exportIVAReportToExcel,
+  exportProfitAndLossToExcel,
+  downloadBlob,
 
   // Gastos
   createExpense,
