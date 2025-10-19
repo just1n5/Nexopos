@@ -21,6 +21,7 @@ import { ExpenseService } from './services/expense.service';
 import { TaxCalculationService } from './services/tax-calculation.service';
 import { AccountingReportsService } from './services/accounting-reports.service';
 import { FiscalConfigService } from './services/fiscal-config.service';
+import { ExcelExportService } from './services/excel-export.service';
 
 /**
  * Módulo de Contabilidad
@@ -57,7 +58,8 @@ import { FiscalConfigService } from './services/fiscal-config.service';
     ExpenseService,
     TaxCalculationService,
     AccountingReportsService,
-    FiscalConfigService
+    FiscalConfigService,
+    ExcelExportService
   ],
   exports: [
     // Exportar servicios para uso en otros módulos

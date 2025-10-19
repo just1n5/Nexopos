@@ -21,6 +21,7 @@ import { ExpenseService } from './services/expense.service';
 import { FiscalConfigService } from './services/fiscal-config.service';
 import { JournalEntryService } from './services/journal-entry.service';
 import { TaxCalculationService } from './services/tax-calculation.service';
+import { ExcelExportService } from './services/excel-export.service';
 
 // DTOs
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -47,7 +48,8 @@ export class AccountingController {
     private readonly expenseService: ExpenseService,
     private readonly fiscalConfigService: FiscalConfigService,
     private readonly journalEntryService: JournalEntryService,
-    private readonly taxCalculationService: TaxCalculationService
+    private readonly taxCalculationService: TaxCalculationService,
+    private readonly excelExportService: ExcelExportService
   ) {}
 
   /**
@@ -160,6 +162,98 @@ export class AccountingController {
     const end = new Date(endDate);
 
     return this.reportsService.getExpensesByCategory(tenantId, start, end);
+  }
+
+  /**
+   * GET /accounting/reports/iva/export
+   * Exportar reporte de IVA a Excel
+   */
+  @Get('reports/iva/export')
+  @ApiOperation({ summary: 'Exportar reporte de IVA a Excel' })
+  @ApiResponse({
+    status: 200,
+    description: 'Archivo Excel generado exitosamente',
+    headers: {
+      'Content-Type': { description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      'Content-Disposition': { description: 'attachment; filename="reporte-iva.xlsx"' }
+    }
+  })
+  async exportIVAReport(
+    @Request() req,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException('Se requieren las fechas de inicio y fin');
+    }
+
+    const tenantId = req.user.tenantId;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Obtener el reporte
+    const report = await this.reportsService.getIVAReport(tenantId, start, end);
+
+    // Generar Excel
+    const buffer = await this.excelExportService.exportIVAReport(report);
+
+    // Configurar headers para descarga
+    req.res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    req.res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="reporte-iva-${startDate}-${endDate}.xlsx"`
+    );
+
+    return req.res.send(buffer);
+  }
+
+  /**
+   * GET /accounting/reports/profit-loss/export
+   * Exportar Estado de Resultados (P&L) a Excel
+   */
+  @Get('reports/profit-loss/export')
+  @ApiOperation({ summary: 'Exportar Estado de Resultados (P&L) a Excel' })
+  @ApiResponse({
+    status: 200,
+    description: 'Archivo Excel generado exitosamente',
+    headers: {
+      'Content-Type': { description: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      'Content-Disposition': { description: 'attachment; filename="estado-resultados.xlsx"' }
+    }
+  })
+  async exportProfitAndLoss(
+    @Request() req,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException('Se requieren las fechas de inicio y fin');
+    }
+
+    const tenantId = req.user.tenantId;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Obtener el reporte
+    const report = await this.reportsService.getProfitAndLoss(tenantId, start, end);
+
+    // Generar Excel
+    const buffer = await this.excelExportService.exportProfitAndLossReport(report);
+
+    // Configurar headers para descarga
+    req.res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    req.res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="estado-resultados-${startDate}-${endDate}.xlsx"`
+    );
+
+    return req.res.send(buffer);
   }
 
   /**
