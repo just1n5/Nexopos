@@ -298,3 +298,6 @@ export class FiscalConfigResponseDto {
   @ApiProperty()
   updatedAt: Date;
 }
+
+// Alias para compatibilidad con el servicio
+export type FiscalConfigDto = CreateFiscalConfigDto;

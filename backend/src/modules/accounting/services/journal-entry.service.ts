@@ -94,7 +94,7 @@ export class JournalEntryService {
       totalCost = sale.items.reduce((sum, item) => {
         // El costo debería venir del inventario
         // Por ahora usamos un estimado (60% del precio de venta)
-        const estimatedCost = Number(item.price) * 0.6 * item.quantity;
+        const estimatedCost = Number(item.unitPrice) * 0.6 * item.quantity;
         return sum + estimatedCost;
       }, 0);
 
@@ -629,5 +629,52 @@ export class JournalEntryService {
       where: { id },
       relations: ['lines', 'lines.account']
     });
+  }
+
+  /**
+   * Alias para findById (compatibilidad con controller)
+   */
+  async findOne(id: string, tenantId: string): Promise<JournalEntry> {
+    return this.journalEntryRepository.findOne({
+      where: { id, tenantId },
+      relations: ['lines', 'lines.account']
+    });
+  }
+
+  /**
+   * Obtener todos los asientos de un tenant con filtros opcionales
+   */
+  async findAll(
+    tenantId: string,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      entryType?: string;
+    }
+  ): Promise<JournalEntry[]> {
+    const where: any = { tenantId };
+
+    if (filters?.entryType) {
+      where.entryType = filters.entryType;
+    }
+
+    const queryBuilder = this.journalEntryRepository
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.lines', 'lines')
+      .leftJoinAndSelect('lines.account', 'account')
+      .where(where);
+
+    if (filters?.startDate) {
+      queryBuilder.andWhere('entry.entryDate >= :startDate', { startDate: filters.startDate });
+    }
+
+    if (filters?.endDate) {
+      queryBuilder.andWhere('entry.entryDate <= :endDate', { endDate: filters.endDate });
+    }
+
+    return queryBuilder
+      .orderBy('entry.entryDate', 'DESC')
+      .addOrderBy('entry.entryNumber', 'DESC')
+      .getMany();
   }
 }

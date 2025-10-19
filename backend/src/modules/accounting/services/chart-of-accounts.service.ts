@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ChartOfAccounts, AccountType } from '../entities/chart-of-accounts.entity';
+import { ChartOfAccounts, AccountType, AccountNature } from '../entities/chart-of-accounts.entity';
 
 /**
  * Servicio para gestión del Plan de Cuentas (Mini-PUC)
@@ -81,7 +81,7 @@ export class ChartOfAccountsService {
    */
   async findByType(tenantId: string, type: AccountType): Promise<ChartOfAccounts[]> {
     return this.chartOfAccountsRepository.find({
-      where: { tenantId, accountType: type, isActive: true },
+      where: { tenantId, type: type, isActive: true },
       order: { code: 'ASC' }
     });
   }
@@ -100,8 +100,8 @@ export class ChartOfAccountsService {
     accountData: {
       code: string;
       name: string;
-      accountType: AccountType;
-      nature: 'DEBIT' | 'CREDIT';
+      type: AccountType;
+      nature: AccountNature;
       description?: string;
     }
   ): Promise<ChartOfAccounts> {
@@ -121,7 +121,11 @@ export class ChartOfAccountsService {
     }
 
     const account = this.chartOfAccountsRepository.create({
-      ...accountData,
+      code: accountData.code,
+      name: accountData.name,
+      type: accountData.type,
+      nature: accountData.nature,
+      description: accountData.description,
       tenantId,
       isActive: true
     });
@@ -301,12 +305,12 @@ export class ChartOfAccountsService {
 
     // Agrupar por tipo de cuenta
     const hierarchy = {
-      ASSET: accounts.filter(a => a.accountType === AccountType.ASSET),
-      LIABILITY: accounts.filter(a => a.accountType === AccountType.LIABILITY),
-      EQUITY: accounts.filter(a => a.accountType === AccountType.EQUITY),
-      INCOME: accounts.filter(a => a.accountType === AccountType.INCOME),
-      EXPENSE: accounts.filter(a => a.accountType === AccountType.EXPENSE),
-      COST: accounts.filter(a => a.accountType === AccountType.COST)
+      ASSET: accounts.filter(a => a.type === AccountType.ASSET),
+      LIABILITY: accounts.filter(a => a.type === AccountType.LIABILITY),
+      EQUITY: accounts.filter(a => a.type === AccountType.EQUITY),
+      INCOME: accounts.filter(a => a.type === AccountType.INCOME),
+      EXPENSE: accounts.filter(a => a.type === AccountType.EXPENSE),
+      COST: accounts.filter(a => a.type === AccountType.COST)
     };
 
     return hierarchy;
@@ -344,7 +348,7 @@ export class ChartOfAccountsService {
     let inactive = 0;
 
     allAccounts.forEach(account => {
-      byType[account.accountType]++;
+      byType[account.type]++;
       if (account.isActive) {
         active++;
       } else {

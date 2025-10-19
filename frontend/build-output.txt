@@ -1,0 +1,5 @@
+
+> nexopos@1.0.0 build
+> tsc && vite build
+
+src/components/accounting/FiscalConfigForm.tsx(107,9): error TS6133: 'taxResponsibilitiesOptions' is declared but its value is never read.

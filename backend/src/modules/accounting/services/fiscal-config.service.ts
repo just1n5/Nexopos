@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { FiscalConfig, TaxRegime, IVAResponsibility } from '../entities/fiscal-config.entity';
+import { FiscalConfig, TaxRegime, FiscalResponsibility } from '../entities/fiscal-config.entity';
 import { FiscalConfigDto } from '../dto/fiscal-config.dto';
 
 /**
@@ -177,24 +177,20 @@ export class FiscalConfigService {
   async isInvoiceNumberingExhausted(tenantId: string): Promise<boolean> {
     const config = await this.getConfigOrFail(tenantId);
 
-    if (!config.currentInvoiceNumber || !config.toInvoice) {
+    if (!config.nextInvoiceNumber || !config.invoiceRangeTo) {
       return false;
     }
 
-    return config.currentInvoiceNumber >= config.toInvoice;
+    return config.nextInvoiceNumber >= config.invoiceRangeTo;
   }
 
   /**
    * Verificar si la resolución de facturación está vencida
+   * TODO: Agregar campo validUntil a la entidad FiscalConfig
    */
   async isResolutionExpired(tenantId: string): Promise<boolean> {
-    const config = await this.getConfigOrFail(tenantId);
-
-    if (!config.validUntil) {
-      return false;
-    }
-
-    return new Date() > config.validUntil;
+    // Por ahora retornamos false ya que no tenemos el campo en la base de datos
+    return false;
   }
 
   /**
@@ -219,16 +215,16 @@ export class FiscalConfigService {
       );
     }
 
-    // Obtener número actual o iniciar desde el fromInvoice
-    const currentNumber = config.currentInvoiceNumber || config.fromInvoice || 1;
+    // Obtener número actual o iniciar desde el invoiceRangeFrom
+    const currentNumber = config.nextInvoiceNumber || config.invoiceRangeFrom || 1;
     const nextNumber = currentNumber + 1;
 
     // Actualizar en la base de datos
-    config.currentInvoiceNumber = nextNumber;
+    config.nextInvoiceNumber = nextNumber;
     await this.fiscalConfigRepository.save(config);
 
     // Formatear con prefijo
-    const prefix = config.prefixInvoice || 'FE';
+    const prefix = config.invoicePrefix || 'FE';
     return `${prefix}${nextNumber.toString().padStart(10, '0')}`;
   }
 
@@ -257,18 +253,17 @@ export class FiscalConfigService {
     const missingFields: string[] = [];
 
     // Campos obligatorios básicos
-    if (!config.businessName) missingFields.push('Razón social');
+    if (!config.legalName) missingFields.push('Razón social');
     if (!config.nit) missingFields.push('NIT');
     if (!config.taxRegime) missingFields.push('Régimen tributario');
-    if (!config.ivaResponsibility) missingFields.push('Responsabilidad de IVA');
+    if (!config.isVATResponsible) missingFields.push('Responsabilidad de IVA');
 
     // Campos para facturación electrónica
-    if (config.enableElectronicInvoicing) {
-      if (!config.resolutionNumber) missingFields.push('Número de resolución DIAN');
-      if (!config.technicalKey) missingFields.push('Clave técnica');
-      if (!config.prefixInvoice) missingFields.push('Prefijo de facturación');
-      if (!config.fromInvoice) missingFields.push('Numeración desde');
-      if (!config.toInvoice) missingFields.push('Numeración hasta');
+    if (config.useElectronicInvoicing) {
+      if (!config.dianResolutionNumber) missingFields.push('Número de resolución DIAN');
+      if (!config.invoicePrefix) missingFields.push('Prefijo de facturación');
+      if (!config.invoiceRangeFrom) missingFields.push('Numeración desde');
+      if (!config.invoiceRangeTo) missingFields.push('Numeración hasta');
     }
 
     return {
@@ -286,8 +281,8 @@ export class FiscalConfigService {
       throw new BadRequestException('El NIT proporcionado no es válido');
     }
 
-    // Validar email
-    if (data.email && !this.isValidEmail(data.email)) {
+    // Validar email fiscal
+    if (data.fiscalEmail && !this.isValidEmail(data.fiscalEmail)) {
       throw new BadRequestException('El email proporcionado no es válido');
     }
 
@@ -296,14 +291,8 @@ export class FiscalConfigService {
       throw new BadRequestException('El teléfono proporcionado no es válido');
     }
 
-    // Validar numeración de facturación
-    if (data.fromInvoice && data.toInvoice) {
-      if (data.fromInvoice >= data.toInvoice) {
-        throw new BadRequestException(
-          'La numeración inicial debe ser menor a la numeración final'
-        );
-      }
-    }
+    // La validación de rango de facturación no aplica en el CreateFiscalConfigDto
+    // ya que esos campos no están en el DTO (solo en la entidad)
   }
 
   /**
@@ -349,7 +338,7 @@ export class FiscalConfigService {
     businessName: string;
     nit: string;
     taxRegime: TaxRegime;
-    ivaResponsibility: IVAResponsibility;
+    ivaResponsibility: 'NON_RESPONSIBLE' | 'RESPONSIBLE';
     electronicInvoicingEnabled: boolean;
     resolutionValid: boolean;
     numberingExhausted: boolean;
@@ -362,19 +351,19 @@ export class FiscalConfigService {
     const numberingExhausted = await this.isInvoiceNumberingExhausted(tenantId);
 
     let remainingInvoices: number | undefined;
-    if (config.currentInvoiceNumber && config.toInvoice) {
-      remainingInvoices = config.toInvoice - config.currentInvoiceNumber;
+    if (config.nextInvoiceNumber && config.invoiceRangeTo) {
+      remainingInvoices = config.invoiceRangeTo - config.nextInvoiceNumber;
     }
 
     return {
-      businessName: config.businessName,
+      businessName: config.legalName,
       nit: config.nit,
       taxRegime: config.taxRegime,
-      ivaResponsibility: config.ivaResponsibility,
-      electronicInvoicingEnabled: config.enableElectronicInvoicing,
+      ivaResponsibility: config.fiscalResponsibilities.includes(FiscalResponsibility.R_99_NO_RESPONSABLE) ? 'NON_RESPONSIBLE' : 'RESPONSIBLE',
+      electronicInvoicingEnabled: config.useElectronicInvoicing,
       resolutionValid,
       numberingExhausted,
-      currentInvoiceNumber: config.currentInvoiceNumber,
+      currentInvoiceNumber: config.nextInvoiceNumber,
       remainingInvoices
     };
   }

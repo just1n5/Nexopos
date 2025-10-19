@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/justi/Desktop/NexoPos/Nexoposdesarrollo/frontend/src/**)",
+      "Read(//c/Users/justi/Desktop/NexoPos/Nexoposdesarrollo/frontend/src/views/**)",
+      "Read(//c/Users/justi/Desktop/NexoPos/Nexoposdesarrollo/backend/src/modules/reports/**)",
+      "Read(//c/Users/justi/Desktop/NexoPos/Nexoposdesarrollo/backend/**)",
+      "Read(//c/Users/justi/Desktop/NexoPos/Nexoposdesarrollo/**)",
+      "Bash(git push)",
+      "Bash(npm run start:dev:*)",
+      "Bash(PGPASSWORD=nexopos123 psql:*)",
+      "Bash(npx ts-node:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
