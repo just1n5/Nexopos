@@ -14,7 +14,9 @@ export class InventoryService {
     @InjectRepository(InventoryMovement)
     private movementRepository: Repository<InventoryMovement>,
     private dataSource: DataSource,
-  ) {}
+  ) {
+    console.log('InventoryService instantiated');
+  }
 
   async getStock(productId: string, variantId?: string, warehouseId?: string): Promise<InventoryStock> {
     const where: any = { productId };
