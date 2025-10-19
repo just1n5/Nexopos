@@ -6,6 +6,7 @@ import { ExpenseRegistration } from '../components/accounting/ExpenseRegistratio
 import { ExpenseList } from '../components/accounting/ExpenseList';
 import { IVAReportView } from '../components/accounting/IVAReportView';
 import { ProfitLossView } from '../components/accounting/ProfitLossView';
+import { BalanceSheetView } from '../components/accounting/BalanceSheetView';
 import { FiscalConfigForm } from '../components/accounting/FiscalConfigForm';
 import { Button } from '../components/ui/button';
 
@@ -231,7 +232,7 @@ const AccountingView: React.FC = () => {
                         Balance General
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Próximamente
+                        Activos, Pasivos, Patrimonio
                       </div>
                     </button>
                   </div>
@@ -251,13 +252,7 @@ const AccountingView: React.FC = () => {
                   {/* Report Views */}
                   {selectedReport === 'iva' && <IVAReportView />}
                   {selectedReport === 'profit-loss' && <ProfitLossView />}
-                  {selectedReport === 'balance' && (
-                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Balance General - Próximamente disponible
-                      </p>
-                    </div>
-                  )}
+                  {selectedReport === 'balance' && <BalanceSheetView />}
                 </div>
               )}
             </div>

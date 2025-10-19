@@ -100,6 +100,21 @@ export const exportProfitAndLossToExcel = async (
 };
 
 /**
+ * Descarga el Balance General en formato Excel
+ * Devuelve un Blob que puede ser descargado directamente
+ */
+export const exportBalanceSheetToExcel = async (
+  date?: string
+): Promise<Blob> => {
+  const params = date ? { date } : {};
+  const response = await axios.get(`${API_URL}/accounting/reports/balance-sheet/export`, {
+    params,
+    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+  });
+  return response.data;
+};
+
+/**
  * Helper function para descargar un Blob como archivo
  */
 export const downloadBlob = (blob: Blob, filename: string): void => {
@@ -302,6 +317,7 @@ export default {
   // Exportación Excel
   exportIVAReportToExcel,
   exportProfitAndLossToExcel,
+  exportBalanceSheetToExcel,
   downloadBlob,
 
   // Gastos
