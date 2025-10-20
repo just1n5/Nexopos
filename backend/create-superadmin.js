@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const DB_URL = process.env.DB_URL || 'postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos';
 
 async function createSuperAdmin() {
+  console.log('Starting createSuperAdmin script...');
+  console.log(`DB_URL: ${DB_URL}`);
   console.log('🔄 Conectando a la base de datos...');
 
   const dataSource = new DataSource({
@@ -21,12 +23,15 @@ async function createSuperAdmin() {
     console.log('✅ Conexión exitosa\n');
 
     const queryRunner = dataSource.createQueryRunner();
+    console.log('QueryRunner created.');
 
     // Verificar si el usuario ya existe
+    console.log('Checking if user jserna@cloutionsas.com already exists...');
     const existingUsers = await queryRunner.query(
       `SELECT id FROM users WHERE email = $1`,
       ['jserna@cloutionsas.com']
     );
+    console.log(`Existing users found: ${existingUsers.length}`);
 
     if (existingUsers.length > 0) {
       console.log('⚠️  El usuario ya existe, promoviendo a SUPER_ADMIN...\n');
@@ -42,6 +47,7 @@ async function createSuperAdmin() {
       const password = 'Aguacate41*';
       console.log('🔐 Hasheando contraseña...');
       const hashedPassword = await bcrypt.hash(password, 12);
+      console.log('Password hashed.');
 
       // Crear usuario
       console.log('👤 Creando usuario...\n');
@@ -68,11 +74,17 @@ async function createSuperAdmin() {
     console.log('   ✓ Gestionar participantes beta');
     console.log('   ✓ Todos los permisos de ADMIN\n');
 
+    console.log('Releasing query runner...');
     await queryRunner.release();
+    console.log('Query runner released.');
+
+    console.log('Destroying data source...');
     await dataSource.destroy();
+    console.log('Data source destroyed.');
+
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error en createSuperAdmin:', error.message);
     console.error(error);
     await dataSource.destroy();
     process.exit(1);
