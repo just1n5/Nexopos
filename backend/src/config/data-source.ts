@@ -11,7 +11,7 @@ const migrations = fileExtensions.map((ext) => join(__dirname, '..', 'migrations
 
 const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
-  host: process.env.DB_HOST ?? 'localhost',
+  host: 'dpg-d3qm5j8dl3ps73c2td30-a',
   port: Number(process.env.DB_PORT ?? 5432),
   username: process.env.DB_USER ?? 'nexopos_user',
   password: process.env.DB_PASSWORD ?? 'nexopos123',
