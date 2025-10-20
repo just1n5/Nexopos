@@ -58,7 +58,9 @@ async function bootstrap() {
 
   // Puerto
   const port = process.env.PORT || 3000;
+  console.log(`Attempting to listen on port ${port}...`);
   await app.listen(port);
+  console.log(`Successfully listening on port ${port}`);
   
   console.log(`
 🚀 NexoPOS Backend running on http://localhost:${port}
