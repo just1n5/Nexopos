@@ -33,15 +33,38 @@ async function createSuperAdmin() {
     );
     console.log(`Existing users found: ${existingUsers.length}`);
 
+    // Ensure a tenant exists
+    console.log('🏢 Verificando la existencia del tenant...');
+    let tenantResult = await queryRunner.query(
+      `SELECT id FROM tenants WHERE name = $1`,
+      ['Default Tenant']
+    );
+
+    let tenantId;
+    if (tenantResult.length === 0) {
+      console.log('Tenant no encontrado, creando "Default Tenant"...');
+      const newTenantResult = await queryRunner.query(
+        `INSERT INTO tenants (name, "ownerEmail", status, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, NOW(), NOW())
+         RETURNING id`,
+        ['Default Tenant', 'jserna@cloutionsas.com', 'ACTIVE']
+      );
+      tenantId = newTenantResult[0].id;
+      console.log(`✅ Tenant "Default Tenant" creado con ID: ${tenantId}\n`);
+    } else {
+      tenantId = tenantResult[0].id;
+      console.log(`✅ Tenant "Default Tenant" ya existe con ID: ${tenantId}\n`);
+    }
+
     if (existingUsers.length > 0) {
-      console.log('⚠️  El usuario ya existe, promoviendo a SUPER_ADMIN...\n');
+      console.log('⚠️  El usuario ya existe, promoviendo a SUPER_ADMIN y asociando a tenant...\n');
 
       await queryRunner.query(
-        `UPDATE users SET role = 'SUPER_ADMIN' WHERE email = $1`,
-        ['jserna@cloutionsas.com']
+        `UPDATE users SET role = 'SUPER_ADMIN', "tenantId" = $1 WHERE email = $2`,
+        [tenantId, 'jserna@cloutionsas.com']
       );
 
-      console.log('✅ Usuario promovido a SUPER_ADMIN exitosamente\n');
+      console.log('✅ Usuario promovido a SUPER_ADMIN y asociado al tenant exitosamente\n');
     } else {
       // Hash de la contraseña
       const password = 'Aguacate41*';
@@ -50,12 +73,12 @@ async function createSuperAdmin() {
       console.log('Password hashed.');
 
       // Crear usuario
-      console.log('👤 Creando usuario...\n');
+      console.log('👤 Creando usuario SUPER_ADMIN y asociando a tenant...\n');
       const result = await queryRunner.query(
-        `INSERT INTO users ("firstName", "lastName", email, password, role, "isActive", "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-         RETURNING id, email, "firstName", "lastName", role`,
-        ['Justine', 'Serna', 'jserna@cloutionsas.com', hashedPassword, 'SUPER_ADMIN', true]
+        `INSERT INTO users ("firstName", "lastName", email, password, role, "isActive", "tenantId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+         RETURNING id, email, "firstName", "lastName", role, "tenantId"`,
+        ['Justine', 'Serna', 'jserna@cloutionsas.com', hashedPassword, 'SUPER_ADMIN', true, tenantId]
       );
 
       console.log('✅ Usuario SUPER_ADMIN creado exitosamente:\n');
@@ -63,6 +86,7 @@ async function createSuperAdmin() {
       console.log(`   Nombre: ${result[0].firstName} ${result[0].lastName}`);
       console.log(`   Email: ${result[0].email}`);
       console.log(`   Rol: ${result[0].role}`);
+      console.log(`   Tenant ID: ${result[0].tenantId}`);
       console.log(`   Contraseña: Aguacate41*\n`);
     }
 
