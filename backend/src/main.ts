@@ -4,10 +4,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
+  console.log('Starting bootstrap process...');
   const app = await NestFactory.create(AppModule);
+  console.log('Nest application created.');
 
   // Configuración Global
   app.setGlobalPrefix('api');
+  console.log('Global prefix set to /api.');
   
   // Validación Global
   app.useGlobalPipes(
@@ -20,6 +23,7 @@ async function bootstrap() {
       }
     })
   );
+  console.log('Global validation pipe configured.');
 
   // CORS - Permitir múltiples orígenes
   const allowedOrigins = [
@@ -44,6 +48,7 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
+  console.log('CORS configured.');
 
   // Swagger Documentation
   const config = new DocumentBuilder()
@@ -55,6 +60,7 @@ async function bootstrap() {
   
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+  console.log('Swagger documentation configured.');
 
   // Puerto
   const port = process.env.PORT || 3000;
