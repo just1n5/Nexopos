@@ -7,6 +7,7 @@ services:
     region: oregon
     plan: free
     buildCommand: cd backend && npm install && npm run build
+    # Force re-evaluation of start command
     startCommand: cd backend && node create-superadmin.js && npm run migration:run && npm run start:prod
     envVars:
       - key: NODE_ENV
