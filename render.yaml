@@ -7,12 +7,15 @@ services:
     region: oregon
     plan: free
     buildCommand: cd backend && npm install && npm run build
-          preStartCommand: |
-        echo "--- Starting create-superadmin script ---"
-        cd backend
-        set -e
-        node create-superadmin.js
-        echo "--- Finished create-superadmin script ---"    startCommand: cd backend && npm run migration:run && npm run start:prod
+    preStartCommand: |
+      echo "--- Starting create-superadmin script ---"
+      cd backend
+      set -e
+      node create-superadmin.js
+      echo "--- Finished create-superadmin script ---"
+      echo "--- Starting verify-superadmin script ---"
+      node verify-superadmin.js
+      echo "--- Finished verify-superadmin script ---"    startCommand: cd backend && npm run migration:run && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
