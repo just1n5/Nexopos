@@ -405,7 +405,7 @@ export default function BetaKeysManagementView() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteKey(key.id, key.key)}
-                              className="text-red-600 hover:bg-red-50"
+                              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-white"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
