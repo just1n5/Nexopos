@@ -48,7 +48,7 @@ export class Tenant {
   })
   businessType: BusinessType;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: true })
   address: string;
 
   @Column({ length: 20 })
