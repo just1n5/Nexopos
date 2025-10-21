@@ -37,7 +37,7 @@ async function createSuperAdmin() {
     // Ensure a tenant exists
     console.log('🏢 Verificando la existencia del tenant...');
     let tenantResult = await queryRunner.query(
-      `SELECT id FROM tenants WHERE name = $1`,
+      `SELECT id FROM tenants WHERE "businessName" = $1`,
       ['Default Tenant']
     );
 
@@ -45,10 +45,10 @@ async function createSuperAdmin() {
     if (tenantResult.length === 0) {
       console.log('Tenant no encontrado, creando "Default Tenant"...');
       const newTenantResult = await queryRunner.query(
-        `INSERT INTO tenants (name, "ownerEmail", status, "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, NOW(), NOW())
+        `INSERT INTO tenants ("businessName", nit, "businessType", address, email, "isActive")
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        ['Default Tenant', 'jserna@cloutionsas.com', 'ACTIVE']
+        ['Default Tenant', '999999999', 'Retail', 'Default Address', 'jserna@cloutionsas.com', true]
       );
       tenantId = newTenantResult[0].id;
       console.log(`✅ Tenant "Default Tenant" creado con ID: ${tenantId}\n`);

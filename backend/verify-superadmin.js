@@ -28,7 +28,7 @@ async function verifySuperAdmin() {
     // 1. Verificar el Tenant
     console.log('🏢 Verificando el "Default Tenant"...');
     const tenantResult = await queryRunner.query(
-      `SELECT id, name, "ownerEmail" FROM tenants WHERE name = $1`,
+      `SELECT id, "businessName" FROM tenants WHERE "businessName" = $1`,
       ['Default Tenant']
     );
 
