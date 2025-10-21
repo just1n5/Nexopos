@@ -18,6 +18,11 @@ export interface OtpEmailData {
   businessName?: string;
 }
 
+export interface BetaInvitationEmailData {
+  recipientEmail: string;
+  betaKey: string;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -67,6 +72,38 @@ export class EmailService {
     });
 
     this.logger.log(`Email service initialized with SMTP host: ${host}`);
+  }
+
+  async sendBetaInvitationEmail(data: BetaInvitationEmailData): Promise<void> {
+    const html = this.getBetaInvitationEmailTemplate(data);
+    const from = this.configService.get<string>('EMAIL_FROM', 'NexoPOS <noreply@nexopos.com>');
+    const subject = '🔑 Invitación a la beta de NexoPOS';
+
+    try {
+      if (this.useSendGrid) {
+        await sgMail.send({
+          to: data.recipientEmail,
+          from,
+          subject,
+          html,
+        });
+        this.logger.log(`Beta invitation email sent via SendGrid to ${data.recipientEmail}`);
+      } else if (this.transporter) {
+        const info = await this.transporter.sendMail({
+          from,
+          to: data.recipientEmail,
+          subject,
+          html,
+        });
+        this.logger.log(`Beta invitation email sent to ${data.recipientEmail}: ${info.messageId}`);
+      } else {
+        this.logger.warn('Email service not configured. Skipping beta invitation email.');
+        throw new Error('Email service not configured');
+      }
+    } catch (error) {
+      this.logger.error(`Failed to send beta invitation email to ${data.recipientEmail}:`, error);
+      throw error;
+    }
   }
 
   async sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
@@ -298,6 +335,127 @@ export class EmailService {
             <p>Estamos aquí para ayudarte. Contáctanos en soporte@nexopos.com</p>
             <p style="margin-top: 20px;">
                 Este es un correo automático de bienvenida.<br>
+                © ${new Date().getFullYear()} NexoPOS - Sistema de Punto de Venta para Colombia
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private getBetaInvitationEmailTemplate(data: BetaInvitationEmailData): string {
+    const registerUrl = `${this.configService.get<string>('FRONTEND_URL', 'https://nexopos-1.onrender.com')}/register`;
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación a NexoPOS</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .beta-key {
+            background-color: #f0fdf4;
+            border: 2px dashed #34d399;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .beta-key code {
+            font-size: 20px;
+            font-weight: bold;
+            color: #065f46;
+            letter-spacing: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #718096;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">N</div>
+            <h1>¡Estás invitado a NexoPOS!</h1>
+            <p>Has recibido una invitación para unirte a la beta cerrada de NexoPOS.</p>
+        </div>
+
+        <p>Usa la siguiente clave beta durante el registro para crear tu cuenta:</p>
+
+        <div class="beta-key">
+            <p style="margin: 0 0 10px 0; color: #065f46; font-weight: 600;">Tu clave de acceso beta:</p>
+            <code>${data.betaKey}</code>
+        </div>
+
+        <p>Esta clave es de un solo uso y es necesaria para completar tu registro en nuestra plataforma.</p>
+
+        <div style="text-align: center;">
+            <a href="${registerUrl}" class="button">
+                Crear mi cuenta ahora →
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Si no esperabas este correo, puedes ignorarlo de forma segura.</p>
+            <p style="margin-top: 20px;">
                 © ${new Date().getFullYear()} NexoPOS - Sistema de Punto de Venta para Colombia
             </p>
         </div>

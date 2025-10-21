@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Copy,
   Check,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +53,10 @@ export default function BetaKeysManagementView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'used' | 'available'>('all');
+  const [invitationDialogOpen, setInvitationDialogOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<BetaKey | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -135,6 +140,43 @@ export default function BetaKeysManagementView() {
       title: 'Copiado',
       description: 'Clave copiada al portapapeles',
     });
+  };
+
+  const handleOpenInvitationDialog = (key: BetaKey) => {
+    setSelectedKey(key);
+    setRecipientEmail('');
+    setInvitationDialogOpen(true);
+  };
+
+  const handleSendInvitation = async () => {
+    if (!token || !selectedKey || !recipientEmail) return;
+
+    if (!/\S+@\S+\.\S+/.test(recipientEmail)) {
+      toast({
+        variant: 'destructive',
+        title: 'Email inválido',
+        description: 'Por favor, ingresa una dirección de correo válida.',
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const response = await betaKeysService.sendInvitation(token, selectedKey.id, recipientEmail);
+      toast({
+        title: 'Invitación Enviada',
+        description: response.message,
+      });
+      setInvitationDialogOpen(false);
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al enviar',
+        description: err.response?.data?.message || 'No se pudo enviar la invitación.',
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleExportCSV = () => {
@@ -400,16 +442,26 @@ export default function BetaKeysManagementView() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          {!key.isUsed && (
+                          <div className="flex items-center justify-end gap-1">
+                            {!key.isUsed && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenInvitationDialog(key)}
+                                className="h-8 w-8 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 dark:hover:text-white"
+                              >
+                                <Mail className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteKey(key.id, key.key)}
-                              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-white"
+                              className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-white"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -463,6 +515,50 @@ export default function BetaKeysManagementView() {
               <Button onClick={handleGenerateKeys} disabled={isGenerating}>
                 {isGenerating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Generar {generateCount} claves
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Send Invitation Dialog */}
+        <Dialog open={invitationDialogOpen} onOpenChange={setInvitationDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enviar Invitación con Beta Key</DialogTitle>
+              <DialogDescription>
+                Envia esta clave a un nuevo usuario para que pueda registrarse.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium">Clave Beta Seleccionada</label>
+                <code className="mt-1 block w-full text-center px-2 py-2 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 rounded font-mono text-lg">
+                  {selectedKey?.key}
+                </code>
+              </div>
+
+              <div>
+                <label htmlFor="email-input" className="text-sm font-medium">Correo del destinatario</label>
+                <Input
+                  id="email-input"
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="ejemplo@correo.com"
+                  className="mt-1"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setInvitationDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSendInvitation} disabled={isSending}>
+                {isSending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Enviar Invitación
               </Button>
             </DialogFooter>
           </DialogContent>

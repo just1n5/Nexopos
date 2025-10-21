@@ -94,4 +94,20 @@ export const betaKeysService = {
     );
     return data;
   },
+
+  /**
+   * Envía una invitación por correo con una beta key
+   */
+  async sendInvitation(token: string, id: string, email: string): Promise<{ message: string }> {
+    const { data } = await axios.post<{ message: string }>(
+      `${API_URL}/beta-keys/${id}/send-invitation`,
+      { email },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return data;
+  },
 };

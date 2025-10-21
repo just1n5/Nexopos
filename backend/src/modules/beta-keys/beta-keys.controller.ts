@@ -94,6 +94,29 @@ export class BetaKeysController {
     return this.betaKeysService.createMultipleBetaKeys(body.count, body.notes);
   }
 
+  @Post(':id/send-invitation')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions(Permission.BETA_KEYS_MANAGE)
+  @ApiOperation({ summary: 'Send beta key invitation to an email (SUPER_ADMIN only)' })
+  @ApiResponse({ status: 200, description: 'Invitation sent successfully' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email'],
+      properties: {
+        email: { type: 'string', format: 'email' },
+      },
+    },
+  })
+  async sendInvitation(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: { email: string },
+  ) {
+    await this.betaKeysService.sendInvitation(id, body.email);
+    return { message: `Invitación con beta key enviada a ${body.email}` };
+  }
+
   @Patch(':id/notes')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionsGuard)

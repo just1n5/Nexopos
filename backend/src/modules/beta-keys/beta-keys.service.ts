@@ -2,13 +2,35 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BetaKey } from './entities/beta-key.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BetaKeysService {
   constructor(
     @InjectRepository(BetaKey)
     private betaKeyRepository: Repository<BetaKey>,
+    private readonly emailService: EmailService,
   ) {}
+
+  /**
+   * Envía una invitación con la beta key a un correo electrónico
+   */
+  async sendInvitation(id: string, recipientEmail: string): Promise<void> {
+    const betaKey = await this.betaKeyRepository.findOne({ where: { id } });
+
+    if (!betaKey) {
+      throw new NotFoundException('Clave beta no encontrada');
+    }
+
+    if (betaKey.isUsed) {
+      throw new ConflictException('Esta clave beta ya ha sido utilizada y no puede ser enviada');
+    }
+
+    await this.emailService.sendBetaInvitationEmail({
+      recipientEmail,
+      betaKey: betaKey.key,
+    });
+  }
 
   /**
    * Genera una clave beta en formato BETA-XXXXX-XXXXX
