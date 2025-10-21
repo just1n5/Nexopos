@@ -24,6 +24,7 @@ export class CreatePaymentsTable1800000000003 implements MigrationInterface {
         "amount" numeric(12,2) NOT NULL,
         "receivedAmount" numeric(12,2) NOT NULL,
         "changeAmount" numeric(12,2) NOT NULL,
+        "changeGiven" numeric(12,2) NULL,
         "transactionId" character varying(255) NULL,
         "notes" character varying(255) NULL,
         "processedById" uuid NULL,
