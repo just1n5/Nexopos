@@ -23,7 +23,8 @@
     "generate:beta-keys": "ts-node -r tsconfig-paths/register src/scripts/generate-beta-keys.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts && echo 'Migrations finished'",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts"
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts",
+    "schema:sync": "typeorm-ts-node-commonjs schema:sync -d src/config/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
