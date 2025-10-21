@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Building2, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { useAuthStore } from '@/stores/authStore';
 import { TaxRegime, IVAResponsibility } from '@/types/accounting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { Label } from '@/components/ui/label';
  */
 
 export const FiscalConfigForm: React.FC = () => {
+  const { token } = useAuthStore();
   const { fiscalConfig, fiscalConfigLoading, loadFiscalConfig, saveFiscalConfig } = useAccountingStore();
 
   const [formData, setFormData] = useState({
@@ -46,8 +48,10 @@ export const FiscalConfigForm: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadFiscalConfig();
-  }, [loadFiscalConfig]);
+    if (token) {
+      loadFiscalConfig(token);
+    }
+  }, [loadFiscalConfig, token]);
 
   useEffect(() => {
     if (fiscalConfig) {
@@ -90,8 +94,13 @@ export const FiscalConfigForm: React.FC = () => {
     setSaveError(null);
     setSaveSuccess(false);
 
+    if (!token) {
+      setSaveError('No estás autenticado.');
+      return;
+    }
+
     try {
-      await saveFiscalConfig({
+      await saveFiscalConfig(token, {
         ...formData,
         fromInvoice: formData.fromInvoice ? parseInt(formData.fromInvoice) : undefined,
         toInvoice: formData.toInvoice ? parseInt(formData.toInvoice) : undefined,

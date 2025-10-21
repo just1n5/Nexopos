@@ -11,6 +11,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { useAuthStore } from '@/stores/authStore';
 import { Expense, EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/accounting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ interface ExpenseListProps {
 }
 
 export const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
+  const { token } = useAuthStore();
   const { expenses, expensesLoading, loadExpenses, markExpenseAsPaid, cancelExpense } = useAccountingStore();
 
   // Filters
@@ -40,8 +42,10 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
 
   // Load expenses on mount
   useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
+    if (token) {
+      loadExpenses(token);
+    }
+  }, [loadExpenses, token]);
 
   // Filter expenses
   const filteredExpenses = expenses.filter((expense) => {
@@ -62,8 +66,9 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
 
   const handleMarkAsPaid = async (expenseId: string) => {
     if (confirm('¿Marcar este gasto como pagado?')) {
+      if (!token) return;
       try {
-        await markExpenseAsPaid(expenseId);
+        await markExpenseAsPaid(token, expenseId);
       } catch (error) {
         console.error('Error marking expense as paid:', error);
       }
@@ -72,8 +77,9 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
 
   const handleDelete = async (expenseId: string) => {
     if (confirm('¿Estás seguro de eliminar este gasto? Esta acción no se puede deshacer.')) {
+      if (!token) return;
       try {
-        await cancelExpense(expenseId);
+        await cancelExpense(token, expenseId);
       } catch (error) {
         console.error('Error deleting expense:', error);
       }

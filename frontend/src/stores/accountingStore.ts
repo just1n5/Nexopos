@@ -69,12 +69,6 @@ interface AccountingState {
   reset: () => void;
 }
 
-const getAuthToken = () => {
-  const token = useAuthStore.getState().token;
-  if (!token) throw new Error('No auth token found');
-  return token;
-};
-
 export const useAccountingStore = create<AccountingState>((set) => ({
   // Estado inicial
   dashboardData: null,

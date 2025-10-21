@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Calendar, Loader2 } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { useAuthStore } from '@/stores/authStore';
 import { exportIVAReportToExcel, downloadBlob } from '@/services/accountingService';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { Label } from '@/components/ui/label';
  */
 
 export const IVAReportView: React.FC = () => {
+  const { token } = useAuthStore();
   const { ivaReport, reportsLoading, loadIVAReport } = useAccountingStore();
   const { toast } = useToast();
 
@@ -35,15 +37,17 @@ export const IVAReportView: React.FC = () => {
   });
 
   const handleGenerateReport = () => {
-    loadIVAReport(startDate, endDate);
+    if (!token) return;
+    loadIVAReport(token, startDate, endDate);
   };
 
   const handleExport = async () => {
+    if (!token) return;
     try {
       setExportLoading(true);
 
       // Llamar al servicio de exportación
-      const blob = await exportIVAReportToExcel(startDate, endDate);
+      const blob = await exportIVAReportToExcel(token, startDate, endDate);
 
       // Generar nombre de archivo con las fechas
       const filename = `reporte-iva-${startDate}-${endDate}.xlsx`;

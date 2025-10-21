@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Camera, Upload, Save, AlertCircle } from 'lucide-react';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS, ExpenseType, PaymentMethod, CreateExpenseDto } from '@/types/accounting';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +29,7 @@ export const ExpenseRegistration: React.FC<ExpenseRegistrationProps> = ({
   onClose,
   onSuccess
 }) => {
+  const { token } = useAuthStore();
   const { createExpense } = useAccountingStore();
 
   // Form state
@@ -94,7 +96,7 @@ export const ExpenseRegistration: React.FC<ExpenseRegistrationProps> = ({
         // TODO: Agregar soporte para invoiceImageUrl cuando implementemos el upload
       };
 
-      await createExpense(expenseData);
+      await createExpense(token!, expenseData);
 
       // Reset form
       setSelectedCategory(null);

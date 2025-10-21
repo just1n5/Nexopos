@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Calendar, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
+import { useAuthStore } from '@/stores/authStore';
 import { exportProfitAndLossToExcel, downloadBlob } from '@/services/accountingService';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import { Label } from '@/components/ui/label';
  */
 
 export const ProfitLossView: React.FC = () => {
+  const { token } = useAuthStore();
   const { profitAndLoss, reportsLoading, loadProfitAndLoss } = useAccountingStore();
   const { toast } = useToast();
 
@@ -37,15 +39,17 @@ export const ProfitLossView: React.FC = () => {
   });
 
   const handleGenerateReport = () => {
-    loadProfitAndLoss(startDate, endDate);
+    if (!token) return;
+    loadProfitAndLoss(token, startDate, endDate);
   };
 
   const handleExport = async () => {
+    if (!token) return;
     try {
       setExportLoading(true);
 
       // Llamar al servicio de exportación
-      const blob = await exportProfitAndLossToExcel(startDate, endDate);
+      const blob = await exportProfitAndLossToExcel(token, startDate, endDate);
 
       // Generar nombre de archivo con las fechas
       const filename = `estado-resultados-${startDate}-${endDate}.xlsx`;
