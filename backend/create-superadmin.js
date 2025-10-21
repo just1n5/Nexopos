@@ -1,7 +1,11 @@
 const { DataSource } = require('typeorm');
 const bcrypt = require('bcrypt');
 
-const dataSource = new DataSource({
+async function createSuperAdmin() {
+  console.log('Starting createSuperAdmin script...');
+  console.log('Connecting to the database using environment variables...');
+
+  const dataSource = new DataSource({
     type: 'postgres',
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT, 10),

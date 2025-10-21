@@ -1,6 +1,10 @@
 
 const { DataSource } = require('typeorm');
 
+async function verifySuperAdmin() {
+  console.log('🔍 Iniciando script de verificación...');
+  console.log('🔄 Conectando a la base de datos de Render...');
+
   const dataSource = new DataSource({
     type: 'postgres',
     host: process.env.DB_HOST,
