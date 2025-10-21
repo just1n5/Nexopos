@@ -24,8 +24,8 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts && echo 'Migrations finished'",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts",
-    "schema:sync": "typeorm-ts-node-commonjs schema:sync -d src/config/data-source.ts",
-    "fix:beta-key-nulls": "ts-node -r tsconfig-paths/register src/scripts/fix-beta-key-nulls.ts"
+    "schema:sync": "node node_modules/typeorm/cli.js schema:sync -d dist/config/data-source.js",
+    "fix:beta-key-nulls": "node dist/scripts/fix-beta-key-nulls.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
