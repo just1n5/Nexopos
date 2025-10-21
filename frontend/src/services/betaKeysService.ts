@@ -57,7 +57,7 @@ export const betaKeysService = {
    */
   async generateKeys(token: string, count: number, notes?: string): Promise<BetaKey[]> {
     const { data } = await axios.post<BetaKey[]>(
-      `${API_URL}/beta-keys/generate`,
+      `${API_URL}/beta-keys/bulk`,
       { count, notes },
       {
         headers: {
