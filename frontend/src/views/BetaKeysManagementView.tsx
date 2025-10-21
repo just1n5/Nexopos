@@ -340,7 +340,7 @@ export default function BetaKeysManagementView() {
                       <TableRow key={key.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <code className="px-2 py-1 bg-gray-100 rounded font-mono text-sm">
+                            <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 rounded font-mono text-sm">
                               {key.key}
                             </code>
                             <Button
