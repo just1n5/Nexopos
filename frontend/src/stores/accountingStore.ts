@@ -225,5 +225,29 @@ export const useAccountingStore = create<AccountingState>((set) => ({
     }
   },
 
-  reset: () => set({ ... }), // Reset logic remains the same
+  reset: () => {
+    set({
+      dashboardData: null,
+      dashboardLoading: false,
+      dashboardError: null,
+      expenses: [],
+      expensesLoading: false,
+      expensesError: null,
+      selectedExpense: null,
+      expenseStats: null,
+      expenseStatsLoading: false,
+      ivaReport: null,
+      profitAndLoss: null,
+      balanceSheet: null,
+      expensesByCategory: null,
+      reportsLoading: false,
+      reportsError: null,
+      fiscalConfig: null,
+      fiscalSummary: null,
+      fiscalConfigLoading: false,
+      fiscalConfigError: null,
+      journalEntries: [],
+      journalEntriesLoading: false
+    });
+  }
 }));
