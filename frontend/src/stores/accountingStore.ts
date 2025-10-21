@@ -13,7 +13,6 @@ import {
   JournalEntry
 } from '../types/accounting';
 import accountingService from '../services/accountingService';
-import { useAuthStore } from './authStore';
 
 interface AccountingState {
   // Dashboard
