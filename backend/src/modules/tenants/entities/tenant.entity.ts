@@ -51,7 +51,7 @@ export class Tenant {
   @Column({ type: 'text', nullable: true })
   address: string;
 
-  @Column({ length: 20 })
+  @Column({ length: 20, nullable: true })
   phone: string;
 
   @Column({ length: 100 })
