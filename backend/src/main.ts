@@ -25,8 +25,30 @@ async function bootstrap() {
   );
   console.log('Global validation pipe configured.');
 
-  app.enableCors();
-  console.log('CORS configured with permissive settings for debugging.');
+  // CORS - Permitir múltiples orígenes
+  const allowedOrigins = [
+    'http://localhost:5173', // Desarrollo local
+    'http://localhost:3000',
+    'https://nexopos-1.onrender.com', // Frontend en Render
+  ];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Permitir requests sin origin (mobile apps, Postman, etc)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  });
+  console.log('CORS configured.');
 
   // Swagger Documentation
   const config = new DocumentBuilder()

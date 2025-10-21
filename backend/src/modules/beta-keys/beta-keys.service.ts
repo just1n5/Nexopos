@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BetaKey } from './entities/beta-key.entity';
@@ -6,15 +6,11 @@ import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BetaKeysService {
-  private readonly logger = new Logger(BetaKeysService.name);
-
   constructor(
     @InjectRepository(BetaKey)
     private betaKeyRepository: Repository<BetaKey>,
     private readonly emailService: EmailService,
-  ) {
-    this.logger.log('BetaKeysService initialized');
-  }
+  ) {}
 
   /**
    * Envía una invitación con la beta key a un correo electrónico
