@@ -1,16 +1,13 @@
 const { DataSource } = require('typeorm');
 const bcrypt = require('bcrypt');
 
-const DB_URL = process.env.DB_URL || 'postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos';
-
-async function createSuperAdmin() {
-  console.log('Starting createSuperAdmin script...');
-  console.log(`DB_URL: ${DB_URL}`);
-  console.log('🔄 Conectando a la base de datos...');
-
-  const dataSource = new DataSource({
+const dataSource = new DataSource({
     type: 'postgres',
-    url: DB_URL,
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT, 10),
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     synchronize: false,
     logging: false,
     ssl: {
