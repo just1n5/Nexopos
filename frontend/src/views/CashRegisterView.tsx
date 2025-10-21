@@ -133,7 +133,7 @@ export default function CashRegisterView() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold text-foreground">Gestión de Caja</h1>
+            <h1 className="text-3xl font-bold text-foreground select-none">Gestión de Caja</h1>
             <Badge variant={isRegisterOpen ? 'success' : 'destructive'} className="text-base px-3 py-1">
               {isRegisterOpen ? (
                 <>
@@ -148,7 +148,7 @@ export default function CashRegisterView() {
               )}
             </Badge>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground select-none">
             {new Date().toLocaleDateString('es-CO', {
               weekday: 'long',
               year: 'numeric',
@@ -162,14 +162,14 @@ export default function CashRegisterView() {
           // Formulario para abrir caja
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 select-none">
                 <Unlock className="w-5 h-5" />
                 Abrir Caja
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 select-none">
                   Monto de Apertura
                 </label>
                 <div className="relative">
@@ -185,7 +185,7 @@ export default function CashRegisterView() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 select-none">
                   Notas (Opcional)
                 </label>
                 <Input
@@ -205,7 +205,7 @@ export default function CashRegisterView() {
           <>
             {/* Resumen de Ventas */}
             {summary && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 select-none">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -260,7 +260,7 @@ export default function CashRegisterView() {
             {summary && summary.salesByPaymentMethod && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 select-none">
                     <CreditCard className="w-5 h-5" />
                     Ventas por Método de Pago
                   </CardTitle>
@@ -289,7 +289,7 @@ export default function CashRegisterView() {
             {/* Gestión de Gastos */}
             <Card className="mb-6">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 select-none">
                   <Minus className="w-5 h-5" />
                   Gastos del Día
                 </CardTitle>
@@ -375,7 +375,7 @@ export default function CashRegisterView() {
             {/* Cierre de Caja */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 select-none">
                   <Lock className="w-5 h-5" />
                   Cerrar Caja
                 </CardTitle>
@@ -391,7 +391,7 @@ export default function CashRegisterView() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 select-none">
                       Efectivo Esperado
                     </label>
                     <div className="text-2xl font-bold text-primary">
@@ -400,7 +400,7 @@ export default function CashRegisterView() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2 select-none">
                       Efectivo Real Contado
                     </label>
                     <div className="relative">
@@ -439,7 +439,7 @@ export default function CashRegisterView() {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 select-none">
                     Notas de Cierre (Opcional)
                   </label>
                   <Input
