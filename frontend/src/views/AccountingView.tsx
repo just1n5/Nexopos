@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Receipt, FileText, Settings, Loader2, Plus } from 'lucide-react';
 import { useAccountingStore } from '../stores/accountingStore';
+import { useAuthStore } from '../stores/authStore';
 import { AccountingDashboard } from '../components/accounting/DashboardWidgets';
 import { ExpenseRegistration } from '../components/accounting/ExpenseRegistration';
 import { ExpenseList } from '../components/accounting/ExpenseList';
@@ -27,6 +28,7 @@ type TabType = 'dashboard' | 'expenses' | 'reports' | 'config';
 type ReportType = 'iva' | 'profit-loss' | 'balance';
 
 const AccountingView: React.FC = () => {
+  const { token } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null);
@@ -40,11 +42,11 @@ const AccountingView: React.FC = () => {
 
   // Cargar dashboard al montar el componente
   useEffect(() => {
-    if (activeTab === 'dashboard' && !dashboardData) {
+    if (activeTab === 'dashboard' && !dashboardData && token) {
       const now = new Date();
-      loadDashboard(now.getMonth() + 1, now.getFullYear());
+      loadDashboard(token, now.getMonth() + 1, now.getFullYear());
     }
-  }, [activeTab, dashboardData, loadDashboard]);
+  }, [activeTab, dashboardData, loadDashboard, token]);
 
   const tabs = [
     {
@@ -138,8 +140,9 @@ const AccountingView: React.FC = () => {
                   <p className="text-red-500 mb-4">{dashboardError}</p>
                   <button
                     onClick={() => {
+                      if (!token) return;
                       const now = new Date();
-                      loadDashboard(now.getMonth() + 1, now.getFullYear());
+                      loadDashboard(token, now.getMonth() + 1, now.getFullYear());
                     }}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                   >
@@ -282,9 +285,9 @@ const AccountingView: React.FC = () => {
         onSuccess={() => {
           setShowExpenseModal(false);
           // Reload dashboard if we're on that tab
-          if (activeTab === 'dashboard') {
+          if (activeTab === 'dashboard' && token) {
             const now = new Date();
-            loadDashboard(now.getMonth() + 1, now.getFullYear());
+            loadDashboard(token, now.getMonth() + 1, now.getFullYear());
           }
         }}
       />

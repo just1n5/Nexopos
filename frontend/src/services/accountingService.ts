@@ -25,42 +25,49 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 // DASHBOARD Y REPORTES
 // ========================================
 
-export const getDashboard = async (month?: number, year?: number): Promise<DashboardData> => {
+export const getDashboard = async (token: string, month?: number, year?: number): Promise<DashboardData> => {
   const params = new URLSearchParams();
   if (month) params.append('month', month.toString());
   if (year) params.append('year', year.toString());
 
-  const response = await axios.get(`${API_URL}/accounting/dashboard?${params.toString()}`);
+  const response = await axios.get(`${API_URL}/accounting/dashboard?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getIVAReport = async (startDate: string, endDate: string): Promise<IVAReport> => {
+export const getIVAReport = async (token: string, startDate: string, endDate: string): Promise<IVAReport> => {
   const response = await axios.get(`${API_URL}/accounting/reports/iva`, {
-    params: { startDate, endDate }
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const getProfitAndLoss = async (startDate: string, endDate: string): Promise<ProfitAndLoss> => {
+export const getProfitAndLoss = async (token: string, startDate: string, endDate: string): Promise<ProfitAndLoss> => {
   const response = await axios.get(`${API_URL}/accounting/reports/profit-loss`, {
-    params: { startDate, endDate }
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const getBalanceSheet = async (date?: string): Promise<BalanceSheet> => {
+export const getBalanceSheet = async (token: string, date?: string): Promise<BalanceSheet> => {
   const response = await axios.get(`${API_URL}/accounting/reports/balance-sheet`, {
-    params: date ? { date } : {}
+    params: date ? { date } : {},
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const getExpensesByCategory = async (
+  token: string,
   startDate: string,
   endDate: string
 ): Promise<ExpensesByCategory> => {
   const response = await axios.get(`${API_URL}/accounting/reports/expenses-by-category`, {
-    params: { startDate, endDate }
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
@@ -74,12 +81,14 @@ export const getExpensesByCategory = async (
  * Devuelve un Blob que puede ser descargado directamente
  */
 export const exportIVAReportToExcel = async (
+  token: string,
   startDate: string,
   endDate: string
 ): Promise<Blob> => {
   const response = await axios.get(`${API_URL}/accounting/reports/iva/export`, {
     params: { startDate, endDate },
-    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+    responseType: 'blob', // Importante: indica que esperamos un archivo binario
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
@@ -89,12 +98,14 @@ export const exportIVAReportToExcel = async (
  * Devuelve un Blob que puede ser descargado directamente
  */
 export const exportProfitAndLossToExcel = async (
+  token: string,
   startDate: string,
   endDate: string
 ): Promise<Blob> => {
   const response = await axios.get(`${API_URL}/accounting/reports/profit-loss/export`, {
     params: { startDate, endDate },
-    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+    responseType: 'blob', // Importante: indica que esperamos un archivo binario
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
@@ -104,12 +115,14 @@ export const exportProfitAndLossToExcel = async (
  * Devuelve un Blob que puede ser descargado directamente
  */
 export const exportBalanceSheetToExcel = async (
+  token: string,
   date?: string
 ): Promise<Blob> => {
   const params = date ? { date } : {};
   const response = await axios.get(`${API_URL}/accounting/reports/balance-sheet/export`, {
     params,
-    responseType: 'blob' // Importante: indica que esperamos un archivo binario
+    responseType: 'blob', // Importante: indica que esperamos un archivo binario
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
@@ -132,54 +145,71 @@ export const downloadBlob = (blob: Blob, filename: string): void => {
 // GASTOS
 // ========================================
 
-export const createExpense = async (expenseData: CreateExpenseDto): Promise<Expense> => {
-  const response = await axios.post(`${API_URL}/accounting/expenses`, expenseData);
+export const createExpense = async (token: string, expenseData: CreateExpenseDto): Promise<Expense> => {
+  const response = await axios.post(`${API_URL}/accounting/expenses`, expenseData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getExpenses = async (filters?: {
+export const getExpenses = async (token: string, filters?: {
   status?: string;
   type?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<Expense[]> => {
-  const response = await axios.get(`${API_URL}/accounting/expenses`, { params: filters });
+  const response = await axios.get(`${API_URL}/accounting/expenses`, {
+    params: filters,
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getExpense = async (id: string): Promise<Expense> => {
-  const response = await axios.get(`${API_URL}/accounting/expenses/${id}`);
+export const getExpense = async (token: string, id: string): Promise<Expense> => {
+  const response = await axios.get(`${API_URL}/accounting/expenses/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const updateExpense = async (
+  token: string,
   id: string,
   updateData: Partial<CreateExpenseDto>
 ): Promise<Expense> => {
-  const response = await axios.put(`${API_URL}/accounting/expenses/${id}`, updateData);
+  const response = await axios.put(`${API_URL}/accounting/expenses/${id}`, updateData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
 export const markExpenseAsPaid = async (
+  token: string,
   id: string,
   paymentDate?: string
 ): Promise<Expense> => {
   const response = await axios.post(`${API_URL}/accounting/expenses/${id}/mark-paid`, {
     paymentDate
+  }, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const cancelExpense = async (id: string): Promise<void> => {
-  await axios.delete(`${API_URL}/accounting/expenses/${id}`);
+export const cancelExpense = async (token: string, id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/accounting/expenses/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };
 
 export const getExpenseStats = async (
+  token: string,
   startDate: string,
   endDate: string
 ): Promise<ExpenseStats> => {
   const response = await axios.get(`${API_URL}/accounting/expenses-stats`, {
-    params: { startDate, endDate }
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
@@ -188,31 +218,41 @@ export const getExpenseStats = async (
 // CONFIGURACIÓN FISCAL
 // ========================================
 
-export const getFiscalConfig = async (): Promise<FiscalConfig | null> => {
-  const response = await axios.get(`${API_URL}/accounting/fiscal-config`);
+export const getFiscalConfig = async (token: string): Promise<FiscalConfig | null> => {
+  const response = await axios.get(`${API_URL}/accounting/fiscal-config`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const saveFiscalConfig = async (config: FiscalConfig): Promise<FiscalConfig> => {
-  const response = await axios.put(`${API_URL}/accounting/fiscal-config`, config);
+export const saveFiscalConfig = async (token: string, config: FiscalConfig): Promise<FiscalConfig> => {
+  const response = await axios.put(`${API_URL}/accounting/fiscal-config`, config, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getFiscalSummary = async (): Promise<FiscalSummary> => {
-  const response = await axios.get(`${API_URL}/accounting/fiscal-config/summary`);
+export const getFiscalSummary = async (token: string): Promise<FiscalSummary> => {
+  const response = await axios.get(`${API_URL}/accounting/fiscal-config/summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const validateFiscalConfig = async (): Promise<{
+export const validateFiscalConfig = async (token: string): Promise<{
   isComplete: boolean;
   missingFields: string[];
 }> => {
-  const response = await axios.get(`${API_URL}/accounting/fiscal-config/validate`);
+  const response = await axios.get(`${API_URL}/accounting/fiscal-config/validate`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getNextInvoiceNumber = async (): Promise<{ invoiceNumber: string }> => {
-  const response = await axios.post(`${API_URL}/accounting/fiscal-config/next-invoice-number`);
+export const getNextInvoiceNumber = async (token: string): Promise<{ invoiceNumber: string }> => {
+  const response = await axios.post(`${API_URL}/accounting/fiscal-config/next-invoice-number`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
@@ -220,17 +260,22 @@ export const getNextInvoiceNumber = async (): Promise<{ invoiceNumber: string }>
 // ASIENTOS CONTABLES
 // ========================================
 
-export const getJournalEntries = async (filters?: {
+export const getJournalEntries = async (token: string, filters?: {
   startDate?: string;
   endDate?: string;
   entryType?: string;
 }): Promise<JournalEntry[]> => {
-  const response = await axios.get(`${API_URL}/accounting/journal-entries`, { params: filters });
+  const response = await axios.get(`${API_URL}/accounting/journal-entries`, {
+    params: filters,
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
-export const getJournalEntry = async (id: string): Promise<JournalEntry> => {
-  const response = await axios.get(`${API_URL}/accounting/journal-entries/${id}`);
+export const getJournalEntry = async (token: string, id: string): Promise<JournalEntry> => {
+  const response = await axios.get(`${API_URL}/accounting/journal-entries/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
@@ -238,19 +283,20 @@ export const getJournalEntry = async (id: string): Promise<JournalEntry> => {
 // CÁLCULOS FISCALES
 // ========================================
 
-export const getIVABalance = async (startDate: string, endDate: string): Promise<{
+export const getIVABalance = async (token: string, startDate: string, endDate: string): Promise<{
   ivaGenerado: number;
   ivaDescontable: number;
   saldo: number;
   tipo: 'a_pagar' | 'a_favor';
 }> => {
   const response = await axios.get(`${API_URL}/accounting/tax/iva-balance`, {
-    params: { startDate, endDate }
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const getWithholdingsInFavor = async (year: number): Promise<{
+export const getWithholdingsInFavor = async (token: string, year: number): Promise<{
   total: number;
   byType: {
     reteFuente: number;
@@ -260,12 +306,13 @@ export const getWithholdingsInFavor = async (year: number): Promise<{
   count: number;
 }> => {
   const response = await axios.get(`${API_URL}/accounting/tax/withholdings-in-favor`, {
-    params: { year }
+    params: { year },
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-export const getTaxProvision = async (month?: number, year?: number): Promise<{
+export const getTaxProvision = async (token: string, month?: number, year?: number): Promise<{
   total: number;
   breakdown: {
     iva: number;
@@ -276,7 +323,9 @@ export const getTaxProvision = async (month?: number, year?: number): Promise<{
   if (month) params.append('month', month.toString());
   if (year) params.append('year', year.toString());
 
-  const response = await axios.get(`${API_URL}/accounting/tax/provision?${params.toString()}`);
+  const response = await axios.get(`${API_URL}/accounting/tax/provision?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 
@@ -284,7 +333,7 @@ export const getTaxProvision = async (month?: number, year?: number): Promise<{
 // OCR DE FACTURAS (Futuro)
 // ========================================
 
-export const scanInvoice = async (imageFile: File): Promise<{
+export const scanInvoice = async (token: string, imageFile: File): Promise<{
   supplierName?: string;
   supplierNit?: string;
   invoiceNumber?: string;
@@ -299,7 +348,8 @@ export const scanInvoice = async (imageFile: File): Promise<{
 
   const response = await axios.post(`${API_URL}/accounting/expenses/ocr-scan`, formData, {
     headers: {
-      'Content-Type': 'multipart/form-data'
+      'Content-Type': 'multipart/form-data',
+      Authorization: `Bearer ${token}`,
     }
   });
 
