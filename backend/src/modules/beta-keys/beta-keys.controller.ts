@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { BetaKeysService } from './beta-keys.service';
@@ -19,7 +20,10 @@ import { PermissionsGuard } from '../users/guards/permissions.guard';
 @ApiTags('Beta Keys')
 @Controller('beta-keys')
 export class BetaKeysController {
-  constructor(private readonly betaKeysService: BetaKeysService) {}
+  private readonly logger = new Logger(BetaKeysController.name);
+  constructor(private readonly betaKeysService: BetaKeysService) {
+    this.logger.log('BetaKeysController initialized');
+  }
 
   /**
    * Endpoint público para validar beta key (sin autenticación)
