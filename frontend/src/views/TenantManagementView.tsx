@@ -477,7 +477,7 @@ export default function TenantManagementView() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRequestAction(tenant, 'suspend')}
-                                  className="text-orange-600 hover:bg-orange-50"
+                                  className="text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900 dark:hover:text-white"
                                 >
                                   <Ban className="w-4 h-4 mr-1" />
                                   Suspender
@@ -486,7 +486,7 @@ export default function TenantManagementView() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRequestAction(tenant, 'delete')}
-                                  className="text-red-600 hover:bg-red-50"
+                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-white"
                                 >
                                   <Trash2 className="w-4 h-4 mr-1" />
                                   Eliminar
@@ -498,7 +498,7 @@ export default function TenantManagementView() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleReactivate(tenant)}
-                                  className="text-green-600 hover:bg-green-50"
+                                  className="text-green-600 hover:bg-green-50 dark:hover:bg-green-900 dark:hover:text-white"
                                 >
                                   <RotateCcw className="w-4 h-4 mr-1" />
                                   Reactivar
@@ -507,7 +507,7 @@ export default function TenantManagementView() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRequestAction(tenant, 'delete')}
-                                  className="text-red-600 hover:bg-red-50"
+                                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-white"
                                 >
                                   <Trash2 className="w-4 h-4 mr-1" />
                                   Eliminar
