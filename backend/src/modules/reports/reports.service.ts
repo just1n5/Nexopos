@@ -424,7 +424,7 @@ export class ReportsService {
     const movementsByType: Record<string, { count: number; quantity: number; totalCost: number }> = {};
 
     movements.forEach((movement) => {
-      const type = movement.movementType;
+      const type = movement.type;
       if (!movementsByType[type]) {
         movementsByType[type] = { count: 0, quantity: 0, totalCost: 0 };
       }
@@ -439,7 +439,7 @@ export class ReportsService {
       id: movement.id,
       productId: movement.productId,
       productVariantId: movement.productVariantId,
-      movementType: movement.movementType,
+      movementType: movement.type,
       quantity: Number(movement.quantity || 0),
       quantityBefore: Number(movement.quantityBefore || 0),
       quantityAfter: Number(movement.quantityAfter || 0),

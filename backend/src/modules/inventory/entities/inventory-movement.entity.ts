@@ -25,7 +25,7 @@ export enum MovementType {
 @Entity('inventory_movements')
 @Index(['productId'])
 @Index(['productVariantId'])
-@Index(['movementType'])
+@Index(['type'])
 @Index(['createdAt'])
 export class InventoryMovement {
   @PrimaryGeneratedColumn('uuid')
@@ -41,7 +41,7 @@ export class InventoryMovement {
     type: 'enum',
     enum: MovementType
   })
-  movementType: MovementType;
+  type: MovementType;
 
   @Column({ type: 'decimal', precision: 10, scale: 3 })
   quantity: number; // Positive for IN, Negative for OUT

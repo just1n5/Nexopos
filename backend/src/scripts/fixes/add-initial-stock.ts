@@ -68,7 +68,7 @@ async function addInitialStock() {
           // Create movement
           const movement = movementRepo.create({
             productId: product.id,
-            movementType: MovementType.ADJUSTMENT,
+            type: MovementType.ADJUSTMENT,
             quantity: initialQuantity,
             quantityBefore: 0,
             quantityAfter: initialQuantity,
@@ -134,7 +134,7 @@ async function addInitialStock() {
             const movement = movementRepo.create({
               productId: product.id,
               productVariantId: variant.id,
-              movementType: MovementType.ADJUSTMENT,
+              type: MovementType.ADJUSTMENT,
               quantity: initialQuantity,
               quantityBefore: 0,
               quantityAfter: initialQuantity,
