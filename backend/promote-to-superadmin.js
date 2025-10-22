@@ -1,6 +1,6 @@
 const { DataSource } = require('typeorm');
 
-const DB_URL = process.env.DB_URL || 'postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos';
+const DB_URL = process.env.DATABASE_URL || process.env.DB_URL || 'postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos';
 
 async function promoteToSuperAdmin() {
   const args = process.argv.slice(2);
