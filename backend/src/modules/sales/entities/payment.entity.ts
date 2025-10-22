@@ -84,7 +84,7 @@ export class Payment {
 
   // User who processed the payment (for audit)
   @Column({ nullable: true })
-  processedBy: string;
+  processedById: string;
 
   // Additional fields
   @Column({ nullable: true })
