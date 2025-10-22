@@ -1,5 +1,4 @@
 ﻿import { DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../modules/users/entities/user.entity';
@@ -8,6 +7,7 @@ import { Tax, TaxType } from '../modules/taxes/entities/tax.entity';
 import { Product, ProductStatus } from '../modules/products/entities/product.entity';
 import { Customer, CustomerType, CustomerStatus } from '../modules/customers/entities/customer.entity';
 import { DianResolution, ResolutionStatus } from '../modules/invoice-dian/entities/dian-resolution.entity';
+import { AppDataSource } from '../config/data-source'; // Import AppDataSource
 
 /**
  * Script de Seeds para NexoPOS
@@ -17,32 +17,19 @@ import { DianResolution, ResolutionStatus } from '../modules/invoice-dian/entiti
 export async function runSeeds() {
   console.log('Starting seeds...');
 
-  config({ path: '.env' });
-
-  const configService = new ConfigService();
+  config({ path: '.env' }); // Keep this for local .env files
   
-  // Create database connection
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: configService.get<string>('DB_HOST', 'localhost'),
-    port: configService.get<number>('DB_PORT', 5432),
-    database: configService.get<string>('DB_NAME', 'nexopos'),
-    username: configService.get<string>('DB_USER', 'nexopos_user'),
-    password: configService.get<string>('DB_PASSWORD', 'nexopos123'),
-    schema: configService.get<string>('DB_SCHEMA', 'public'),
-    entities: ['src/**/*.entity{.ts,.js}'],
-    synchronize: false,
-    ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : false,
-  });
+  // Use AppDataSource for database connection
+  const dataSource = AppDataSource;
 
   await dataSource.initialize();
 
-  const uuidExtension = await dataSource.query("SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp'");
-  if (uuidExtension.length === 0) {
-    throw new Error('UUID extension "uuid-ossp" is missing. Run CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; as a superuser and retry.');
-  }
-
-  await dataSource.synchronize();
+  // Remove uuidExtension check and synchronize as AppDataSource handles this
+  // const uuidExtension = await dataSource.query("SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp'");
+  // if (uuidExtension.length === 0) {
+  //   throw new Error('UUID extension "uuid-ossp" is missing. Run CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; as a superuser and retry.');
+  // }
+  // await dataSource.synchronize();
 
   try {
     // 1. Create Users
