@@ -7,7 +7,7 @@ import { Tax, TaxType } from '../modules/taxes/entities/tax.entity';
 import { Product, ProductStatus } from '../modules/products/entities/product.entity';
 import { Customer, CustomerType, CustomerStatus } from '../modules/customers/entities/customer.entity';
 import { DianResolution, ResolutionStatus } from '../modules/invoice-dian/entities/dian-resolution.entity';
-import { Tenant, TenantStatus } from '../modules/tenants/entities/tenant.entity'; // Add Tenant import
+import { Tenant, BusinessType } from '../modules/tenants/entities/tenant.entity'; // Import Tenant and BusinessType
 import { AppDataSource } from '../config/data-source'; // Import AppDataSource
 
 /**
@@ -502,7 +502,7 @@ async function createTenant(dataSource: DataSource): Promise<Tenant> {
   const tenantData = {
     businessName: 'NexoPOS Demo Tenant',
     nit: '900123456-7',
-    businessType: 'Retail',
+    businessType: BusinessType.OTRO,
     address: 'Calle Ficticia #123',
     phone: '3001234567',
     email: 'info@nexopos-demo.com',
