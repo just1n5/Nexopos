@@ -326,7 +326,7 @@ export class CreditsService {
       paymentMethod: this.normalizePaymentMethod(payment.method),
       date: payment.processedAt || payment.createdAt,
       notes: payment.notes,
-      receivedBy: payment.processedBy,
+      receivedBy: payment.processedById,
     };
   }
 
