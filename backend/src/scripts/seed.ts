@@ -87,7 +87,7 @@ async function createUsers(dataSource: DataSource, tenantId: string): Promise<Us
   
   const users = [
     {
-      email: 'jserna@cloution.com',
+      email: 'jserna@cloutionsas.com',
       password: await bcrypt.hash('Aguacate41*', 10),
       firstName: 'Justine',
       lastName: 'Serna',
