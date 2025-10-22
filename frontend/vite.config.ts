@@ -11,6 +11,6 @@ export default defineConfig({
     },
   },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL),
+    'import.meta.env.VITE_API_URL': JSON.stringify('http://test.com/api'), // Hardcoded for testing
   },
 })
