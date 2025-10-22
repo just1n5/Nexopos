@@ -1,0 +1,23 @@
+name: Deploy to Dokku
+
+on:
+  # Esto se activa cada vez que haces push a la rama 'main'
+  push:
+    branches:
+      - main 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Push to Dokku
+        uses: dokku/github-action@master
+        with:
+          # 👇 ¡IMPORTANTE! Asegúrate de que esta IP sea la de tu servidor
+          git_remote_url: 'ssh://dokku@192.168.80.17/nexopos' 
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
