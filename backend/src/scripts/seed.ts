@@ -95,6 +95,14 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
   
   const users = [
     {
+      email: 'jserna@cloution.com',
+      password: await bcrypt.hash('Aguacate41*', 10),
+      firstName: 'Justine',
+      lastName: 'Serna',
+      role: UserRole.SUPER_ADMIN,
+      isActive: true
+    },
+    {
       email: 'admin@nexopos.co',
       password: await bcrypt.hash('Admin123!', 10),
       firstName: 'Admin',
