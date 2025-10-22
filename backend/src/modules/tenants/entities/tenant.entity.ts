@@ -14,6 +14,7 @@ import { Customer } from '../../customers/entities/customer.entity';
 import { DianResolution } from '../../invoice-dian/entities/dian-resolution.entity';
 import { Tax } from '../../taxes/entities/tax.entity'; // Add Tax import
 
+
 export enum BusinessType {
   TIENDA = 'Tienda',
   SUPERMERCADO = 'Supermercado',
@@ -83,6 +84,9 @@ export class Tenant {
 
   @OneToMany(() => Tax, (tax) => tax.tenant)
   taxes: Tax[];
+
+  @OneToMany(() => Product, (product) => product.tenant)
+  products: Product[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -44,6 +44,12 @@ export class Product {
   @Column('decimal', { precision: 12, scale: 2 })
   basePrice: number;
 
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
+  @ManyToOne(() => Tenant, (tenant) => tenant.products, { onDelete: 'CASCADE' })
+  tenant: Tenant;
+
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.ACTIVE })
   status: ProductStatus;
 
@@ -65,14 +71,7 @@ export class Product {
   })
   pricePerGram?: number;
 
-  // Multi-tenancy: cada producto pertenece a un tenant específico
-  @Index()
-  @Column({ type: 'uuid', nullable: true })
-  tenantId: string;
 
-  @ManyToOne(() => Tenant)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
 
   @OneToMany(() => ProductVariant, (variant) => variant.product, {
     cascade: true,
