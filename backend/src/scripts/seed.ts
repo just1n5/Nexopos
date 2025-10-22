@@ -124,23 +124,32 @@ async function createUsers(dataSource: DataSource, tenantId: string): Promise<Us
     }
   ];
 
-  const savedUsers = [];
-  for (const userData of users) {
-    const existingUser = await userRepository.findOne({ 
-      where: { email: userData.email, tenantId: tenantId } // Also check tenantId for existing user
-    });
-    
-    if (!existingUser) {
-      const user = userRepository.create(userData);
-      const saved = await userRepository.save(user);
-      savedUsers.push(saved);
-      console.log(`  -> User created: ${userData.email}`);
-    } else {
-      console.log(`  -> User already exists: ${userData.email}`);
-      savedUsers.push(existingUser);
+    const savedUsers = [];
+    for (const userData of users) {
+      let existingUser = await userRepository.findOne({ 
+        where: { email: userData.email } // Find by email only first
+      });
+      
+      if (existingUser) {
+        // If user exists but tenantId is null or doesn't match, update it
+        if (!existingUser.tenantId || existingUser.tenantId !== tenantId) {
+          existingUser.tenantId = tenantId;
+          existingUser.role = userData.role; // Ensure role is also updated
+          existingUser.firstName = userData.firstName;
+          existingUser.lastName = userData.lastName;
+          await userRepository.save(existingUser);
+          console.log(`  -> User updated with tenantId and role: ${userData.email}`);
+        } else {
+          console.log(`  -> User already exists with correct tenantId: ${userData.email}`);
+        }
+        savedUsers.push(existingUser);
+      } else {
+        const user = userRepository.create(userData);
+        const saved = await userRepository.save(user);
+        savedUsers.push(saved);
+        console.log(`  -> User created: ${userData.email}`);
+      }
     }
-  }
-
   return savedUsers;
 }
 
