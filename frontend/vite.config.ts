@@ -10,7 +10,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify('http://test.com/api'), // Hardcoded for testing
-  },
 })
