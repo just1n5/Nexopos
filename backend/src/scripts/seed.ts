@@ -7,6 +7,7 @@ import { Tax, TaxType } from '../modules/taxes/entities/tax.entity';
 import { Product, ProductStatus } from '../modules/products/entities/product.entity';
 import { Customer, CustomerType, CustomerStatus } from '../modules/customers/entities/customer.entity';
 import { DianResolution, ResolutionStatus } from '../modules/invoice-dian/entities/dian-resolution.entity';
+import { Tenant, TenantStatus } from '../modules/tenant-management/entities/tenant.entity'; // Add Tenant import
 import { AppDataSource } from '../config/data-source'; // Import AppDataSource
 
 /**
@@ -32,29 +33,33 @@ export async function runSeeds() {
   // await dataSource.synchronize();
 
   try {
+    // 0. Create Tenant
+    console.log('Creating tenant...');
+    const tenant = await createTenant(dataSource);
+
     // 1. Create Users
     console.log('Creating users...');
-    const users = await createUsers(dataSource);
+    const users = await createUsers(dataSource, tenant.id);
     
     // 2. Create Categories
     console.log('Creating categories...');
-    const categories = await createCategories(dataSource);
+    const categories = await createCategories(dataSource, tenant.id);
     
     // 3. Create Taxes
     console.log('Creating taxes...');
-    const taxes = await createTaxes(dataSource);
+    const taxes = await createTaxes(dataSource, tenant.id);
     
     // 4. Create Products
     console.log('Creating products...');
-    const products = await createProducts(dataSource, categories, taxes);
+    const products = await createProducts(dataSource, categories, taxes, tenant.id);
     
     // 5. Create Customers
     console.log('Creating customers...');
-    const customers = await createCustomers(dataSource);
+    const customers = await createCustomers(dataSource, tenant.id);
     
     // 6. Create DIAN Resolution
     console.log('Creating DIAN resolution...');
-    const resolution = await createDianResolution(dataSource);
+    const resolution = await createDianResolution(dataSource, tenant.id);
 
     console.log('Seeds completed successfully!');
     
@@ -77,7 +82,7 @@ export async function runSeeds() {
 
 // Helper functions
 
-async function createUsers(dataSource: DataSource): Promise<User[]> {
+async function createUsers(dataSource: DataSource, tenantId: string): Promise<User[]> {
   const userRepository = dataSource.getRepository(User);
   
   const users = [
@@ -87,7 +92,8 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
       firstName: 'Justine',
       lastName: 'Serna',
       role: UserRole.SUPER_ADMIN,
-      isActive: true
+      isActive: true,
+      tenantId: tenantId // Assign tenantId
     },
     {
       email: 'admin@nexopos.co',
@@ -95,7 +101,8 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
       firstName: 'Admin',
       lastName: 'NexoPOS',
       role: UserRole.ADMIN,
-      isActive: true
+      isActive: true,
+      tenantId: tenantId // Assign tenantId
     },
     {
       email: 'cajero@nexopos.co',
@@ -103,7 +110,8 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
       firstName: 'Juan',
       lastName: 'Cajero',
       role: UserRole.CASHIER,
-      isActive: true
+      isActive: true,
+      tenantId: tenantId // Assign tenantId
     },
     {
       email: 'demo@nexopos.co',
@@ -111,14 +119,15 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
       firstName: 'Demo',
       lastName: 'User',
       role: UserRole.CASHIER,
-      isActive: true
+      isActive: true,
+      tenantId: tenantId // Assign tenantId
     }
   ];
 
   const savedUsers = [];
   for (const userData of users) {
     const existingUser = await userRepository.findOne({ 
-      where: { email: userData.email } 
+      where: { email: userData.email, tenantId: tenantId } // Also check tenantId for existing user
     });
     
     if (!existingUser) {
@@ -135,24 +144,24 @@ async function createUsers(dataSource: DataSource): Promise<User[]> {
   return savedUsers;
 }
 
-async function createCategories(dataSource: DataSource): Promise<Category[]> {
+async function createCategories(dataSource: DataSource, tenantId: string): Promise<Category[]> {
   const categoryRepository = dataSource.getRepository(Category);
   
   const categories = [
-    { name: 'Bebidas', description: 'Bebidas y refrescos' },
-    { name: 'Alimentos', description: 'Alimentos y comestibles' },
-    { name: 'Aseo', description: 'Productos de aseo y limpieza' },
-    { name: 'Papelería', description: 'Artículos de papelería' },
-    { name: 'Tecnología', description: 'Productos tecnológicos' },
-    { name: 'Ropa', description: 'Prendas de vestir' },
-    { name: 'Medicamentos', description: 'Productos farmacéuticos' },
-    { name: 'Otros', description: 'Otros productos' }
+    { name: 'Bebidas', description: 'Bebidas y refrescos', tenantId: tenantId },
+    { name: 'Alimentos', description: 'Alimentos y comestibles', tenantId: tenantId },
+    { name: 'Aseo', description: 'Productos de aseo y limpieza', tenantId: tenantId },
+    { name: 'Papelería', description: 'Artículos de papelería', tenantId: tenantId },
+    { name: 'Tecnología', description: 'Productos tecnológicos', tenantId: tenantId },
+    { name: 'Ropa', description: 'Prendas de vestir', tenantId: tenantId },
+    { name: 'Medicamentos', description: 'Productos farmacéuticos', tenantId: tenantId },
+    { name: 'Otros', description: 'Otros productos', tenantId: tenantId }
   ];
 
   const savedCategories = [];
   for (const categoryData of categories) {
     const existing = await categoryRepository.findOne({ 
-      where: { name: categoryData.name } 
+      where: { name: categoryData.name, tenantId: tenantId } 
     });
     
     if (!existing) {
@@ -169,7 +178,7 @@ async function createCategories(dataSource: DataSource): Promise<Category[]> {
   return savedCategories;
 }
 
-async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
+async function createTaxes(dataSource: DataSource, tenantId: string): Promise<Tax[]> {
   const taxRepository = dataSource.getRepository(Tax);
   
   const taxes = [
@@ -179,7 +188,8 @@ async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
       rate: 19,
       type: TaxType.IVA,
       isActive: true,
-      description: 'Impuesto al Valor Agregado 19%'
+      description: 'Impuesto al Valor Agregado 19%',
+      tenantId: tenantId
     },
     {
       name: 'IVA 5%',
@@ -187,7 +197,8 @@ async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
       rate: 5,
       type: TaxType.IVA,
       isActive: true,
-      description: 'Impuesto al Valor Agregado 5%'
+      description: 'Impuesto al Valor Agregado 5%',
+      tenantId: tenantId
     },
     {
       name: 'Exento',
@@ -195,7 +206,8 @@ async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
       rate: 0,
       type: TaxType.OTHER,
       isActive: true,
-      description: 'Producto exento de impuestos'
+      description: 'Producto exento de impuestos',
+      tenantId: tenantId
     },
     {
       name: 'INC 8%',
@@ -203,14 +215,15 @@ async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
       rate: 8,
       type: TaxType.INC,
       isActive: true,
-      description: 'Impuesto Nacional al Consumo 8%'
+      description: 'Impuesto Nacional al Consumo 8%',
+      tenantId: tenantId
     }
   ];
 
   const savedTaxes = [];
   for (const taxData of taxes) {
     const existing = await taxRepository.findOne({ 
-      where: { code: taxData.code } 
+      where: { code: taxData.code, tenantId: tenantId } 
     });
     
     if (!existing) {
@@ -230,7 +243,8 @@ async function createTaxes(dataSource: DataSource): Promise<Tax[]> {
 async function createProducts(
   dataSource: DataSource,
   _categories: Category[],
-  _taxes: Tax[]
+  _taxes: Tax[],
+  tenantId: string
 ): Promise<Product[]> {
   const productRepository = dataSource.getRepository(Product);
 
@@ -241,6 +255,7 @@ async function createProducts(
       description: 'Bebida gaseosa Coca Cola 350 ml',
       basePrice: 3000,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Agua Cristal 600 ml',
@@ -248,6 +263,7 @@ async function createProducts(
       description: 'Agua sin gas Cristal 600 ml',
       basePrice: 2500,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Pan Bimbo tradicional',
@@ -255,6 +271,7 @@ async function createProducts(
       description: 'Pan de molde Bimbo 450 g',
       basePrice: 5000,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Leche Alpina 1 L',
@@ -262,6 +279,7 @@ async function createProducts(
       description: 'Leche entera Alpina 1 litro',
       basePrice: 4500,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Jabón Protex barra',
@@ -269,6 +287,7 @@ async function createProducts(
       description: 'Jabón antibacterial Protex 90 g',
       basePrice: 3500,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Papel higiénico Scott x4',
@@ -276,6 +295,7 @@ async function createProducts(
       description: 'Papel higiénico Scott paquete x4',
       basePrice: 8000,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Cuaderno 100 hojas cuadriculado',
@@ -283,6 +303,7 @@ async function createProducts(
       description: 'Cuaderno cuadriculado de 100 hojas',
       basePrice: 4000,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       name: 'Lapicero BIC azul',
@@ -290,6 +311,7 @@ async function createProducts(
       description: 'Lapicero BIC cristal azul',
       basePrice: 1500,
       status: ProductStatus.ACTIVE,
+      tenantId: tenantId
     },
   ];
 
@@ -297,7 +319,7 @@ async function createProducts(
 
   for (const productData of products) {
     const existing = await productRepository.findOne({
-      where: { sku: productData.sku },
+      where: { sku: productData.sku, tenantId: tenantId },
     });
 
     if (!existing) {
@@ -314,7 +336,7 @@ async function createProducts(
   return savedProducts;
 }
 
-async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
+async function createCustomers(dataSource: DataSource, tenantId: string): Promise<Customer[]> {
   const customerRepository = dataSource.getRepository(Customer);
   
   const customers = [
@@ -333,7 +355,8 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
       creditLimit: 500000,
       creditDays: 30,
       whatsapp: '3001234567',
-      status: CustomerStatus.ACTIVE
+      status: CustomerStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       type: CustomerType.INDIVIDUAL,
@@ -349,7 +372,8 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
       creditLimit: 300000,
       creditDays: 15,
       whatsapp: '3109876543',
-      status: CustomerStatus.ACTIVE
+      status: CustomerStatus.ACTIVE,
+      tenantId: tenantId
     },
         {
       type: CustomerType.BUSINESS,
@@ -366,7 +390,8 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
       creditEnabled: true,
       creditLimit: 2000000,
       creditDays: 45,
-      status: CustomerStatus.ACTIVE
+      status: CustomerStatus.ACTIVE,
+      tenantId: tenantId
     },
     {
       type: CustomerType.INDIVIDUAL,
@@ -374,7 +399,8 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
       documentNumber: '222222222',
       firstName: 'Consumidor',
       lastName: 'Final',
-      status: CustomerStatus.ACTIVE
+      status: CustomerStatus.ACTIVE,
+      tenantId: tenantId
     }
   ];
 
@@ -383,14 +409,16 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
     const existing = await customerRepository.findOne({ 
       where: { 
         documentType: customerData.documentType,
-        documentNumber: customerData.documentNumber 
+        documentNumber: customerData.documentNumber,
+        tenantId: tenantId
       } 
     });
     
     if (!existing) {
       const customer = customerRepository.create({
         ...customerData,
-        creditAvailable: customerData.creditLimit || 0
+        creditAvailable: customerData.creditLimit || 0,
+        tenantId: tenantId
       });
       const saved = await customerRepository.save(customer);
       savedCustomers.push(saved);
@@ -404,11 +432,11 @@ async function createCustomers(dataSource: DataSource): Promise<Customer[]> {
   return savedCustomers;
 }
 
-async function createDianResolution(dataSource: DataSource): Promise<DianResolution> {
+async function createDianResolution(dataSource: DataSource, tenantId: string): Promise<DianResolution> {
   const resolutionRepository = dataSource.getRepository(DianResolution);
   
   const existing = await resolutionRepository.findOne({ 
-    where: { status: ResolutionStatus.ACTIVE } 
+    where: { status: ResolutionStatus.ACTIVE, tenantId: tenantId } 
   });
   
   if (existing) {
@@ -431,7 +459,8 @@ async function createDianResolution(dataSource: DataSource): Promise<DianResolut
     status: ResolutionStatus.ACTIVE,
     alertThreshold: 100,
     alertSent: false,
-    notes: 'Resolución de facturación POS para NexoPOS'
+    notes: 'Resolución de facturación POS para NexoPOS',
+    tenantId: tenantId
   });
 
   const saved = await resolutionRepository.save(resolution);
@@ -466,6 +495,36 @@ function printSummary(counts: any) {
   console.log('    Pass:  Demo123!');
   console.log('------------------------------\n');
 }
+
+async function createTenant(dataSource: DataSource): Promise<Tenant> {
+  const tenantRepository = dataSource.getRepository(Tenant);
+
+  const tenantData = {
+    businessName: 'NexoPOS Demo Tenant',
+    nit: '900123456-7',
+    businessType: 'Retail',
+    address: 'Calle Ficticia #123',
+    phone: '3001234567',
+    email: 'info@nexopos-demo.com',
+    isActive: true,
+    maxAdmins: 5,
+    maxManagers: 10,
+    maxCashiers: 20,
+    betaKeyUsed: 'DEMO_KEY_001' // Assuming a beta key is used or can be generated
+  };
+
+  let tenant = await tenantRepository.findOne({ where: { nit: tenantData.nit } });
+
+  if (!tenant) {
+    tenant = tenantRepository.create(tenantData);
+    await tenantRepository.save(tenant);
+    console.log(`  -> Tenant created: ${tenant.businessName}`);
+  } else {
+    console.log(`  -> Tenant already exists: ${tenant.businessName}`);
+  }
+  return tenant;
+}
+
 // Run seeds if executed directly
 if (require.main === module) {
   runSeeds()
