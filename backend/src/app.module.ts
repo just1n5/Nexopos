@@ -33,22 +33,38 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      ignoreEnvFile: false,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        database: config.get<string>('DB_NAME', 'nexopos'),
-        username: config.get<string>('DB_USER', 'nexopos_user'),
-        password: config.get<string>('DB_PASSWORD', 'nexopos123'),
-        autoLoadEntities: true,
-        synchronize: config.get<string>('DB_SYNC', 'true') === 'true',
-        logging: config.get<string>('DB_LOGGING', 'false') === 'true',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            ssl: {
+              rejectUnauthorized: false,
+            },
+            autoLoadEntities: true,
+            synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
+            logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
+          };
+        } else {
+          return {
+            type: 'postgres',
+            host: configService.get<string>('DB_HOST', 'localhost'),
+            port: configService.get<number>('DB_PORT', 5432),
+            database: configService.get<string>('DB_NAME', 'nexopos'),
+            username: configService.get<string>('DB_USER', 'nexopos_user'),
+            password: configService.get<string>('DB_PASSWORD', 'nexopos123'),
+            autoLoadEntities: true,
+            synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
+            logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
+          };
+        }
+      },
     }),
     HealthModule,
     UsersModule,
