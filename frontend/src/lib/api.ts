@@ -1,6 +1,4 @@
-﻿console.log('VITE_API_URL from import.meta.env:', import.meta.env.VITE_API_URL);
-const RAW_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
-console.log('RAW_BASE_URL after fallback:', RAW_BASE_URL);
+﻿const RAW_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 const NORMALIZED_BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 export const getApiBaseUrl = () => NORMALIZED_BASE_URL;
