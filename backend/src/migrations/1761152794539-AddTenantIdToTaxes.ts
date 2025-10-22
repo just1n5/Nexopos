@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from "typeorm";
 
-export class AddTenantIdToTaxes1761151624238 implements MigrationInterface {
-    name = 'AddTenantIdToTaxes1761151624238'
+export class AddTenantIdToTaxes1761152794539 implements MigrationInterface {
+    name = 'AddTenantIdToTaxes1761152794539'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.addColumn('taxes', new TableColumn({
