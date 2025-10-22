@@ -7,7 +7,7 @@ import { Tax, TaxType } from '../modules/taxes/entities/tax.entity';
 import { Product, ProductStatus } from '../modules/products/entities/product.entity';
 import { Customer, CustomerType, CustomerStatus } from '../modules/customers/entities/customer.entity';
 import { DianResolution, ResolutionStatus } from '../modules/invoice-dian/entities/dian-resolution.entity';
-import { Tenant, TenantStatus } from '../modules/tenant-management/entities/tenant.entity'; // Add Tenant import
+import { Tenant, TenantStatus } from '../modules/tenants/entities/tenant.entity'; // Add Tenant import
 import { AppDataSource } from '../config/data-source'; // Import AppDataSource
 
 /**

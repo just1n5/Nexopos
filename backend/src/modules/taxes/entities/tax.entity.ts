@@ -4,8 +4,10 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  Index
+  Index,
+  ManyToOne // Add ManyToOne
 } from 'typeorm';
+import { Tenant } from '../../tenants/entities/tenant.entity'; // Add Tenant import
 
 export enum TaxType {
   IVA = 'IVA',
@@ -40,6 +42,12 @@ export class Tax {
 
   @Column({ length: 50, nullable: true })
   code?: string; // Code for DIAN or accounting purposes
+
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
+  @ManyToOne(() => Tenant, (tenant) => tenant.taxes, { onDelete: 'CASCADE' })
+  tenant: Tenant;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

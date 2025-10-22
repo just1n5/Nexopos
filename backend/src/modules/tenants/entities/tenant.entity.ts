@@ -1,12 +1,18 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  Index,
   OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Category } from '../../categories/entities/category.entity';
+import { Product } from '../../products/entities/product.entity';
+import { Customer } from '../../customers/entities/customer.entity';
+import { DianResolution } from '../../invoice-dian/entities/dian-resolution.entity';
+import { Tax } from '../../taxes/entities/tax.entity'; // Add Tax import
 
 export enum BusinessType {
   TIENDA = 'Tienda',
@@ -74,6 +80,9 @@ export class Tenant {
 
   @OneToMany(() => User, (user) => user.tenant)
   users: User[];
+
+  @OneToMany(() => Tax, (tax) => tax.tenant)
+  taxes: Tax[];
 
   @CreateDateColumn()
   createdAt: Date;
