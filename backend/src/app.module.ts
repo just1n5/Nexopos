@@ -1,6 +1,8 @@
 ﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -24,6 +26,10 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..' , 'frontend', 'dist'),
+      exclude: ['/api*'],
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
