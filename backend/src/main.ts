@@ -30,6 +30,7 @@ async function bootstrap() {
     'http://localhost:5173', // Desarrollo local
     'http://localhost:3000',
     'https://nexopos-1.onrender.com', // Frontend en Render
+    'http://nexopos.cloution-servidor.local', // Frontend en Dokku
   ];
 
   app.enableCors({
