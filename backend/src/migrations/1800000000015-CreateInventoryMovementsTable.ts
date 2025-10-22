@@ -62,11 +62,11 @@ export class CreateInventoryMovementsTable1800000000015 implements MigrationInte
       FOREIGN KEY ("productVariantId") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE NO ACTION
     `);
     // Assuming a warehouses table exists
-    await queryRunner.query(`
-      ALTER TABLE "inventory_movements"
-      ADD CONSTRAINT "FK_inventory_movements_warehouse"
-      FOREIGN KEY ("warehouseId") REFERENCES "warehouses"("id") ON DELETE SET NULL ON UPDATE NO ACTION
-    `);
+    // await queryRunner.query(`
+    //   ALTER TABLE "inventory_movements"
+    //   ADD CONSTRAINT "FK_inventory_movements_warehouse"
+    //   FOREIGN KEY ("warehouseId") REFERENCES "warehouses"("id") ON DELETE SET NULL ON UPDATE NO ACTION
+    // `);
     await queryRunner.query(`
       ALTER TABLE "inventory_movements"
       ADD CONSTRAINT "FK_inventory_movements_processedBy"
