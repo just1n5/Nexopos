@@ -1,9 +1,12 @@
 ﻿import 'reflect-metadata';
-import { config } from 'dotenv';
 import { join } from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
 
-config({ path: '.env' });
+// Only load dotenv if DATABASE_URL is not already set (e.g., by Dokku)
+if (!process.env.DATABASE_URL) {
+  const { config } = require('dotenv');
+  config({ path: '.env' });
+}
 
 const fileExtensions = ['ts', 'js'];
 const entities = fileExtensions.map((ext) => join(__dirname, '..', 'modules', '**', `*.entity.${ext}`));
