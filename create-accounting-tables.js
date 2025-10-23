@@ -406,6 +406,20 @@ async function createAccountingTables() {
         await client.query(`ALTER TABLE expenses ADD COLUMN "journalEntryId" UUID;`);
         console.log('   ✅ Columna "journalEntryId" agregada a expenses');
       }
+
+      // Verificar si la columna createdBy existe
+      const createdByExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'createdBy'
+        );
+      `);
+
+      if (!createdByExists.rows[0].exists) {
+        await client.query(`ALTER TABLE expenses ADD COLUMN "createdBy" UUID NOT NULL;`);
+        console.log('   ✅ Columna "createdBy" agregada a expenses');
+      }
     }
 
     // ========================================
