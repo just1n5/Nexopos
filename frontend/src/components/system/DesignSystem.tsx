@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -301,14 +300,12 @@ const DesignSystem = () => {
             title="Ventas del Día"
             mainValue="$1,234,567"
             subLabels={[{ label: "Total ventas", value: "123" }]} 
-            icon={<DollarSign className="w-5 h-5" />}
           />
           <KPICard
             title="Ingresos Netos"
             mainValue="$890,123"
             subLabels={[{ label: "Margen", value: "15%" }]} 
             variant="totalizador"
-            icon={<TrendingUp className="w-5 h-5" />}
           />
         </div>
       </section>
