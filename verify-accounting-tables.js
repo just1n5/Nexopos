@@ -16,6 +16,28 @@ async function verifyAccountingTables() {
     await client.connect();
     console.log('✅ Conectado a la base de datos');
 
+    console.log('\n📋 Verificando columna journalEntryId en la tabla expenses...');
+
+    const columnQuery = `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        AND table_name = 'expenses'
+        AND column_name = 'journalEntryId'
+      );
+    `;
+
+    const columnResult = await client.query(columnQuery);
+
+    if (columnResult.rows[0].exists) {
+      console.log('✅ La columna "journalEntryId" existe en la tabla expenses.');
+    } else {
+      console.log('❌ La columna "journalEntryId" NO existe en la tabla expenses.');
+    }
+
+    console.log('\n📋 Verificando tablas de contabilidad...');
+
     const accountingTables = [
       'chart_of_accounts',
       'fiscal_configs',
@@ -24,8 +46,6 @@ async function verifyAccountingTables() {
       'expenses',
       'tax_withholdings',
     ];
-
-    console.log('\n📋 Verificando tablas de contabilidad...');
 
     const query = `
       SELECT table_name
@@ -43,6 +63,7 @@ async function verifyAccountingTables() {
     } else {
       console.log('❌ No se encontraron tablas de contabilidad.');
     }
+
 
     await client.end();
     process.exit(0);
