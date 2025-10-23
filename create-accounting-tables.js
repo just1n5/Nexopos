@@ -378,6 +378,20 @@ async function createAccountingTables() {
         await client.query(`ALTER TABLE expenses ADD COLUMN "isOcrExtracted" BOOLEAN DEFAULT false;`);
         console.log('   ✅ Columna "isOcrExtracted" agregada a expenses');
       }
+
+      // Verificar si la columna wasManuallyEdited existe
+      const wasManuallyEditedExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'wasManuallyEdited'
+        );
+      `);
+
+      if (!wasManuallyEditedExists.rows[0].exists) {
+        await client.query(`ALTER TABLE expenses ADD COLUMN "wasManuallyEdited" BOOLEAN DEFAULT false;`);
+        console.log('   ✅ Columna "wasManuallyEdited" agregada a expenses');
+      }
     }
 
     // ========================================
