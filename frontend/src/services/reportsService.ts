@@ -157,6 +157,7 @@ export interface InventoryMovementsReport {
 
 class ReportsService {
   async getSalesReport(token: string, filters?: ReportFilters): Promise<SalesReport> {
+    console.log('Token in getSalesReport:', token);
     const params = this.buildQueryParams(filters)
     const response = await apiFetch(`/reports/sales?${params}`, {
       method: 'GET',
