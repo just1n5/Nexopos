@@ -364,6 +364,20 @@ async function createAccountingTables() {
         await client.query(`ALTER TABLE expenses ADD COLUMN "ocrData" JSONB;`);
         console.log('   ✅ Columna "ocrData" agregada a expenses');
       }
+
+      // Verificar si la columna isOcrExtracted existe
+      const isOcrExtractedExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'isOcrExtracted'
+        );
+      `);
+
+      if (!isOcrExtractedExists.rows[0].exists) {
+        await client.query(`ALTER TABLE expenses ADD COLUMN "isOcrExtracted" BOOLEAN DEFAULT false;`);
+        console.log('   ✅ Columna "isOcrExtracted" agregada a expenses');
+      }
     }
 
     // ========================================
