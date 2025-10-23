@@ -3,66 +3,55 @@
 @tailwind utilities;
 
 @layer base {
+  /* === MODO CLARO (DEFAULT) === */
   :root {
-    --background: 220 13% 98%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 100%;
+    --foreground: 224 24% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 224 24% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 250 77% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 250 100% 68%;
-    --secondary: 220 13% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 220 13% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 220 13% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-hover: 0 84% 55%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --popover-foreground: 224 24% 18%;
+    --primary: 180 94% 44%;
+    --primary-foreground: 224 24% 18%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 345 100% 59%;
+    --destructive-foreground: 224 24% 18%;
+    --success: 158 81% 42%;
     --success-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 250 77% 58%;
-    --radius: 0.5rem;
-
-    /* Chart variables for light mode */
-    --tooltip-bg: #ffffff;
-    --tooltip-text: #1F2937;
-    --tooltip-border: #E5E7EB;
-    --chart-text: #1F2937;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 180 94% 44%;
+    --radius: 0.75rem; /* 12px */
   }
 
+  /* === MODO OSCURO === */
   .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 14%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 14%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 243 75% 70%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 0 0% 20%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 62.8% 50%;
-    --destructive-hover: 0 70% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 243 75% 59%;
-
-    /* Chart variables for dark mode */
-    --tooltip-bg: #1F2937;
-    --tooltip-text: #FFFFFF;
-    --tooltip-border: #374151;
-    --chart-text: #FFFFFF;
+    --background: 224 24% 18%;
+    --foreground: 210 40% 98%;
+    --card: 173 12% 28%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 24% 18%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 180 94% 44%;
+    --primary-foreground: 224 24% 18%;
+    --secondary: 173 12% 28%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 173 12% 28%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 173 12% 28%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 345 100% 59%;
+    --destructive-foreground: 224 24% 18%;
+    --success: 158 81% 42%;
+    --success-foreground: 0 0% 100%;
+    --border: 173 12% 35%;
+    --input: 173 12% 35%;
+    --ring: 180 94% 44%;
   }
 }
 
@@ -72,70 +61,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  /* --- Fix for unwanted blinking cursor on non-editable text --- */
+  /* Ensures that text elements do not show a blinking cursor, */
+  /* unless they are explicitly designed for text input. */
+  *:not(input):not(textarea):not([contenteditable="true"]) {
+    caret-color: transparent;
   }
-  
-  ::-webkit-scrollbar-track {
-    @apply bg-muted;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-md;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
-  }
-  
-  /* Print styles for receipts */
-  @media print {
-    body * {
-      visibility: hidden;
-    }
-    .printable, .printable * {
-      visibility: visible;
-    }
-    .printable {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 80mm;
-    }
-  }
-  
-  /* Mobile optimizations */
-  @media (max-width: 640px) {
-    html {
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    input, textarea, select {
-      font-size: 16px !important; /* Prevents zoom on iOS */
-    }
-  }
-}
-
-@layer utilities {
-  .animate-in {
-    animation-name: animateIn;
-    animation-duration: 350ms;
-    animation-fill-mode: both;
-  }
-  
-  @keyframes animateIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  input, textarea, [contenteditable="true"] {
+    caret-color: var(--foreground); /* Or whatever the primary text color is */
   }
 }

@@ -1,5 +1,7 @@
+const { fontFamily } = require("tailwindcss/defaultTheme");
+
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
@@ -7,7 +9,6 @@ export default {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
-  prefix: "",
   theme: {
     container: {
       center: true,
@@ -17,6 +18,22 @@ export default {
       },
     },
     extend: {
+      // 1. TIPOGRAFÍA (Poppins)
+      fontFamily: {
+        sans: ["Poppins", ...fontFamily.sans],
+      },
+      
+      // 2. SOMBRAS Y BORDES (Shadow para tarjetas, Glow para botones)
+      boxShadow: {
+        // Sombra suave para tarjetas en MODO CLARO
+        'nexo-card': '0 4px 16px 0 rgba(37, 42, 52, 0.05)',
+        
+        // "Glow" para micro-interacciones de botones
+        'nexo-glow-primary': '0 0 15px 0 rgba(8, 217, 214, 0.5)',
+        'nexo-glow-destructive': '0 0 15px 0 rgba(255, 46, 99, 0.5)',
+      },
+      
+      // 3. COLORES (Definidos por las variables CSS)
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -34,7 +51,10 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
-          hover: "hsl(var(--destructive-hover))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -53,31 +73,27 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      // 4. BORDER RADIUS (Leído desde la variable CSS)
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
       },
       keyframes: {
         "accordion-down": {
-          from: { height: "0" },
+          from: { height: 0 },
           to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "slide-in": {
-          from: { transform: "translateX(100%)" },
-          to: { transform: "translateX(0)" },
+          to: { height: 0 },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "slide-in": "slide-in 0.3s ease-out",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

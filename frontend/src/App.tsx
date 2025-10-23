@@ -18,7 +18,8 @@ import {
   User,
   Key,
   Building2,
-  Receipt
+  Receipt,
+  BookText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +43,7 @@ const DashboardView = lazy(() => import('@/views/DashboardView'))
 const AccountingView = lazy(() => import('@/views/AccountingView'))
 const BetaKeysManagementView = lazy(() => import('@/views/BetaKeysManagementView'))
 const TenantManagementView = lazy(() => import('@/views/TenantManagementView'))
+const SystemView = lazy(() => import('@/views/SystemView'))
 
 // Loading component
 function LoadingScreen() {
@@ -63,6 +65,7 @@ const baseNavItems = [
   { path: '/cash-register', label: 'Caja', icon: Calculator, shortcut: 'F4' },
   { path: '/dashboard', label: 'Reportes', icon: BarChart3, shortcut: 'F5' },
   { path: '/accounting', label: 'Contabilidad', icon: Receipt, shortcut: 'F7' },
+  { path: '/system', label: 'Sistema', icon: BookText, shortcut: 'F8' },
   { path: '/settings', label: 'Configuración', icon: Settings, shortcut: 'F6' }
 ]
 
@@ -79,10 +82,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const { config: businessConfig } = useBusinessStore()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : true
-  })
+  const [darkMode, setDarkMode] = useState(true) // Default to dark mode
   const [notifications] = useState(3) // Mock de notificaciones
 
   const navItems = user?.role === UserRole.SUPER_ADMIN ? superAdminNavItems : baseNavItems;
@@ -128,7 +128,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         'F3': '/credit',
         'F4': '/cash-register',
         'F5': '/dashboard',
-        'F6': '/settings'
+        'F6': '/settings',
+        'F7': '/accounting',
+        'F8': '/system'
       }
 
       const route = keyMap[e.key]
@@ -459,6 +461,14 @@ export default function App() {
               !isAuthenticated ? <Navigate to="/login" replace /> : (
                 <MainLayout>
                   <SettingsView />
+                </MainLayout>
+              )
+            } />
+
+            <Route path="/system" element={
+              !isAuthenticated ? <Navigate to="/login" replace /> : (
+                <MainLayout>
+                  <SystemView />
                 </MainLayout>
               )
             } />

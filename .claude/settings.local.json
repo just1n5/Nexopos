@@ -19,7 +19,13 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nFix: Optimizar área de escaneo y configuración del scanner de códigos de barras\n\nMejoras implementadas:\n- Área de escaneo adaptativa (70% del área visible)\n- Proporción 2:1 optimizada para códigos de barras (width:height)\n- FPS ajustado a 20 para balance entre rendimiento y detección\n- Modo verbose activado temporalmente para debugging\n\nConfiguración del qrbox:\n- Función adaptativa basada en el tamaño del visor\n- 70% del área visible para máxima detección\n- Height = width * 0.5 (proporción ideal para códigos de barras)\n- Se ajusta automáticamente a diferentes tamaños de pantalla\n\nMejoras técnicas:\n- qrbox dinámico en vez de tamaño fijo\n- Mejor proporción para códigos de barras largos\n- Removidas constraints de video no soportadas\n- Verbose mode para identificar problemas de detección\n\nBeneficios:\n- Mayor área de detección\n- Mejor adaptación a diferentes pantallas\n- Proporción optimizada para códigos de barras estándar\n- Logs detallados para debugging\n\nPrueba con código de barras:\n- Mantén el código a 15-30cm de la cámara\n- Asegúrate de tener buena iluminación\n- Verifica logs en consola para ver intentos de detección\n- El área verde con marco indica la zona de escaneo\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(DB_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node add-barcode-columns.js)",
       "Bash(git restore src/services/accountingService.ts)",
-      "Bash(npm install --save-dev @types/exceljs)"
+      "Bash(npm install --save-dev @types/exceljs)",
+      "Bash(dokku config:set:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(git commit:*)",
+      "Bash(DB_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node:*)",
+      "Bash(DATABASE_URL=\"postgresql://nexopos_user:0B13dRjho45aqVdVThYiLGhlsxbv3Q1E@dpg-d3hiuoj3fgac739rg2hg-a.virginia-postgres.render.com/nexopos\" node:*)"
     ],
     "deny": [],
     "ask": []
