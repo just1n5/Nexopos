@@ -361,8 +361,13 @@ async function createAccountingTables() {
       `);
 
       if (!ocrDataExists.rows[0].exists) {
-        await client.query(`ALTER TABLE expenses ADD COLUMN "ocrData" JSONB;`);
-        console.log('   ✅ Columna "ocrData" agregada a expenses');
+        console.log('   Attempting to add column "ocrData"...');
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "ocrData" JSONB;`);
+          console.log('   ✅ Columna "ocrData" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "ocrData": ${err.message}`);
+        }
       }
 
       // Verificar si la columna isOcrExtracted existe
@@ -375,8 +380,13 @@ async function createAccountingTables() {
       `);
 
       if (!isOcrExtractedExists.rows[0].exists) {
-        await client.query(`ALTER TABLE expenses ADD COLUMN "isOcrExtracted" BOOLEAN DEFAULT false;`);
-        console.log('   ✅ Columna "isOcrExtracted" agregada a expenses');
+        console.log('   Attempting to add column "isOcrExtracted"...');
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "isOcrExtracted" BOOLEAN DEFAULT false;`);
+          console.log('   ✅ Columna "isOcrExtracted" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "isOcrExtracted": ${err.message}`);
+        }
       }
 
       // Verificar si la columna wasManuallyEdited existe
@@ -389,8 +399,13 @@ async function createAccountingTables() {
       `);
 
       if (!wasManuallyEditedExists.rows[0].exists) {
-        await client.query(`ALTER TABLE expenses ADD COLUMN "wasManuallyEdited" BOOLEAN DEFAULT false;`);
-        console.log('   ✅ Columna "wasManuallyEdited" agregada a expenses');
+        console.log('   Attempting to add column "wasManuallyEdited"...');
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "wasManuallyEdited" BOOLEAN DEFAULT false;`);
+          console.log('   ✅ Columna "wasManuallyEdited" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "wasManuallyEdited": ${err.message}`);
+        }
       }
 
       // Verificar si la columna journalEntryId existe
@@ -403,6 +418,7 @@ async function createAccountingTables() {
       `);
 
       if (!journalEntryIdExists.rows[0].exists) {
+        console.log('   Attempting to add column "journalEntryId"...');
         try {
           await client.query(`ALTER TABLE expenses ADD COLUMN "journalEntryId" UUID;`);
           console.log('   ✅ Columna "journalEntryId" agregada a expenses');
@@ -421,6 +437,7 @@ async function createAccountingTables() {
       `);
 
       if (!createdByExists.rows[0].exists) {
+        console.log('   Attempting to add column "createdBy"...');
         try {
           await client.query(`ALTER TABLE expenses ADD COLUMN "createdBy" UUID NOT NULL;`);
           console.log('   ✅ Columna "createdBy" agregada a expenses');
@@ -439,10 +456,12 @@ async function createAccountingTables() {
       `);
 
       if (!approvedByExists.rows[0].exists) {
+        console.log('   Attempting to add column "approvedBy"...');
         try {
           await client.query(`ALTER TABLE expenses ADD COLUMN "approvedBy" UUID;`);
           console.log('   ✅ Columna "approvedBy" agregada a expenses');
-        } catch (err) {
+        }
+        catch (err) {
           console.error(`   ❌ Error al agregar columna "approvedBy": ${err.message}`);
         }
       }
@@ -457,6 +476,7 @@ async function createAccountingTables() {
       `);
 
       if (!approvedAtExists.rows[0].exists) {
+        console.log('   Attempting to add column "approvedAt"...');
         try {
           await client.query(`ALTER TABLE expenses ADD COLUMN "approvedAt" TIMESTAMP;`);
           console.log('   ✅ Columna "approvedAt" agregada a expenses');
