@@ -6,6 +6,8 @@ import { TaxRegime, IVAResponsibility } from '@/types/accounting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 /**
  * Formulario de Configuración Fiscal
@@ -267,16 +269,13 @@ export const FiscalConfigForm: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <Label className="mb-2 block">Régimen Tributario *</Label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 p-3 border dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <input
-                      type="radio"
-                      name="taxRegime"
-                      value={TaxRegime.SIMPLIFIED}
-                      checked={formData.taxRegime === TaxRegime.SIMPLIFIED}
-                      onChange={(e) => handleInputChange('taxRegime', e.target.value)}
-                      className="w-4 h-4"
-                    />
+                <RadioGroup
+                  value={formData.taxRegime}
+                  onValueChange={(value) => handleInputChange('taxRegime', value)}
+                  className="space-y-2"
+                >
+                  <Label className="flex items-center gap-2 p-3 border dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <RadioGroupItem value={TaxRegime.SIMPLIFIED} id="simplified" />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">
                         Régimen Simplificado
@@ -285,17 +284,10 @@ export const FiscalConfigForm: React.FC = () => {
                         Para pequeños comerciantes
                       </div>
                     </div>
-                  </label>
+                  </Label>
 
-                  <label className="flex items-center gap-2 p-3 border dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <input
-                      type="radio"
-                      name="taxRegime"
-                      value={TaxRegime.COMMON}
-                      checked={formData.taxRegime === TaxRegime.COMMON}
-                      onChange={(e) => handleInputChange('taxRegime', e.target.value)}
-                      className="w-4 h-4"
-                    />
+                  <Label className="flex items-center gap-2 p-3 border dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <RadioGroupItem value={TaxRegime.COMMON} id="common" />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">
                         Régimen Común
@@ -304,36 +296,34 @@ export const FiscalConfigForm: React.FC = () => {
                         Para empresas que facturan con IVA
                       </div>
                     </div>
-                  </label>
+                  </Label>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="retentionAgent"
+                    checked={formData.retentionAgent}
+                    onCheckedChange={(checked) => handleInputChange('retentionAgent', checked)}
+                  />
+                  <Label htmlFor="retentionAgent" className="text-sm font-medium text-gray-900 dark:text-white">
+                    Agente de Retención
+                  </Label>
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.retentionAgent}
-                    onChange={(e) => handleInputChange('retentionAgent', e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Agente de Retención
-                  </span>
-                </label>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="enableElectronicInvoicing"
                     checked={formData.enableElectronicInvoicing}
-                    onChange={(e) => handleInputChange('enableElectronicInvoicing', e.target.checked)}
-                    className="w-4 h-4 rounded"
+                    onCheckedChange={(checked) => handleInputChange('enableElectronicInvoicing', checked)}
                   />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <Label htmlFor="enableElectronicInvoicing" className="text-sm font-medium text-gray-900 dark:text-white">
                     Facturación Electrónica Habilitada
-                  </span>
-                </label>
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
