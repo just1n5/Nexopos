@@ -77,6 +77,15 @@ export class Product {
   })
   pricePerGram?: number;
 
+  // Porcentaje de IVA (19, 5, 0 para exento)
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    default: 19.00
+  })
+  tax?: number;
+
   // Costo unitario (para productos vendidos por unidad)
   @Column('decimal', {
     name: 'unit_cost',

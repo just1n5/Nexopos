@@ -22,6 +22,7 @@ export interface NewProductData {
   stock: string
   saleType: 'unit' | 'weight'
   pricePerGram?: string
+  tax?: string
   unitCost?: string
   costPerGram?: string
   weightUnit?: 'GRAM' | 'KILO' | 'POUND'
@@ -39,6 +40,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     stock: '0',
     saleType: 'unit',
     pricePerGram: '',
+    tax: '19',
     unitCost: '',
     costPerGram: '',
     weightUnit: 'KILO'
@@ -339,6 +341,25 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                       <p className="text-xs text-muted-foreground mt-1">Ingrese el stock en gramos. Ej: 5kg = 5000g</p>
                     )}
                   </div>
+                </div>
+
+                {/* IVA */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    IVA (%) *
+                  </label>
+                  <select
+                    value={formData.tax}
+                    onChange={(e) => updateField('tax', e.target.value)}
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background"
+                  >
+                    <option value="19">19% - IVA General</option>
+                    <option value="5">5% - IVA Reducido</option>
+                    <option value="0">0% - Exento</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tarifa de IVA según normativa colombiana
+                  </p>
                 </div>
 
                 {/* Costos de Compra */}

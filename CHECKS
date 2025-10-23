@@ -1,0 +1,5 @@
+WAIT=10
+TIMEOUT=60
+ATTEMPTS=6
+
+/api/health/ping
