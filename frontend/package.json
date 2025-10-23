@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx tsc && npx vite build --mode production --force",
+    "build": "npx tsc && npx vite build --mode production",
+    "postinstall": "rm -rf .tailwindcss",
     "start": "node server.js",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
