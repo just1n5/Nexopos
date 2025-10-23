@@ -64,6 +64,17 @@
       gtag('config', 'GA_MEASUREMENT_ID');
     </script>
     
+    <!-- Service Worker Unregistration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+    </script>
+
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
