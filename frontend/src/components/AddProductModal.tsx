@@ -22,6 +22,9 @@ export interface NewProductData {
   stock: string
   saleType: 'unit' | 'weight'
   pricePerGram?: string
+  unitCost?: string
+  costPerGram?: string
+  weightUnit?: 'GRAM' | 'KILO' | 'POUND'
 }
 
 type IdentifierType = 'sku' | 'barcode' | 'both'
@@ -35,7 +38,10 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     basePrice: '',
     stock: '0',
     saleType: 'unit',
-    pricePerGram: ''
+    pricePerGram: '',
+    unitCost: '',
+    costPerGram: '',
+    weightUnit: 'KILO'
   })
 
   const [identifierType, setIdentifierType] = useState<IdentifierType>('both')
@@ -59,8 +65,11 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
       if (!formData.barcode?.trim()) return false
     }
 
-    if (formData.saleType === 'weight' && (!formData.pricePerGram || parseFloat(formData.pricePerGram) <= 0)) {
-      return false
+    if (formData.saleType === 'weight') {
+      if (!formData.pricePerGram || parseFloat(formData.pricePerGram) <= 0) return false
+      if (!formData.costPerGram || parseFloat(formData.costPerGram) <= 0) return false
+    } else {
+      if (!formData.unitCost || parseFloat(formData.unitCost) <= 0) return false
     }
 
     return true
@@ -291,6 +300,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                   </select>
                 </div>
 
+                {/* Precios de Venta */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
@@ -329,6 +339,71 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                       <p className="text-xs text-muted-foreground mt-1">Ingrese el stock en gramos. Ej: 5kg = 5000g</p>
                     )}
                   </div>
+                </div>
+
+                {/* Costos de Compra */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formData.saleType === 'unit' ? (
+                    // Costo Unitario para productos por unidad
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Costo Unitario *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          type="number"
+                          step="1"
+                          value={formData.unitCost}
+                          onChange={(e) => updateField('unitCost', e.target.value)}
+                          placeholder="20000"
+                          className="h-11 pl-8"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Costo de compra por unidad</p>
+                    </div>
+                  ) : (
+                    // Costo por peso para productos vendidos por peso
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Unidad de Peso para Costo *
+                        </label>
+                        <select
+                          value={formData.weightUnit}
+                          onChange={(e) => updateField('weightUnit', e.target.value as 'GRAM' | 'KILO' | 'POUND')}
+                          className="w-full h-11 px-3 rounded-md border border-input bg-background"
+                        >
+                          <option value="GRAM">Gramo</option>
+                          <option value="KILO">Kilogramo</option>
+                          <option value="POUND">Libra</option>
+                        </select>
+                        <p className="text-xs text-muted-foreground mt-1">Unidad en la que conoces el costo</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Costo por {formData.weightUnit === 'GRAM' ? 'Gramo' : formData.weightUnit === 'KILO' ? 'Kilogramo' : 'Libra'} *
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={formData.costPerGram}
+                            onChange={(e) => updateField('costPerGram', e.target.value)}
+                            placeholder={formData.weightUnit === 'KILO' ? '12000' : formData.weightUnit === 'POUND' ? '5400' : '12.00'}
+                            className="h-11 pl-8"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formData.weightUnit === 'KILO' && 'Ej: Si compras a $12,000/kg, ingresa 12000'}
+                          {formData.weightUnit === 'POUND' && 'Ej: Si compras a $5,400/lb, ingresa 5400'}
+                          {formData.weightUnit === 'GRAM' && 'Ej: Si compras a $12/g, ingresa 12'}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

@@ -667,15 +667,26 @@ export class SalesService {
         }
       }
 
-      // Calculate the actual price for the variant
+      // Calculate the actual cost for the product
+      // Use unitCost for unit-based products, costPerGram for weight-based products
       let costPrice = 0;
-      if (product.basePrice !== undefined && product.basePrice !== null) {
-        costPrice = Number(product.basePrice);
-
-        // Add priceDelta if this is a variant
-        if (variant && variant.priceDelta !== undefined && variant.priceDelta !== null) {
-          costPrice += Number(variant.priceDelta);
+      if (product.saleType === 'WEIGHT') {
+        // For weight-based products, use costPerGram
+        if (product.costPerGram !== undefined && product.costPerGram !== null) {
+          costPrice = Number(product.costPerGram);
         }
+      } else {
+        // For unit-based products, use unitCost
+        if (product.unitCost !== undefined && product.unitCost !== null) {
+          costPrice = Number(product.unitCost);
+        }
+      }
+
+      // Add priceDelta if this is a variant (variants may have different costs)
+      if (variant && variant.priceDelta !== undefined && variant.priceDelta !== null) {
+        // Note: For now we apply the same cost.
+        // In the future, variants could have their own cost fields
+        // For now, costPrice stays the same for all variants of a product
       }
 
       // Validate that costPrice is a valid number

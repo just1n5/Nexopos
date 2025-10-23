@@ -23,6 +23,12 @@ export enum ProductSaleType {
   WEIGHT = 'WEIGHT'
 }
 
+export enum WeightUnit {
+  GRAM = 'GRAM',
+  KILO = 'KILO',
+  POUND = 'POUND'
+}
+
 @Entity('products')
 @Index(['tenantId', 'sku'], { unique: true }) // SKU único por tenant
 export class Product {
@@ -70,6 +76,36 @@ export class Product {
     nullable: true
   })
   pricePerGram?: number;
+
+  // Costo unitario (para productos vendidos por unidad)
+  @Column('decimal', {
+    name: 'unit_cost',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    default: 0
+  })
+  unitCost?: number;
+
+  // Costo por gramo (para productos vendidos por peso)
+  @Column('decimal', {
+    name: 'cost_per_gram',
+    precision: 12,
+    scale: 4,
+    nullable: true,
+    default: 0
+  })
+  costPerGram?: number;
+
+  // Unidad de peso para entrada de costo (el sistema siempre convierte a gramos internamente)
+  @Column({
+    name: 'weight_unit',
+    type: 'enum',
+    enum: WeightUnit,
+    nullable: true,
+    default: WeightUnit.GRAM
+  })
+  weightUnit?: WeightUnit;
 
 
 
