@@ -50,6 +50,38 @@ La mayoría de los comandos deben ejecutarse desde el directorio raíz del proye
     -   `npm run build`: Compila la aplicación para producción.
     -   `npm run lint`: Analiza el código en busca de errores de estilo.
 
+## 🚀 Deployment
+
+El proyecto está configurado para ser desplegado en un servidor Dokku. Hay dos aplicaciones separadas en Dokku: `nexopos` para el backend y `nexopos-frontend` para el frontend.
+
+### Backend (`nexopos`)
+
+El backend se despliega en la aplicación `nexopos` en Dokku. El `start` script en el `package.json` de la raíz del proyecto se encarga de iniciar el backend.
+
+### Frontend (`nexopos-frontend`)
+
+El frontend se despliega en la aplicación `nexopos-frontend` en Dokku. Para que el dominio principal (`nexopos.cloution-servidor.local`) apunte al frontend, se ha creado una configuración de Nginx.
+
+#### Configuración de Nginx
+
+Se ha creado un archivo de configuración de Nginx en `/home/dokku/nexopos/nginx.conf.d/00-frontend-proxy.conf` con el siguiente contenido:
+
+```nginx
+set $upstream http://172.17.0.5:5173;
+```
+
+Este archivo se encarga de redirigir las peticiones al contenedor del frontend. La dirección IP `172.17.0.5` es la dirección IP del contenedor del frontend en Dokku.
+
+#### Procfile
+
+Se ha creado un `Procfile` en la raíz del proyecto para especificar el comando de inicio para el frontend:
+
+```
+web: npm run start --prefix frontend
+```
+
+Este comando le dice a Dokku que ejecute el `start` script en el `package.json` del directorio `frontend`.
+
 ## 📋 Convenciones de Desarrollo
 
 -   **Estilo de Código**: El proyecto utiliza ESLint y Prettier para mantener un estilo de código consistente.

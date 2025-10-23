@@ -1,5 +1,4 @@
-import React from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Wallet, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Landmark, AlertTriangle } from 'lucide-react';
 
 interface SalesWidgetProps {
   total: number;
@@ -18,7 +17,7 @@ export const SalesWidget: React.FC<SalesWidgetProps> = ({ total, trend, compared
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">
           Ventas del Mes
         </h3>
         <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
@@ -27,7 +26,7 @@ export const SalesWidget: React.FC<SalesWidgetProps> = ({ total, trend, compared
       </div>
 
       <div className="space-y-2">
-        <p className="text-3xl font-bold text-gray-900 dark:text-white">
+        <p className="text-4xl font-bold text-gray-900 dark:text-white">
           ${total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
         </p>
 
@@ -68,16 +67,16 @@ export const ExpensesWidget: React.FC<ExpensesWidgetProps> = ({ total, breakdown
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">
           Gastos del Mes
         </h3>
         <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-          <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <TrendingDown className="w-6 h-6 text-destructive dark:text-destructive" />
         </div>
       </div>
 
       <div className="space-y-4">
-        <p className="text-3xl font-bold text-gray-900 dark:text-white">
+        <p className="text-4xl font-bold text-gray-900 dark:text-white">
           ${total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
         </p>
 
@@ -123,7 +122,7 @@ export const NetProfitWidget: React.FC<NetProfitWidgetProps> = ({ value, type })
         : 'bg-gradient-to-br from-red-500 to-red-600'
     }`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">
+        <h3 className="text-xl font-semibold text-white">
           Ganancia Neta
         </h3>
         <div className="p-2 bg-white/20 rounded-lg">
@@ -166,17 +165,17 @@ export const AvailableMoneyWidget: React.FC<AvailableMoneyWidgetProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">
           Dinero Disponible
         </h3>
         <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-          <Wallet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <Landmark className="w-6 h-6 text-blue-600 dark:text-blue-400" />
         </div>
       </div>
 
       <div className="space-y-4">
         <div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="text-4xl font-bold text-gray-900 dark:text-white">
             ${total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">Total disponible</p>
@@ -221,8 +220,8 @@ export const TaxProvisionWidget: React.FC<TaxProvisionWidgetProps> = ({
     <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-md p-6 border-4 border-orange-400">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
+          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
             Provisión de Impuestos
           </h3>
           <p className="text-xs text-white/80 mt-1">LA PREGUNTA DEL MILLÓN</p>
