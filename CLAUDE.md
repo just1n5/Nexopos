@@ -274,6 +274,204 @@ El proyecto está en fase MVP con funcionalidades core implementadas:
 - 🚧 Integración DIAN (en progreso)
 - 🚧 Multi-sucursal (planificado)
 
+## Despliegue en Producción (Dokku)
+
+### Información del Servidor
+
+- **Plataforma:** Dokku (PaaS auto-hospedado)
+- **Servidor:** Laptop local en red LAN
+- **IP:** 192.168.80.17
+- **Aplicación:** nexopos
+- **Dominio:** No configurado aún (acceso por IP)
+
+### Git Remotes Configurados
+
+```bash
+dokku   ssh://dokku@192.168.80.17/nexopos (fetch/push)
+dokku-frontend  dokku@nexopos.cloution-servidor.local:nexopos-frontend (fetch/push)
+origin  https://github.com/just1n5/Nexopos.git (fetch/push)
+```
+
+### Flujo de Despliegue a Producción
+
+1. **Desarrollo Local**
+   - Desarrolla y prueba cambios localmente con `npm run dev`
+   - Asegúrate de que todo funcione correctamente
+
+2. **Commit de Cambios**
+   ```bash
+   git add .
+   git commit -m "Descripción de los cambios"
+   ```
+
+3. **Despliegue a Dokku**
+   ```bash
+   git push dokku main
+   ```
+
+   Dokku automáticamente:
+   - Detecta el proyecto Node.js (usando package.json)
+   - Ejecuta `npm install` en root, backend y frontend
+   - Construye el frontend (`npm run build` en frontend/)
+   - Construye el backend (`npm run build` en backend/)
+   - Reinicia la aplicación con la nueva versión
+
+4. **Post-Despliegue: Ejecutar Migraciones**
+
+   Si hiciste cambios en la base de datos, ejecuta las migraciones:
+   ```bash
+   dokku enter nexopos
+   cd backend && npm run migration:run
+   exit
+   ```
+
+5. **Verificación**
+   ```bash
+   # Ver logs en tiempo real
+   dokku logs nexopos -t
+
+   # Verificar estado de la app
+   dokku ps:report nexopos
+   ```
+
+### Comandos Útiles de Dokku
+
+#### Logs y Debugging
+```bash
+# Ver logs en tiempo real (tail)
+dokku logs nexopos -t
+
+# Ver últimas 100 líneas de logs
+dokku logs nexopos --num 100
+
+# Ver logs de un servicio específico
+dokku logs nexopos --ps web
+```
+
+#### Gestión de la Aplicación
+```bash
+# Listar todas las apps
+dokku apps:list
+
+# Ver información de la app
+dokku ps:report nexopos
+
+# Reiniciar la aplicación
+dokku ps:restart nexopos
+
+# Detener la aplicación
+dokku ps:stop nexopos
+
+# Iniciar la aplicación
+dokku ps:start nexopos
+
+# Ver procesos en ejecución
+dokku ps nexopos
+```
+
+#### Variables de Entorno
+```bash
+# Ver todas las variables de entorno
+dokku config:show nexopos
+
+# Configurar una variable
+dokku config:set nexopos DB_HOST=localhost
+
+# Configurar múltiples variables
+dokku config:set nexopos \
+  DB_HOST=localhost \
+  DB_PORT=5432 \
+  JWT_SECRET=nuevo-secret
+
+# Eliminar una variable
+dokku config:unset nexopos VARIABLE_NAME
+```
+
+#### Ejecución de Comandos
+```bash
+# Entrar al contenedor de la app
+dokku enter nexopos
+
+# Ejecutar un comando sin entrar
+dokku run nexopos npm --version
+
+# Ejecutar migraciones
+dokku run nexopos bash -c "cd backend && npm run migration:run"
+```
+
+#### Base de Datos
+```bash
+# Si usas PostgreSQL con Dokku
+dokku postgres:info nexopos-db
+dokku postgres:logs nexopos-db -t
+dokku postgres:connect nexopos-db
+```
+
+### URLs de Acceso
+
+**Producción (Dokku):**
+- **Frontend:** http://192.168.80.17 (puerto configurado por Dokku)
+- **API:** http://192.168.80.17/api
+- **Swagger:** http://192.168.80.17/api (si está habilitado)
+
+**Desarrollo Local:**
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000/api
+- **Swagger Docs:** http://localhost:3000/api
+
+### Troubleshooting
+
+#### La aplicación no inicia después del deploy
+```bash
+# Ver logs completos
+dokku logs nexopos --num 500
+
+# Verificar que las dependencias se instalaron
+dokku run nexopos npm list
+
+# Reconstruir la app desde cero
+dokku ps:rebuild nexopos
+```
+
+#### Migraciones fallan
+```bash
+# Entrar al contenedor
+dokku enter nexopos
+
+# Verificar conexión a BD
+cd backend
+npm run typeorm schema:log
+
+# Ejecutar migraciones manualmente
+npm run migration:run
+```
+
+#### Variables de entorno no se aplican
+```bash
+# Ver variables actuales
+dokku config:show nexopos
+
+# Reiniciar después de cambiar config
+dokku ps:restart nexopos
+```
+
+### Notas Importantes
+
+- **No usar `DB_SYNC=true` en producción** - Siempre usar migraciones
+- **JWT_SECRET** debe ser diferente entre desarrollo y producción
+- **Backups de BD** - Configurar backups regulares de PostgreSQL
+- **Logs** - Los logs de Dokku se rotan automáticamente
+- **Recursos** - La laptop servidor debe tener recursos suficientes (RAM, CPU)
+
+### Futuras Mejoras
+
+- [ ] Configurar dominio personalizado (ej. nexopos.miempresa.com)
+- [ ] Configurar SSL/HTTPS con Let's Encrypt
+- [ ] Implementar CI/CD con GitHub Actions
+- [ ] Configurar backups automáticos de base de datos
+- [ ] Monitoreo con herramientas externas
+- [ ] Configurar alertas de errores
+
 ## Notas de Git
 
 Hay múltiples archivos de documentación temporal (*.md) sin seguimiento en el repositorio. Estos son notas de desarrollo y no deben ser commiteados a menos que sean solicitados explícitamente.

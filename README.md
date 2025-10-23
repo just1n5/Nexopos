@@ -40,47 +40,149 @@ NexoPOS es una plataforma de software como servicio (SaaS) de nueva generación,
 - **Autenticación:** JWT + OAuth 2.0
 - **API:** RESTful + GraphQL
 
-### Infraestructura (Planificada)
-- **Contenedores:** Docker
-- **Orquestación:** Kubernetes
-- **Cloud:** AWS/Azure/GCP
-- **CI/CD:** GitHub Actions
+### Infraestructura
+- **Despliegue:** Dokku (PaaS auto-hospedado)
+- **Servidor:** Laptop local (192.168.80.17)
+- **CI/CD:** Git push deployment
 
 ## 🚀 Instalación y Configuración
 
 ### Prerrequisitos
-- Node.js 18+ 
+- Node.js 18+
 - npm o yarn
 - Git
 
-### Pasos de instalación
+### Desarrollo Local
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/nexopos.git
-cd nexopos
+git clone https://github.com/just1n5/Nexopos.git
+cd Nexoposdesarrollo
 
-# Instalar dependencias
-npm install
+# Instalar todas las dependencias (root, backend, frontend)
+npm run install:all
 
 # Configurar variables de entorno
-cp .env.example .env.local
+# Backend
+cd backend && cp .env.example .env
+# Editar backend/.env con tus credenciales de BD
 
-# Iniciar en modo desarrollo
+# Iniciar en modo desarrollo (backend + frontend)
 npm run dev
 ```
 
-El servidor de desarrollo estará disponible en `http://localhost:5173`
+El servidor de desarrollo estará disponible en:
+- **Frontend:** `http://localhost:5173`
+- **Backend API:** `http://localhost:3000/api`
+- **Swagger Docs:** `http://localhost:3000/api`
 
-### Scripts disponibles
+### Scripts Disponibles
 
 ```bash
-npm run dev        # Inicia el servidor de desarrollo
-npm run build      # Compila para producción
-npm run preview    # Preview de la build de producción
-npm run lint       # Ejecuta el linter
-npm run test       # Ejecuta los tests
+# Desarrollo
+npm run dev              # Inicia backend + frontend simultáneamente
+npm run backend          # Solo backend (modo watch)
+npm run frontend         # Solo frontend
+npm run install:all      # Instala dependencias de todo el monorepo
+
+# Backend
+cd backend
+npm run start:dev        # Desarrollo con hot-reload
+npm run start:debug      # Debug mode
+npm run build            # Compila para producción
+npm run start:prod       # Producción
+npm run migration:run    # Ejecutar migraciones
+npm run migration:generate  # Generar nueva migración
+npm run seed             # Seed de datos
+
+# Frontend
+cd frontend
+npm run dev              # Desarrollo
+npm run build            # Compila para producción
+npm run preview          # Preview de build
+npm run lint             # Ejecuta el linter
 ```
+
+## 🚀 Despliegue en Producción (Dokku)
+
+### Configuración Inicial del Remote
+
+El proyecto ya tiene configurados los remotes de Dokku:
+
+```bash
+# Ver remotes configurados
+git remote -v
+
+# Deberías ver:
+# dokku   ssh://dokku@192.168.80.17/nexopos (fetch)
+# dokku   ssh://dokku@192.168.80.17/nexopos (push)
+```
+
+### Flujo de Despliegue
+
+```bash
+# 1. Asegúrate de tener todos los cambios commiteados
+git add .
+git commit -m "Tu mensaje de commit"
+
+# 2. Despliega a producción
+git push dokku main
+
+# 3. Dokku automáticamente:
+#    - Detecta que es una aplicación Node.js
+#    - Instala dependencias (npm install)
+#    - Construye backend y frontend
+#    - Reinicia la aplicación
+
+# 4. (Opcional) Ejecutar migraciones post-despliegue
+dokku enter nexopos
+cd backend && npm run migration:run
+exit
+```
+
+### Comandos Útiles de Dokku
+
+```bash
+# Ver logs en tiempo real
+dokku logs nexopos -t
+
+# Ver estado de la aplicación
+dokku ps:report nexopos
+
+# Reiniciar la aplicación
+dokku ps:restart nexopos
+
+# Configurar variables de entorno
+dokku config:set nexopos DB_HOST=... DB_PASSWORD=...
+
+# Ver variables de entorno configuradas
+dokku config:show nexopos
+
+# Entrar al contenedor (para ejecutar comandos)
+dokku enter nexopos
+
+# Ver todas las aplicaciones
+dokku apps:list
+```
+
+### Verificación Post-Despliegue
+
+```bash
+# 1. Verificar logs para errores
+dokku logs nexopos -t
+
+# 2. Acceder a la aplicación
+# http://192.168.80.17 (o el puerto configurado)
+
+# 3. Verificar que el backend responde
+# curl http://192.168.80.17/api/health
+```
+
+### Acceso a la Aplicación en Producción
+
+- **URL Base:** `http://192.168.80.17` (red local)
+- **API:** `http://192.168.80.17/api`
+- **Nota:** Aún no hay dominio configurado. La aplicación corre en la laptop servidor (192.168.80.17)
 
 ## 📱 Funcionalidades por Módulo
 
