@@ -44,6 +44,7 @@ const AccountingView = lazy(() => import('@/views/AccountingView'))
 const BetaKeysManagementView = lazy(() => import('@/views/BetaKeysManagementView'))
 const TenantManagementView = lazy(() => import('@/views/TenantManagementView'))
 const SystemView = lazy(() => import('@/views/SystemView'))
+const DesignSystemView = lazy(() => import('@/views/DesignSystemView').then(module => ({ default: module.DesignSystemView })))
 
 // Loading component
 function LoadingScreen() {
@@ -489,6 +490,9 @@ export default function App() {
                 </MainLayout>
               )
             } />
+
+            {/* Ruta de Design System (accesible sin autenticación para demostración) */}
+            <Route path="/design-system" element={<DesignSystemView />} />
 
             {/* Ruta por defecto */}
             <Route path="*" element={<Navigate to="/" replace />} />
