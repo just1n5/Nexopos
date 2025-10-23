@@ -160,6 +160,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('businessName', e.target.value)}
                   placeholder="Nombre completo de la empresa"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -174,6 +175,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('nit', e.target.value)}
                   placeholder="900123456-7"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -187,6 +189,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.economicActivity}
                   onChange={(e) => handleInputChange('economicActivity', e.target.value)}
                   placeholder="4711 - Comercio al por menor"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -201,6 +204,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   placeholder="Calle 123 #45-67"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -215,6 +219,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   placeholder="Bogotá"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -229,6 +234,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="601 234 5678"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -243,6 +249,7 @@ export const FiscalConfigForm: React.FC = () => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="empresa@ejemplo.com"
                   required
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
             </div>
@@ -353,6 +360,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.resolutionNumber}
                   onChange={(e) => handleInputChange('resolutionNumber', e.target.value)}
                   placeholder="18764123456789"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -365,6 +373,7 @@ export const FiscalConfigForm: React.FC = () => {
                   type="date"
                   value={formData.resolutionDate}
                   onChange={(e) => handleInputChange('resolutionDate', e.target.value)}
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -378,6 +387,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.prefixInvoice}
                   onChange={(e) => handleInputChange('prefixInvoice', e.target.value)}
                   placeholder="SETP"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -390,6 +400,7 @@ export const FiscalConfigForm: React.FC = () => {
                   type="date"
                   value={formData.validUntil}
                   onChange={(e) => handleInputChange('validUntil', e.target.value)}
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -403,6 +414,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.fromInvoice}
                   onChange={(e) => handleInputChange('fromInvoice', e.target.value)}
                   placeholder="1"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -416,6 +428,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.toInvoice}
                   onChange={(e) => handleInputChange('toInvoice', e.target.value)}
                   placeholder="5000"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -429,6 +442,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.technicalKey}
                   onChange={(e) => handleInputChange('technicalKey', e.target.value)}
                   placeholder="Clave técnica proporcionada por la DIAN"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
 
@@ -442,6 +456,7 @@ export const FiscalConfigForm: React.FC = () => {
                   value={formData.testSetId}
                   onChange={(e) => handleInputChange('testSetId', e.target.value)}
                   placeholder="ID del set de pruebas (ambiente de habilitación)"
+                  className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
                 />
               </div>
             </div>
@@ -452,7 +467,8 @@ export const FiscalConfigForm: React.FC = () => {
             <Button
               type="submit"
               disabled={fiscalConfigLoading}
-              className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+              variant="primary"
+              className="transition-all hover:shadow-nexo-glow-primary gap-2"
             >
               {fiscalConfigLoading ? (
                 <>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Receipt, FileText, Settings, Loader2, Plus } from 'lucide-react';
+import { LayoutDashboard, Receipt, FileText, Settings, Loader2, Plus, BarChart, Scale } from 'lucide-react';
 import { useAccountingStore } from '../stores/accountingStore';
 import { useAuthStore } from '../stores/authStore';
 import { AccountingDashboard } from '../components/accounting/DashboardWidgets';
@@ -173,7 +173,8 @@ const AccountingView: React.FC = () => {
                 </div>
                 <Button
                   onClick={() => setShowExpenseModal(true)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+                  variant="primary"
+                  className="transition-all hover:shadow-nexo-glow-primary gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Registrar Nuevo Gasto
@@ -202,9 +203,9 @@ const AccountingView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
                     <button
                       onClick={() => setSelectedReport('iva')}
-                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
+                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary dark:hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
                     >
-                      <div className="text-4xl mb-3">📊</div>
+                      <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                       <div className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                         Reporte de IVA
                       </div>
@@ -215,9 +216,9 @@ const AccountingView: React.FC = () => {
 
                     <button
                       onClick={() => setSelectedReport('profit-loss')}
-                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
+                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary dark:hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
                     >
-                      <div className="text-4xl mb-3">💰</div>
+                      <BarChart className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                       <div className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                         Estado de Resultados
                       </div>
@@ -228,9 +229,9 @@ const AccountingView: React.FC = () => {
 
                     <button
                       onClick={() => setSelectedReport('balance')}
-                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
+                      className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary dark:hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
                     >
-                      <div className="text-4xl mb-3">⚖️</div>
+                      <Scale className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                       <div className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                         Balance General
                       </div>

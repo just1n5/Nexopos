@@ -141,7 +141,7 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ onEditExpense }) => {
             placeholder="Buscar por proveedor, factura, descripción..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
           />
         </div>
 
