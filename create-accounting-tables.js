@@ -392,6 +392,20 @@ async function createAccountingTables() {
         await client.query(`ALTER TABLE expenses ADD COLUMN "wasManuallyEdited" BOOLEAN DEFAULT false;`);
         console.log('   ✅ Columna "wasManuallyEdited" agregada a expenses');
       }
+
+      // Verificar si la columna journalEntryId existe
+      const journalEntryIdExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'journalEntryId'
+        );
+      `);
+
+      if (!journalEntryIdExists.rows[0].exists) {
+        await client.query(`ALTER TABLE expenses ADD COLUMN "journalEntryId" UUID;`);
+        console.log('   ✅ Columna "journalEntryId" agregada a expenses');
+      }
     }
 
     // ========================================
