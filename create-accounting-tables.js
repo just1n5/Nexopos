@@ -403,9 +403,68 @@ async function createAccountingTables() {
       `);
 
       if (!journalEntryIdExists.rows[0].exists) {
-        await client.query(`ALTER TABLE expenses ADD COLUMN "journalEntryId" UUID;`);
-        console.log('   ✅ Columna "journalEntryId" agregada a expenses');
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "journalEntryId" UUID;`);
+          console.log('   ✅ Columna "journalEntryId" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "journalEntryId": ${err.message}`);
+        }
       }
+
+      // Verificar si la columna createdBy existe
+      const createdByExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'createdBy'
+        );
+      `);
+
+      if (!createdByExists.rows[0].exists) {
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "createdBy" UUID NOT NULL;`);
+          console.log('   ✅ Columna "createdBy" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "createdBy": ${err.message}`);
+        }
+      }
+
+      // Verificar si la columna approvedBy existe
+      const approvedByExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'approvedBy'
+        );
+      `);
+
+      if (!approvedByExists.rows[0].exists) {
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "approvedBy" UUID;`);
+          console.log('   ✅ Columna "approvedBy" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "approvedBy": ${err.message}`);
+        }
+      }
+
+      // Verificar si la columna approvedAt existe
+      const approvedAtExists = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'expenses'
+          AND column_name = 'approvedAt'
+        );
+      `);
+
+      if (!approvedAtExists.rows[0].exists) {
+        try {
+          await client.query(`ALTER TABLE expenses ADD COLUMN "approvedAt" TIMESTAMP;`);
+          console.log('   ✅ Columna "approvedAt" agregada a expenses');
+        } catch (err) {
+          console.error(`   ❌ Error al agregar columna "approvedAt": ${err.message}`);
+        }
+      }
+    }
 
       // Verificar si la columna createdBy existe
       const createdByExists = await client.query(`
