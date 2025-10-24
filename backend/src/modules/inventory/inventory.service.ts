@@ -93,7 +93,7 @@ export class InventoryService {
         tenantId,
         productId,
         productVariantId: metadata?.variantId,
-        movementType,
+        type: movementType,
         quantity: quantityChange,
         quantityBefore,
         quantityAfter,
