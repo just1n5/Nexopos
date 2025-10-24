@@ -45,6 +45,7 @@ export class InventoryService {
     quantity: number,
     movementType: MovementType,
     userId: string,
+    tenantId: string,
     metadata?: {
       variantId?: string;
       warehouseId?: string;
@@ -69,6 +70,7 @@ export class InventoryService {
       
       if (!stock.id) {
         this.logger.log(`DEBUG: adjustStock - Creating new stock record for product ${productId}`);
+        stock.tenantId = tenantId;
         stock = await queryRunner.manager.save(InventoryStock, stock);
         this.logger.log(`DEBUG: adjustStock - New stock record created: ${JSON.stringify(stock)}`);
       } else {
@@ -88,6 +90,7 @@ export class InventoryService {
 
       // Create movement record
       const movement = queryRunner.manager.create(InventoryMovement, {
+        tenantId,
         productId,
         productVariantId: metadata?.variantId,
         movementType,
@@ -161,13 +164,14 @@ export class InventoryService {
     }
   }
 
-  async processStockForSale(saleItems: any[], userId: string): Promise<void> {
+  async processStockForSale(saleItems: any[], userId: string, tenantId: string): Promise<void> {
     for (const item of saleItems) {
       await this.adjustStock(
         item.productId,
         -item.quantity,
         MovementType.SALE,
         userId,
+        tenantId,
         {
           variantId: item.productVariantId,
           referenceType: 'sale',
@@ -314,6 +318,7 @@ export class InventoryService {
     productId: string,
     actualQuantity: number,
     userId: string,
+    tenantId: string,
     metadata?: {
       variantId?: string;
       warehouseId?: string;
@@ -322,14 +327,14 @@ export class InventoryService {
     }
   ): Promise<InventoryMovement> {
     const stock = await this.getStock(productId, metadata?.variantId, metadata?.warehouseId);
-    
+
     if (!stock.id) {
       throw new NotFoundException(`Stock record not found for product ${productId}`);
     }
 
     const currentQuantity = Number(stock.quantity) || 0;
     const difference = Number(actualQuantity) - currentQuantity;
-    
+
     if (difference === 0) {
       this.logger.log(`Stock count matches for product ${productId}`);
       return null;
@@ -341,6 +346,7 @@ export class InventoryService {
       difference,
       MovementType.ADJUSTMENT,
       userId,
+      tenantId,
       {
         ...metadata,
         reason: 'Stock count adjustment',

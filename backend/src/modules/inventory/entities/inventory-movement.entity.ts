@@ -31,6 +31,9 @@ export class InventoryMovement {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid' })
+  tenantId: string;
+
   @Column()
   productId: string;
 

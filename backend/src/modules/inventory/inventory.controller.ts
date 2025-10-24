@@ -48,8 +48,8 @@ export class InventoryController {
   @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get products with low stock' })
   @ApiQuery({ name: 'warehouseId', required: false })
-  async getLowStock(@Query('warehouseId') warehouseId?: string) {
-    return this.inventoryService.getLowStockProducts(warehouseId);
+  async getLowStock(@Query('warehouseId') warehouseId?: string, @Request() req) {
+    return this.inventoryService.getLowStockProducts(req.user.tenantId, warehouseId);
   }
 
   @Get('expiring')
@@ -81,8 +81,8 @@ export class InventoryController {
   @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get stock valuation' })
   @ApiQuery({ name: 'warehouseId', required: false })
-  async getValuation(@Query('warehouseId') warehouseId?: string) {
-    return this.inventoryService.getStockValuation(warehouseId);
+  async getValuation(@Query('warehouseId') warehouseId?: string, @Request() req) {
+    return this.inventoryService.getStockValuation(req.user.tenantId, warehouseId);
   }
 
   @Post('adjust-stock')
@@ -128,6 +128,7 @@ export class InventoryController {
       adjustStockDto.quantity,
       adjustStockDto.movementType,
       req.user.id,
+      req.user.tenantId,
       {
         variantId: adjustStockDto.variantId,
         warehouseId: adjustStockDto.warehouseId,
@@ -172,6 +173,7 @@ export class InventoryController {
       stockCountDto.productId,
       stockCountDto.actualQuantity,
       req.user.id,
+      req.user.tenantId,
       {
         variantId: stockCountDto.variantId,
         warehouseId: stockCountDto.warehouseId,
