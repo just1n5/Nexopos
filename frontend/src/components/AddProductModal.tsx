@@ -49,10 +49,60 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
   const [identifierType, setIdentifierType] = useState<IdentifierType>('both')
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const { toast } = useToast()
 
+  // Calcular errores en tiempo real
+  const validateFields = (data: NewProductData) => {
+    const errors: Record<string, string> = {}
+
+    if (!data.name.trim()) {
+      errors.name = 'El nombre es obligatorio'
+    }
+
+    if (identifierType === 'sku' || identifierType === 'both') {
+      if (!data.sku?.trim()) {
+        errors.sku = 'El SKU es obligatorio'
+      }
+    }
+
+    if (identifierType === 'barcode' || identifierType === 'both') {
+      if (!data.barcode?.trim()) {
+        errors.barcode = 'El código de barras es obligatorio'
+      }
+    }
+
+    if (data.saleType === 'weight') {
+      const priceVal = parseFloat(data.pricePerGram) || 0
+      const costVal = parseFloat(data.costPerGram) || 0
+
+      if (!data.pricePerGram || priceVal <= 0) {
+        errors.pricePerGram = 'Ingresa un precio por gramo mayor a 0'
+      }
+      if (!data.costPerGram || costVal <= 0) {
+        errors.costPerGram = 'Ingresa un costo por gramo mayor a 0'
+      }
+    } else {
+      const priceVal = parseFloat(data.basePrice) || 0
+      const costVal = parseFloat(data.unitCost) || 0
+
+      if (!data.basePrice || priceVal <= 0) {
+        errors.basePrice = 'Ingresa un precio base mayor a 0'
+      }
+      if (!data.unitCost || costVal <= 0) {
+        errors.unitCost = 'Ingresa un costo unitario mayor a 0'
+      }
+    }
+
+    return errors
+  }
+
   const updateField = (field: keyof NewProductData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    const newFormData = { ...formData, [field]: value }
+    setFormData(newFormData)
+    // Validar en tiempo real
+    const errors = validateFields(newFormData)
+    setFieldErrors(errors)
   }
 
   // Validar el formulario
@@ -250,8 +300,11 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                     value={formData.name}
                     onChange={(e) => updateField('name', e.target.value)}
                     placeholder="Ej: Camiseta Básica Blanca"
-                    className="h-11"
+                    className={`h-11 ${fieldErrors.name ? 'border-red-500' : ''}`}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.name}</p>
+                  )}
                 </div>
 
                 <div>
@@ -278,9 +331,13 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                       value={formData.sku}
                       onChange={(e) => updateField('sku', e.target.value.toUpperCase())}
                       placeholder="Ej: CAM-BLA-001"
-                      className="h-11 font-mono"
+                      className={`h-11 font-mono ${fieldErrors.sku ? 'border-red-500' : ''}`}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Código único para uso interno</p>
+                    {fieldErrors.sku ? (
+                      <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.sku}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">Código único para uso interno</p>
+                    )}
                   </div>
                 )}
 
@@ -296,7 +353,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                         value={formData.barcode}
                         onChange={(e) => updateField('barcode', e.target.value)}
                         placeholder="Ej: 7702004008886"
-                        className="h-11 font-mono flex-1"
+                        className={`h-11 font-mono flex-1 ${fieldErrors.barcode ? 'border-red-500' : ''}`}
                       />
                       <Button
                         type="button"
@@ -308,7 +365,11 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                         <Camera className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Código de barras del producto</p>
+                    {fieldErrors.barcode ? (
+                      <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.barcode}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">Código de barras del producto</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -346,11 +407,29 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                         value={formData.saleType === 'weight' ? formData.pricePerGram : formData.basePrice}
                         onChange={(e) => updateField(formData.saleType === 'weight' ? 'pricePerGram' : 'basePrice', e.target.value)}
                         placeholder={formData.saleType === 'weight' ? '15.50' : '25000'}
-                        className="h-11 pl-8"
+                        className={`h-11 pl-8 ${
+                          formData.saleType === 'weight'
+                            ? fieldErrors.pricePerGram ? 'border-red-500' : ''
+                            : fieldErrors.basePrice ? 'border-red-500' : ''
+                        }`}
                       />
                     </div>
-                    {formData.saleType === 'weight' && (
-                      <p className="text-xs text-muted-foreground mt-1">Precio por gramo. Ej: Si 1kg cuesta $15,500, ingrese 15.5</p>
+                    {formData.saleType === 'weight' ? (
+                      <>
+                        {fieldErrors.pricePerGram ? (
+                          <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.pricePerGram}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-1">Precio por gramo. Ej: Si 1kg cuesta $15,500, ingrese 15.5</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {fieldErrors.basePrice ? (
+                          <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.basePrice}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-1">Precio de venta al público</p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -408,10 +487,14 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                           value={formData.unitCost}
                           onChange={(e) => updateField('unitCost', e.target.value)}
                           placeholder="20000"
-                          className="h-11 pl-8"
+                          className={`h-11 pl-8 ${fieldErrors.unitCost ? 'border-red-500' : ''}`}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Costo de compra por unidad</p>
+                      {fieldErrors.unitCost ? (
+                        <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.unitCost}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Costo de compra por unidad</p>
+                      )}
                     </div>
                   ) : (
                     // Costo por peso para productos vendidos por peso
@@ -444,14 +527,18 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                             value={formData.costPerGram}
                             onChange={(e) => updateField('costPerGram', e.target.value)}
                             placeholder={formData.weightUnit === 'KILO' ? '12000' : formData.weightUnit === 'POUND' ? '5400' : '12.00'}
-                            className="h-11 pl-8"
+                            className={`h-11 pl-8 ${fieldErrors.costPerGram ? 'border-red-500' : ''}`}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formData.weightUnit === 'KILO' && 'Ej: Si compras a $12,000/kg, ingresa 12000'}
-                          {formData.weightUnit === 'POUND' && 'Ej: Si compras a $5,400/lb, ingresa 5400'}
-                          {formData.weightUnit === 'GRAM' && 'Ej: Si compras a $12/g, ingresa 12'}
-                        </p>
+                        {fieldErrors.costPerGram ? (
+                          <p className="text-xs text-red-500 mt-1">❌ {fieldErrors.costPerGram}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formData.weightUnit === 'KILO' && 'Ej: Si compras a $12,000/kg, ingresa 12000'}
+                            {formData.weightUnit === 'POUND' && 'Ej: Si compras a $5,400/lb, ingresa 5400'}
+                            {formData.weightUnit === 'GRAM' && 'Ej: Si compras a $12/g, ingresa 12'}
+                          </p>
+                        )}
                       </div>
                     </>
                   )}
