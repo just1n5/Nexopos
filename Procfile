@@ -1,1 +1,1 @@
-web: npm run start --prefix frontend
+web: npm run build && npm run start
