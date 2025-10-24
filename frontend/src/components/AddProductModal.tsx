@@ -127,8 +127,8 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
     if (formData.saleType === 'weight') {
       // Para productos por peso
-      const pricePerGramVal = parseFloat(formData.pricePerGram) || 0
-      const costPerGramVal = parseFloat(formData.costPerGram) || 0
+      const pricePerGramVal = parseFloat(formData.pricePerGram || '0') || 0
+      const costPerGramVal = parseFloat(formData.costPerGram || '0') || 0
 
       if (!formData.pricePerGram || pricePerGramVal <= 0) {
         console.log('❌ Precio por gramo inválido:', formData.pricePerGram)
@@ -140,8 +140,8 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
       }
     } else {
       // Para productos por unidad
-      const basePriceVal = parseFloat(formData.basePrice) || 0
-      const unitCostVal = parseFloat(formData.unitCost) || 0
+      const basePriceVal = parseFloat(formData.basePrice || '0') || 0
+      const unitCostVal = parseFloat(formData.unitCost || '0') || 0
 
       if (!formData.basePrice || basePriceVal <= 0) {
         console.log('❌ Precio base inválido:', formData.basePrice)
