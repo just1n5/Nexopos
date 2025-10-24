@@ -1,1 +1,1 @@
-web: npm run build && npm run start
+web: node backend/dist/main.js
