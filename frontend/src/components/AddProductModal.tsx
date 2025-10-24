@@ -57,25 +57,53 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
   // Validar el formulario
   const isFormValid = () => {
-    if (!formData.name.trim()) return false
+    if (!formData.name.trim()) {
+      console.log('❌ Falta nombre del producto')
+      return false
+    }
 
     if (identifierType === 'sku' || identifierType === 'both') {
-      if (!formData.sku?.trim()) return false
+      if (!formData.sku?.trim()) {
+        console.log('❌ Falta SKU')
+        return false
+      }
     }
     if (identifierType === 'barcode' || identifierType === 'both') {
-      if (!formData.barcode?.trim()) return false
+      if (!formData.barcode?.trim()) {
+        console.log('❌ Falta código de barras')
+        return false
+      }
     }
 
     if (formData.saleType === 'weight') {
       // Para productos por peso
-      if (!formData.pricePerGram || parseFloat(formData.pricePerGram) <= 0) return false
-      if (!formData.costPerGram || parseFloat(formData.costPerGram) <= 0) return false
+      const pricePerGramVal = parseFloat(formData.pricePerGram) || 0
+      const costPerGramVal = parseFloat(formData.costPerGram) || 0
+
+      if (!formData.pricePerGram || pricePerGramVal <= 0) {
+        console.log('❌ Precio por gramo inválido:', formData.pricePerGram)
+        return false
+      }
+      if (!formData.costPerGram || costPerGramVal <= 0) {
+        console.log('❌ Costo por gramo inválido:', formData.costPerGram)
+        return false
+      }
     } else {
       // Para productos por unidad
-      if (!formData.basePrice || parseFloat(formData.basePrice) <= 0) return false
-      if (!formData.unitCost || parseFloat(formData.unitCost) <= 0) return false
+      const basePriceVal = parseFloat(formData.basePrice) || 0
+      const unitCostVal = parseFloat(formData.unitCost) || 0
+
+      if (!formData.basePrice || basePriceVal <= 0) {
+        console.log('❌ Precio base inválido:', formData.basePrice)
+        return false
+      }
+      if (!formData.unitCost || unitCostVal <= 0) {
+        console.log('❌ Costo unitario inválido:', formData.unitCost)
+        return false
+      }
     }
 
+    console.log('✅ Formulario válido para tipo:', formData.saleType)
     return true
   }
 
@@ -211,7 +239,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
               {/* Información Básica */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-700">
+                <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-900">
                   <Package className="w-4 h-4" />
                   Información Básica
                 </h3>
@@ -243,7 +271,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 {(identifierType === 'sku' || identifierType === 'both') && (
                   <div>
                     <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-gray-500" />
+                      <Hash className="w-4 h-4 text-gray-700" />
                       SKU (Código Interno) *
                     </label>
                     <Input
@@ -260,7 +288,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 {(identifierType === 'barcode' || identifierType === 'both') && (
                   <div>
                     <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                      <Barcode className="w-4 h-4 text-gray-500" />
+                      <Barcode className="w-4 h-4 text-gray-700" />
                       Código de Barras *
                     </label>
                     <div className="flex gap-2">
@@ -287,8 +315,8 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
               {/* Tipo de Venta y Precio */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-700">
-                  <DollarSign className="w-4 h-4" />
+                <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-900">
+                  <DollarSign className="w-4 h-4 text-primary" />
                   Precio y Stock
                 </h3>
 
