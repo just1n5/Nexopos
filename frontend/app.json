@@ -1,8 +1,5 @@
 {
-  "healthchecks": [
-    {
-      "type": "listening",
-      "port": 5000
-    }
-  ]
+  "healthchecks": {
+    "web": []
+  }
 }
