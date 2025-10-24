@@ -89,6 +89,7 @@ export class InventoryService {
       }
 
       // Create movement record
+      const unitCost = metadata?.unitCost ?? 0;
       const movement = queryRunner.manager.create(InventoryMovement, {
         tenantId,
         productId,
@@ -97,8 +98,8 @@ export class InventoryService {
         quantity: quantityChange,
         quantityBefore,
         quantityAfter,
-        unitCost: metadata?.unitCost,
-        totalCost: metadata?.unitCost ? metadata.unitCost * Math.abs(quantityChange) : null,
+        unitCost,
+        totalCost: unitCost > 0 ? unitCost * Math.abs(quantityChange) : 0,
         referenceType: metadata?.referenceType,
         referenceId: metadata?.referenceId,
         referenceNumber: metadata?.referenceNumber,
