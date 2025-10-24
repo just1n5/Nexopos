@@ -33,7 +33,7 @@ export class IntegrationService {
    * - Registra en la caja
    * - Actualiza el crédito del cliente si aplica
    */
-  async completeSale(saleId: string): Promise<Sale> {
+  async completeSale(saleId: string, tenantId: string): Promise<Sale> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -69,6 +69,7 @@ export class IntegrationService {
           -item.quantity,
           MovementType.SALE,
           sale.userId,
+          tenantId,
           {
             variantId: item.productVariantId,
             referenceType: 'sale',
@@ -130,7 +131,7 @@ export class IntegrationService {
   /**
    * Cancela una venta y revierte todas las operaciones
    */
-  async cancelSale(saleId: string, reason: string, userId: string): Promise<Sale> {
+  async cancelSale(saleId: string, reason: string, userId: string, tenantId: string): Promise<Sale> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -160,6 +161,7 @@ export class IntegrationService {
             item.quantity, // Devolver al inventario
             MovementType.RETURN_CUSTOMER,
             userId,
+            tenantId,
             {
               variantId: item.productVariantId,
               referenceType: 'sale_cancellation',
@@ -319,7 +321,10 @@ export class IntegrationService {
       // 3. Cerrar todas las ventas pendientes
       const pendingSales = await this.salesService.findPending();
       for (const sale of pendingSales) {
-        await this.completeSale(sale.id);
+        // We need tenantId here, but we don't have it in the method signature
+        // For now, we'll get it from the user entity via the userId
+        // This is a temporary solution - ideally the sale entity should have tenantId
+        await this.completeSale(sale.id, sale.user?.tenantId || '');
       }
 
       // 4. Cerrar la sesión de caja

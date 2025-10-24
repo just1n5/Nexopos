@@ -108,7 +108,7 @@ export class SalesController {
   @ApiResponse({ status: 404, description: 'Sale not found' })
   @ApiResponse({ status: 409, description: 'Sale cannot be cancelled' })
   async cancelSale(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.salesService.cancelSale(id, req.user.id);
+    return this.salesService.cancelSale(id, req.user.id, req.user.tenantId);
   }
 
   // Reports endpoints

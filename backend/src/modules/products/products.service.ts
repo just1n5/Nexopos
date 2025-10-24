@@ -44,6 +44,7 @@ export class ProductsService {
               stockValue,
               MovementType.ADJUSTMENT,
               null, // System-generated, no specific user
+              tenantId,
               {
                 variantId: variant.id,
                 unitCost: Number(savedProduct.basePrice + (variant.priceDelta || 0)),
@@ -67,6 +68,7 @@ export class ProductsService {
             stockValue,
             MovementType.ADJUSTMENT,
             null, // System-generated, no specific user
+            tenantId,
             {
               unitCost: Number(savedProduct.basePrice || 0),
               reason: 'Initial stock',

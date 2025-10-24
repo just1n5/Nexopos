@@ -45,8 +45,8 @@ export class IntegrationController {
   @ApiResponse({ status: 200, description: 'Sale completed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid sale or already completed' })
   @ApiResponse({ status: 404, description: 'Sale not found' })
-  async completeSale(@Param('id') saleId: string) {
-    return this.integrationService.completeSale(saleId);
+  async completeSale(@Param('id') saleId: string, @Request() req) {
+    return this.integrationService.completeSale(saleId, req.user.tenantId);
   }
 
   /**
@@ -83,7 +83,7 @@ export class IntegrationController {
     if (!reason) {
       throw new BadRequestException('Cancellation reason is required');
     }
-    return this.integrationService.cancelSale(saleId, reason, req.user.id);
+    return this.integrationService.cancelSale(saleId, reason, req.user.id, req.user.tenantId);
   }
 
   /**

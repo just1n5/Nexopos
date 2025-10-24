@@ -48,7 +48,7 @@ export class InventoryController {
   @Permissions(Permission.INVENTORY_READ)
   @ApiOperation({ summary: 'Get products with low stock' })
   @ApiQuery({ name: 'warehouseId', required: false })
-  async getLowStock(@Query('warehouseId') warehouseId?: string, @Request() req) {
+  async getLowStock(@Request() req, @Query('warehouseId') warehouseId?: string) {
     return this.inventoryService.getLowStockProducts(req.user.tenantId, warehouseId);
   }
 
@@ -81,7 +81,7 @@ export class InventoryController {
   @Permissions(Permission.REPORTS_INVENTORY)
   @ApiOperation({ summary: 'Get stock valuation' })
   @ApiQuery({ name: 'warehouseId', required: false })
-  async getValuation(@Query('warehouseId') warehouseId?: string, @Request() req) {
+  async getValuation(@Request() req, @Query('warehouseId') warehouseId?: string) {
     return this.inventoryService.getStockValuation(req.user.tenantId, warehouseId);
   }
 

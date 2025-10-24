@@ -221,6 +221,7 @@ export class SalesService {
           -update.quantity, // Negative for sales (stock reduction)
           MovementType.SALE,
           userId || 'system',
+          tenantId,
           {
             variantId: update.variantId,
             referenceType: 'sale',
@@ -457,7 +458,7 @@ export class SalesService {
     return sale;
   }
 
-  async cancelSale(id: string, userId: string): Promise<Sale> {
+  async cancelSale(id: string, userId: string, tenantId: string): Promise<Sale> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -501,6 +502,7 @@ export class SalesService {
           item.quantity, // Positive to add stock back
           MovementType.PURCHASE,
           userId || 'system',
+          tenantId,
           {
             variantId: item.productVariantId,
             referenceType: 'sale',
