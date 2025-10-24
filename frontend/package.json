@@ -33,6 +33,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "express": "^4.21.2",
+    "http-proxy-middleware": "^2.0.6",
     "framer-motion": "^10.16.16",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.294.0",
