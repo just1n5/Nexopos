@@ -90,6 +90,7 @@ export const ProfitLossView: React.FC = () => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
             />
           </div>
           <div>
@@ -101,12 +102,14 @@ export const ProfitLossView: React.FC = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
             />
           </div>
           <Button
             onClick={handleGenerateReport}
             disabled={reportsLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+            variant="primary"
+            className="transition-all hover:shadow-nexo-glow-primary gap-2"
           >
             {reportsLoading ? (
               <>
@@ -162,7 +165,7 @@ export const ProfitLossView: React.FC = () => {
             <div className={`rounded-lg p-6 ${
               profitAndLoss.netProfit >= 0
                 ? 'bg-gradient-to-br from-green-500 to-green-600'
-                : 'bg-gradient-to-br from-red-500 to-red-600'
+                : 'bg-gradient-to-br from-destructive to-destructive-600'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
@@ -244,11 +247,11 @@ export const ProfitLossView: React.FC = () => {
               </div>
 
               {/* Utilidad Bruta */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 flex justify-between items-center">
-                <span className="font-medium text-blue-700 dark:text-blue-300">
+              <div className="bg-info-50 dark:bg-info-900/20 rounded-lg p-3 flex justify-between items-center">
+                <span className="font-medium text-info-700 dark:text-info-300">
                   Utilidad Bruta (Ventas - Costo)
                 </span>
-                <span className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                <span className="text-xl font-bold text-info-700 dark:text-info-300">
                   ${profitAndLoss.grossProfit.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </span>
               </div>
@@ -283,7 +286,7 @@ export const ProfitLossView: React.FC = () => {
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
                   Total Costos y Gastos
                 </span>
-                <span className="text-2xl font-bold text-red-600 dark:text-red-400">
+                <span className="text-2xl font-bold text-destructive dark:text-destructive-400">
                   ${profitAndLoss.expenses.total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </span>
               </div>

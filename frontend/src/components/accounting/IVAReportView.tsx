@@ -88,6 +88,7 @@ export const IVAReportView: React.FC = () => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
             />
           </div>
           <div>
@@ -99,12 +100,14 @@ export const IVAReportView: React.FC = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
             />
           </div>
           <Button
             onClick={handleGenerateReport}
             disabled={reportsLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+            variant="primary"
+            className="transition-all hover:shadow-nexo-glow-primary gap-2"
           >
             {reportsLoading ? (
               <>
@@ -162,11 +165,11 @@ export const IVAReportView: React.FC = () => {
               </div>
 
               {/* IVA Descontable */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">
+              <div className="bg-info-50 dark:bg-info-900/20 rounded-lg p-4 border border-info-200 dark:border-info-800">
+                <p className="text-sm text-info-600 dark:text-info-400 mb-1">
                   IVA Descontable (Compras)
                 </p>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                <p className="text-3xl font-bold text-info-700 dark:text-info-300">
                   ${ivaReport.summary.ivaDescontable.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </p>
               </div>
@@ -174,20 +177,20 @@ export const IVAReportView: React.FC = () => {
               {/* Saldo */}
               <div className={`rounded-lg p-4 border ${
                 ivaReport.summary.tipo === 'a_pagar'
-                  ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                  : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                  ? 'bg-destructive-50 dark:bg-destructive-900/20 border-destructive-200 dark:border-destructive-800'
+                  : 'bg-info-50 dark:bg-info-900/20 border-info-200 dark:border-info-800'
               }`}>
                 <p className={`text-sm mb-1 ${
                   ivaReport.summary.tipo === 'a_pagar'
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-purple-600 dark:text-purple-400'
+                    ? 'text-destructive-600 dark:text-destructive-400'
+                    : 'text-info-600 dark:text-info-400'
                 }`}>
                   {ivaReport.summary.tipo === 'a_pagar' ? 'IVA a Pagar' : 'IVA a Favor'}
                 </p>
                 <p className={`text-3xl font-bold ${
                   ivaReport.summary.tipo === 'a_pagar'
-                    ? 'text-red-700 dark:text-red-300'
-                    : 'text-purple-700 dark:text-purple-300'
+                    ? 'text-destructive-700 dark:text-destructive-300'
+                    : 'text-info-700 dark:text-info-300'
                 }`}>
                   ${ivaReport.summary.saldo.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </p>
@@ -309,11 +312,11 @@ export const IVAReportView: React.FC = () => {
           </div>
 
           {/* Notas Importantes */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+          <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
+            <h4 className="font-semibold text-warning-800 dark:text-warning-200 mb-2">
               📋 Notas para la Declaración DIAN
             </h4>
-            <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1 list-disc list-inside">
+            <ul className="text-sm text-warning-700 dark:text-warning-300 space-y-1 list-disc list-inside">
               <li>Este reporte debe ser verificado por un contador antes de la declaración</li>
               <li>Asegúrate de tener todos los soportes de las compras con IVA descontable</li>
               <li>Los períodos de declaración de IVA son bimestrales para responsables de IVA</li>

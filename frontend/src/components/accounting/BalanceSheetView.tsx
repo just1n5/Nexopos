@@ -88,12 +88,14 @@ export const BalanceSheetView: React.FC = () => {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className="border-0 border-b-2 border-input rounded-t-lg px-2 py-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-colors"
             />
           </div>
           <Button
             onClick={handleGenerateReport}
             disabled={reportsLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+            variant="primary"
+            className="transition-all hover:shadow-nexo-glow-primary gap-2"
           >
             {reportsLoading ? (
               <>
@@ -148,14 +150,14 @@ export const BalanceSheetView: React.FC = () => {
             <div className={`rounded-lg p-4 ${
               isBalanced
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                : 'bg-destructive-50 dark:bg-destructive-900/20 border-destructive-200 dark:border-destructive-800'
             }`}>
               <div className="flex items-center justify-center gap-2">
                 <TrendingUp className={`w-5 h-5 ${
-                  isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  isBalanced ? 'text-green-600 dark:text-green-400' : 'text-destructive-600 dark:text-destructive-400'
                 }`} />
                 <p className={`font-semibold ${
-                  isBalanced ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                  isBalanced ? 'text-green-700 dark:text-green-300' : 'text-destructive-700 dark:text-destructive-300'
                 }`}>
                   {isBalanced ? '✅ Balance Cuadrado' : '⚠️ Balance Descuadrado'}
                 </p>
@@ -206,7 +208,7 @@ export const BalanceSheetView: React.FC = () => {
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
                   Total Activos
                 </span>
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-2xl font-bold text-info-600 dark:text-info-400">
                   ${balanceSheet.assets.total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </span>
               </div>
@@ -239,7 +241,7 @@ export const BalanceSheetView: React.FC = () => {
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
                   Total Pasivos
                 </span>
-                <span className="text-2xl font-bold text-red-600 dark:text-red-400">
+                <span className="text-2xl font-bold text-destructive-600 dark:text-destructive-400">
                   ${balanceSheet.liabilities.total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                 </span>
               </div>
@@ -287,11 +289,11 @@ export const BalanceSheetView: React.FC = () => {
           </div>
 
           {/* Interpretación */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+          <div className="bg-info-50 dark:bg-info-900/20 border border-info-200 dark:border-info-800 rounded-lg p-4">
+            <h4 className="font-semibold text-info-800 dark:text-info-200 mb-2">
               💡 ¿Qué significa esto?
             </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="text-sm text-info-700 dark:text-info-300">
               El Balance General muestra lo que tu negocio TIENE (activos), lo que DEBE (pasivos) y
               lo que realmente TE PERTENECE (patrimonio). Es como una foto de la salud financiera
               de tu negocio en este momento específico.
