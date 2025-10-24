@@ -58,7 +58,6 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
   // Validar el formulario
   const isFormValid = () => {
     if (!formData.name.trim()) return false
-    if (!formData.basePrice || parseFloat(formData.basePrice) <= 0) return false
 
     if (identifierType === 'sku' || identifierType === 'both') {
       if (!formData.sku?.trim()) return false
@@ -68,9 +67,12 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     }
 
     if (formData.saleType === 'weight') {
+      // Para productos por peso
       if (!formData.pricePerGram || parseFloat(formData.pricePerGram) <= 0) return false
       if (!formData.costPerGram || parseFloat(formData.costPerGram) <= 0) return false
     } else {
+      // Para productos por unidad
+      if (!formData.basePrice || parseFloat(formData.basePrice) <= 0) return false
       if (!formData.unitCost || parseFloat(formData.unitCost) <= 0) return false
     }
 
