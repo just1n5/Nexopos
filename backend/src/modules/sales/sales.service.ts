@@ -178,8 +178,9 @@ export class SalesService {
       for (const paymentDto of createSaleDto.payments) {
         const amount = toDecimal(paymentDto.amount);
         const receivedAmount = toDecimal(paymentDto.receivedAmount || paymentDto.amount);
-        const changeGiven = paymentDto.method === 'CASH' ? 
+        const changeGiven = paymentDto.method === 'CASH' ?
             toDecimal(Math.max(0, receivedAmount - amount)) : 0;
+        const changeAmount = toDecimal(Math.max(0, roundedTotalPayment - finalTotal));
 
         const payment = queryRunner.manager.create(Payment, {
           saleId: savedSale.id,
@@ -187,6 +188,7 @@ export class SalesService {
           status: PaymentStatus.COMPLETED,
           amount: amount,
           receivedAmount: receivedAmount,
+          changeAmount: changeAmount,
           changeGiven: changeGiven,
           transactionRef: paymentDto.transactionRef,
           notes: paymentDto.notes,

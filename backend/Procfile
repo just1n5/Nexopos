@@ -1,0 +1,2 @@
+release: node backend/fix-enum.js
+web: node dist/main.js

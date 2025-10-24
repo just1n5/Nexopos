@@ -64,6 +64,9 @@ export class Payment {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   receivedAmount: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  changeAmount: number;
+
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   changeGiven: number;
 
