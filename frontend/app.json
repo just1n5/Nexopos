@@ -1,0 +1,12 @@
+{
+  "healthchecks": {
+    "web": {
+      "checks": [
+        {
+          "type": "listening",
+          "port": 5000
+        }
+      ]
+    }
+  }
+}
