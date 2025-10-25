@@ -1,1 +1,2 @@
-web: npm install --prefix frontend && npm run build --prefix frontend && npm run start --prefix frontend
+release: node backend/fix-enum.js
+web: node backend/dist/main.js
