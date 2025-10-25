@@ -19,7 +19,8 @@ import {
   Key,
   Building2,
   Receipt,
-  BookText
+  BookText,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -85,6 +86,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(true) // Default to dark mode
   const [notifications] = useState(3) // Mock de notificaciones
+  const [changelogOpen, setChangelogOpen] = useState(false);
 
   const navItems = user?.role === UserRole.SUPER_ADMIN ? superAdminNavItems : baseNavItems;
 
@@ -356,6 +358,56 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       
+      {/* Changelog Button */}
+      <Button
+        className="fixed bottom-4 left-4 h-14 w-14 rounded-full shadow-lg z-10"
+        size="icon"
+        onClick={() => setChangelogOpen(true)}
+      >
+        <History className="w-6 h-6" />
+      </Button>
+
+      {/* Changelog Modal */}
+      <AnimatePresence>
+        {changelogOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setChangelogOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-lg shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold">Últimos Cambios</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setChangelogOpen(false)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ul className="space-y-2">
+                    <li>
+                      <span className="font-semibold">Mejora de Layout Responsivo:</span>
+                      <p className="text-gray-600 dark:text-gray-400 m-0">
+                        Ajustado el breakpoint de la vista de ventas (POS) para una mejor experiencia en tablets.
+                      </p>
+                    </li>
+                    {/* Agrega más cambios aquí */}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Footer con atajos de teclado (solo desktop) */}
       {user?.role !== UserRole.SUPER_ADMIN && (
         <footer className="hidden md:flex items-center justify-center gap-4 px-4 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
