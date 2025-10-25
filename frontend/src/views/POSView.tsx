@@ -439,9 +439,9 @@ export default function POSView() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-background">
+    <div className="flex flex-col md:flex-row h-screen bg-background">
       {/* Panel Izquierdo - Catálogo de Productos */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden ${isMobileCartOpen ? 'hidden md:flex' : ''}`}>
         {/* Header de busqueda y categorias */}
         <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 space-y-4 flex-shrink-0">
           <div className="flex gap-2">
@@ -541,7 +541,7 @@ export default function POSView() {
       </div>
 
       {/* Panel Derecho - Carrito de Compras */}
-      <div className={`w-full lg:w-[450px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 flex flex-col overflow-hidden ${!isMobileCartOpen ? 'hidden lg:flex' : ''}`}>
+      <div className={`w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 flex flex-col overflow-hidden ${!isMobileCartOpen ? 'hidden md:flex' : ''}`}>
         {/* Header del carrito */}
         <div className="px-3 py-2 border-b bg-primary text-white flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -551,7 +551,7 @@ export default function POSView() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsMobileCartOpen(false)}
-                  className="text-white hover:bg-white/20 lg:hidden"
+                  className="text-white hover:bg-white/20 md:hidden"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
@@ -756,7 +756,7 @@ export default function POSView() {
 
       {/* Boton flotante para movil */}
       <Button
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg lg:hidden z-10"
+        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg md:hidden z-10"
         size="icon"
         onClick={() => setIsMobileCartOpen(true)}
       >
