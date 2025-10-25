@@ -1,1 +1,1 @@
-web: npm run install:all && npm run start --prefix frontend
+web: cd frontend && npm install && npm run build && npm run start
