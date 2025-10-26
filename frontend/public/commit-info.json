@@ -1,0 +1,11 @@
+{
+  "commit": {
+    "hash": "0000000",
+    "message": "Describe aquí el cambio principal desplegado",
+    "author": "Equipo NexoPOS",
+    "date": "2024-01-01T00:00:00Z"
+  },
+  "changes": [
+    "Actualiza este listado con los últimos ajustes visibles en la aplicación."
+  ]
+}

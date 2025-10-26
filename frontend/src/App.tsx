@@ -20,7 +20,9 @@ import {
   Building2,
   Receipt,
   BookText,
-  History
+  History,
+  GitCommit,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -86,7 +88,18 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(true) // Default to dark mode
   const [notifications] = useState(3) // Mock de notificaciones
-  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false)
+  const [commitInfo, setCommitInfo] = useState<{
+    commit?: {
+      hash: string
+      message: string
+      author?: string
+      date?: string
+    }
+    changes?: string[]
+  } | null>(null)
+  const [commitInfoError, setCommitInfoError] = useState<string | null>(null)
+  const [isLoadingCommitInfo, setIsLoadingCommitInfo] = useState(false)
 
   const navItems = user?.role === UserRole.SUPER_ADMIN ? superAdminNavItems : baseNavItems;
 
@@ -362,7 +375,30 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       <Button
         className="fixed bottom-4 left-4 h-14 w-14 rounded-full shadow-lg z-10"
         size="icon"
-        onClick={() => setChangelogOpen(true)}
+        onClick={() => {
+          setChangelogOpen(true)
+          if (commitInfo || isLoadingCommitInfo) return
+
+          setIsLoadingCommitInfo(true)
+          setCommitInfoError(null)
+
+          fetch(`/commit-info.json?ts=${Date.now()}`)
+            .then(async response => {
+              if (!response.ok) {
+                throw new Error('No se pudo obtener el archivo commit-info.json')
+              }
+              return response.json()
+            })
+            .then(data => {
+              setCommitInfo(data)
+            })
+            .catch(() => {
+              setCommitInfoError('No se pudo cargar la información del commit.')
+            })
+            .finally(() => {
+              setIsLoadingCommitInfo(false)
+            })
+        }}
       >
         <History className="w-6 h-6" />
       </Button>
@@ -391,16 +427,74 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ul className="space-y-2">
-                    <li>
-                      <span className="font-semibold">Mejora de Layout Responsivo:</span>
-                      <p className="text-gray-600 dark:text-gray-400 m-0">
-                        Ajustado el breakpoint de la vista de ventas (POS) para una mejor experiencia en tablets.
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/40">
+                    <div className="flex items-center gap-3 mb-2">
+                      <GitCommit className="w-5 h-5 text-primary" />
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        Información del commit
                       </p>
-                    </li>
-                    {/* Agrega más cambios aquí */}
-                  </ul>
+                    </div>
+                    {isLoadingCommitInfo && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Cargando información…
+                      </div>
+                    )}
+                    {!isLoadingCommitInfo && commitInfo && commitInfo.commit && (
+                      <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <div>
+                          <dt className="font-medium text-gray-900 dark:text-white">Hash</dt>
+                          <dd className="font-mono break-all text-xs">
+                            {commitInfo.commit.hash}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-gray-900 dark:text-white">Mensaje</dt>
+                          <dd>{commitInfo.commit.message}</dd>
+                        </div>
+                        {commitInfo.commit.author && (
+                          <div>
+                            <dt className="font-medium text-gray-900 dark:text-white">Autor</dt>
+                            <dd>{commitInfo.commit.author}</dd>
+                          </div>
+                        )}
+                        {commitInfo.commit.date && (
+                          <div>
+                            <dt className="font-medium text-gray-900 dark:text-white">Fecha</dt>
+                            <dd>{new Date(commitInfo.commit.date).toLocaleString()}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    )}
+                    {!isLoadingCommitInfo && !commitInfo && !commitInfoError && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No hay datos de commit disponibles. Asegúrate de publicar <code className="font-mono text-xs">commit-info.json</code> en <code className="font-mono text-xs">frontend/public</code>.
+                      </p>
+                    )}
+                    {commitInfoError && (
+                      <p className="text-sm text-red-500">
+                        {commitInfoError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <h3 className="m-0 text-base font-semibold">Últimos cambios</h3>
+                    {commitInfo?.changes?.length ? (
+                      <ul className="space-y-2">
+                        {commitInfo.changes.map((change, index) => (
+                          <li key={index} className="text-gray-600 dark:text-gray-300">
+                            {change}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-400 m-0">
+                        Publica los cambios recientes en el archivo <code className="font-mono text-xs">commit-info.json</code> para mostrarlos aquí.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
