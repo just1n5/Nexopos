@@ -1,4 +1,4 @@
-﻿import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Printer, Download, Share2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,7 @@ export default function Receipt({ sale, onClose, showActions = true }: ReceiptPr
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
 
-  const payments = sale.payments ?? []
+  const payments = useMemo(() => sale.payments ?? [], [sale.payments]);
   const primaryMethod = sale.primaryPaymentMethod ?? sale.paymentMethod
   const primaryPaymentName = PAYMENT_LABELS[primaryMethod] ?? 'Otro'
   const fallbackDate = sale.createdAt ?? sale.date

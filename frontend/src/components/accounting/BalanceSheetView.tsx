@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, Calendar, Loader2, TrendingUp } from 'lucide-react';
 import { useAccountingStore } from '@/stores/accountingStore';
 import { exportBalanceSheetToExcel, downloadBlob } from '@/services/accountingService';
@@ -28,10 +28,13 @@ export const BalanceSheetView: React.FC = () => {
     return today.toISOString().split('T')[0];
   });
 
+  const hasRequestedInitialLoad = useRef(false);
+
   useEffect(() => {
-    // Cargar balance del día actual al montar
+    if (hasRequestedInitialLoad.current) return;
     loadBalanceSheet(date);
-  }, []);
+    hasRequestedInitialLoad.current = true;
+  }, [date, loadBalanceSheet]);
 
   const handleGenerateReport = () => {
     loadBalanceSheet(date);

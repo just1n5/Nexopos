@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Settings,
@@ -126,13 +126,7 @@ export default function SettingsView() {
   }
 
   // Cargar usuarios cuando se abre la pestaña
-  useEffect(() => {
-    if (activeTab === 'users' && token) {
-      loadUsers()
-    }
-  }, [activeTab, token])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     if (!token) return
 
     setLoadingUsers(true)
@@ -148,7 +142,12 @@ export default function SettingsView() {
     } finally {
       setLoadingUsers(false)
     }
-  }
+  }, [token, toast])
+
+  useEffect(() => {
+    if (activeTab !== 'users') return
+    loadUsers()
+  }, [activeTab, loadUsers])
 
   const handleCreateUser = async (data: CreateUserDto | UpdateUserDto) => {
     if (!token) return
@@ -718,4 +717,3 @@ export default function SettingsView() {
     </div>
   )
 }
-

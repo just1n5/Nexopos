@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   TrendingUp,
@@ -58,12 +58,6 @@ export default function ReportsView() {
   const [cashRegisterReport, setCashRegisterReport] = useState<CashRegisterReport | null>(null)
   const [movementsReport, setMovementsReport] = useState<InventoryMovementsReport | null>(null)
   
-  useEffect(() => {
-    if (token) {
-      loadReports()
-    }
-  }, [token, dateRange])
-
   // Deshabilitar navegación con PageDown/PageUp en tabs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,7 +70,8 @@ export default function ReportsView() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
   
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
+    if (!token) return
     try {
       setLoading(true)
 
@@ -104,12 +99,12 @@ export default function ReportsView() {
 
       // Cargar todos los reportes en paralelo
       const [sales, products, customers, inventory, cashRegister, movements] = await Promise.all([
-        reportsService.getSalesReport(token!, filters),
-        reportsService.getProductsReport(token!, filters),
-        reportsService.getCustomersReport(token!, filters),
-        reportsService.getInventoryReport(token!),
-        reportsService.getCashRegisterReport(token!, filters),
-        reportsService.getInventoryMovementsReport(token!, filters)
+        reportsService.getSalesReport(token, filters),
+        reportsService.getProductsReport(token, filters),
+        reportsService.getCustomersReport(token, filters),
+        reportsService.getInventoryReport(token),
+        reportsService.getCashRegisterReport(token, filters),
+        reportsService.getInventoryMovementsReport(token, filters)
       ])
 
       setSalesReport(sales)
@@ -128,7 +123,11 @@ export default function ReportsView() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange, token, toast])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
   
   const handleDownloadExcel = (reportType: 'sales' | 'products' | 'customers' | 'inventory' | 'movements') => {
     try {

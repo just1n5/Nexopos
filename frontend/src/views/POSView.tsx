@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
@@ -111,14 +111,10 @@ export default function POSView() {
   }, [token, fetchProducts, fetchCategories])
   
   // Obtener productos filtrados
-  const filteredProducts = useMemo(() => {
-    return getFilteredProducts().filter(p => p.isActive)
-  }, [searchQuery, selectedCategory, products])
+  const filteredProducts = getFilteredProducts().filter(p => p.isActive)
   
   // Obtener categorias
-  const categories = useMemo(() => {
-    return getCategories()
-  }, [products])
+  const categories = getCategories()
 
   // Calcular el cambio
   const calculateChange = () => {

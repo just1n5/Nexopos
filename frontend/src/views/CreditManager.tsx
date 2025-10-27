@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign,
@@ -50,20 +50,15 @@ export default function CreditManager() {
     overdueCount: 0
   })
 
-  useEffect(() => {
-    if (token) {
-      loadCreditData()
-    }
-  }, [token, filterStatus])
-
-  const loadCreditData = async () => {
+  const loadCreditData = useCallback(async () => {
+    if (!token) return
     try {
       setLoading(true)
       const status = filterStatus === 'all' ? undefined : filterStatus
-      const sales = await creditService.getCreditSales(token!, { status })
+      const sales = await creditService.getCreditSales(token, { status })
       setCreditSales(sales)
       
-      const summaryData = await creditService.getCreditSummary(token!)
+      const summaryData = await creditService.getCreditSummary(token)
       setSummary(summaryData)
     } catch (error) {
       console.error('Error loading credit data:', error)
@@ -75,7 +70,12 @@ export default function CreditManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token, filterStatus, toast])
+
+  useEffect(() => {
+    if (!token) return
+    loadCreditData()
+  }, [token, loadCreditData])
 
   // Filtrar ventas por búsqueda
   const filteredSales = creditSales.filter(sale => {

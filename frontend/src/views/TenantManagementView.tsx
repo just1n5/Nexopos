@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2,
@@ -63,9 +63,23 @@ export default function TenantManagementView() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0); // en segundos
   const [isOtpExpired, setIsOtpExpired] = useState(false);
 
+  const loadTenants = useCallback(async () => {
+    if (!token) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await tenantManagementService.getAllTenants(token);
+      setTenants(data);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar los tenants');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
     loadTenants();
-  }, []);
+  }, [loadTenants]);
 
   // Contador regresivo para OTP
   useEffect(() => {
@@ -99,20 +113,6 @@ export default function TenantManagementView() {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const loadTenants = async () => {
-    if (!token) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await tenantManagementService.getAllTenants(token);
-      setTenants(data);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar los tenants');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleResendOtp = async () => {

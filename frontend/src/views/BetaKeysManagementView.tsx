@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Key,
@@ -58,11 +58,7 @@ export default function BetaKeysManagementView() {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     setError(null);
@@ -78,7 +74,11 @@ export default function BetaKeysManagementView() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleGenerateKeys = async () => {
     if (!token || generateCount < 1 || generateCount > 100) {

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Camera, Keyboard, CheckCircle, AlertCircle, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -97,7 +97,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   }, [])
 
   // Iniciar escáner de códigos de barras
-  const startScanner = async () => {
+  const startScanner = useCallback(async () => {
     // Evitar múltiples inicializaciones simultáneas
     if (isInitializing || isScanning) {
       console.log('Scanner ya está inicializando o escaneando, saltando...')
@@ -404,10 +404,10 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         variant: "destructive"
       })
     }
-  }
+  }, [cameras, hasCamera, isInitializing, isScanning, lastScannedCode, onClose, onScan, selectedCameraId, toast])
 
   // Detener escáner
-  const stopScanner = async () => {
+  const stopScanner = useCallback(async () => {
     if (html5QrcodeRef.current) {
       try {
         const state = html5QrcodeRef.current.getState()
@@ -442,7 +442,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         setIsInitializing(false)
       }
     }
-  }
+  }, [])
 
   // Cambiar modo o cámara seleccionada
   useEffect(() => {
@@ -468,8 +468,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, selectedCameraId])
+  }, [isScanning, mode, selectedCameraId, startScanner, stopScanner])
 
   // Limpiar al desmontar
   useEffect(() => {
@@ -634,7 +633,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                       className="w-full"
                       onClick={async () => {
                         await stopScanner()
-                        // El useEffect reiniciará con la nueva cámara
+                        // El useEffect, useCallback reiniciará con la nueva cámara
                       }}
                     >
                       <Camera className="w-4 h-4 mr-2" />

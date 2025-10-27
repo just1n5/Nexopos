@@ -135,7 +135,7 @@ export default function RegisterView() {
     setError(null);
 
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const { confirmPassword: _confirmPassword, ...registerData } = formData;
       const response = await authService.register(registerData);
 
       // Usar el método login del store para guardar el token y usuario
