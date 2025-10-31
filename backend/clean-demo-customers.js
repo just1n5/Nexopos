@@ -40,8 +40,8 @@ async function cleanDemoCustomers() {
           c."lastName",
           c."businessName",
           COUNT(cr.id) as credit_count
-        FROM customer c
-        LEFT JOIN credit cr ON cr."customerId" = c.id
+        FROM "customer" c
+        LEFT JOIN "credit" cr ON cr."customerId" = c.id
         WHERE c."documentType" = $1 AND c."documentNumber" = $2
         GROUP BY c.id, c."firstName", c."lastName", c."businessName"
       `;
@@ -63,21 +63,21 @@ async function cleanDemoCustomers() {
           const deletePaymentsQuery = `
             DELETE FROM "credit-payment"
             WHERE "creditId" IN (
-              SELECT id FROM credit WHERE "customerId" = $1
+              SELECT id FROM "credit" WHERE "customerId" = $1
             )
           `;
           const deletePaymentsResult = await client.query(deletePaymentsQuery, [customerData.id]);
           console.log(`   ✓ ${deletePaymentsResult.rowCount} pago(s) eliminado(s)`);
 
           // Luego eliminar los créditos
-          const deleteCreditsQuery = `DELETE FROM credit WHERE "customerId" = $1`;
+          const deleteCreditsQuery = `DELETE FROM "credit" WHERE "customerId" = $1`;
           const deleteCreditsResult = await client.query(deleteCreditsQuery, [customerData.id]);
           console.log(`   ✓ ${deleteCreditsResult.rowCount} crédito(s) eliminado(s)`);
         }
 
         // Finalmente eliminar el cliente
         const deleteCustomerQuery = `
-          DELETE FROM customer
+          DELETE FROM "customer"
           WHERE "documentType" = $1 AND "documentNumber" = $2
         `;
 
