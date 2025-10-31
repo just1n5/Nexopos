@@ -382,6 +382,7 @@ export default function InventoryView() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b dark:border-gray-700">
+                      <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">Imagen</th>
                       <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">Producto</th>
                       <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">SKU</th>
                       <th className="text-right p-2 font-medium text-gray-700 dark:text-gray-300">Costo</th>
@@ -411,6 +412,21 @@ export default function InventoryView() {
 
                       return (
                         <tr key={product.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <td className="p-2">
+                            <div className="flex items-center justify-center">
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className="w-12 h-12 object-cover rounded border border-gray-200 dark:border-gray-700"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                  <Package className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
                           <td className="p-2">
                             <div>
                               <p className="font-medium dark:text-gray-100">{product.name}</p>
