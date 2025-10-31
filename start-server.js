@@ -24,6 +24,19 @@ if (!fs.existsSync(mainPath)) {
       stdio: 'inherit'
     });
     console.log('✅ Backend compiled successfully');
+
+    // Debug: listar archivos en dist
+    console.log('\n📁 Files in backend/dist after build:');
+    try {
+      const distFiles = execSync('ls -la dist/', {
+        cwd: backendPath,
+        encoding: 'utf-8'
+      });
+      console.log(distFiles);
+    } catch (e) {
+      console.error('Could not list dist files:', e.message);
+    }
+
   } catch (error) {
     console.error('❌ Failed to compile backend:', error.message);
     process.exit(1);
@@ -33,6 +46,18 @@ if (!fs.existsSync(mainPath)) {
 // Verificar nuevamente si el archivo existe
 if (!fs.existsSync(mainPath)) {
   console.error('❌ main.js still not found after compilation!');
+  console.error('Expected path:', mainPath);
+  // Listar lo que hay en backend
+  console.log('\n📁 Files in backend root:');
+  try {
+    const backendFiles = execSync('ls -la', {
+      cwd: backendPath,
+      encoding: 'utf-8'
+    });
+    console.log(backendFiles);
+  } catch (e) {
+    console.error('Could not list backend files:', e.message);
+  }
   process.exit(1);
 }
 
