@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { Request, Response, NextFunction } from 'express';
+import * as express from 'express';
 
 async function bootstrap() {
   console.log('Starting bootstrap process...');
@@ -66,8 +67,18 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   console.log('Swagger documentation configured.');
 
-  // SPA Fallback - Middleware para servir index.html en rutas del frontend
+  // Configurar archivos estáticos del frontend manualmente
   const expressApp = app.getHttpAdapter().getInstance();
+  const frontendDistPath = join(__dirname, '..', '..', 'frontend', 'dist');
+
+  // Servir archivos estáticos del frontend (CSS, JS, imágenes, etc.)
+  expressApp.use(express.static(frontendDistPath, {
+    index: false, // No servir index.html automáticamente
+    maxAge: '1d'
+  }));
+  console.log('Frontend static files configured:', frontendDistPath);
+
+  // SPA Fallback - Middleware para servir index.html en rutas del frontend
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
     // Solo manejar GET requests
     if (req.method !== 'GET') {
@@ -79,14 +90,14 @@ async function bootstrap() {
       return next();
     }
 
-    // Excluir archivos estáticos (tienen extensión)
-    if (req.path.match(/\.[a-zA-Z0-9]+$/)) {
-      return next();
-    }
-
-    // Servir index.html para rutas del frontend (SPA routing)
-    const indexPath = join(__dirname, '..', '..', 'frontend', 'dist', 'index.html');
-    res.sendFile(indexPath);
+    // Servir index.html para todas las rutas del frontend (SPA routing)
+    const indexPath = join(frontendDistPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        next();
+      }
+    });
   });
   console.log('SPA fallback middleware configured.');
 

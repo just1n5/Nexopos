@@ -27,10 +27,7 @@ import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..' , 'frontend', 'dist'),
-      exclude: ['/api*', '/uploads*'],
-    }),
+    // Frontend se sirve desde main.ts para manejar SPA routing
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'uploads'),
       serveRoot: '/uploads',
