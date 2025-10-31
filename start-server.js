@@ -10,10 +10,21 @@ const fs = require('fs');
 console.log('🚀 Starting NexoPOS backend...');
 
 const backendPath = path.join(__dirname, 'backend');
-const mainPath = path.join(backendPath, 'dist', 'main.js');
+let mainPath = path.join(backendPath, 'dist', 'main.js');
 
-console.log('Main file path:', mainPath);
-console.log('File exists?', fs.existsSync(mainPath));
+// Check if files are in dist/src/ instead of dist/
+const altMainPath = path.join(backendPath, 'dist', 'src', 'main.js');
+
+console.log('Checking main file at:', mainPath);
+console.log('Exists?', fs.existsSync(mainPath));
+console.log('Checking alt path:', altMainPath);
+console.log('Exists?', fs.existsSync(altMainPath));
+
+// Use the path that exists
+if (fs.existsSync(altMainPath)) {
+  console.log('✅ Using alt path:', altMainPath);
+  mainPath = altMainPath;
+}
 
 // Si el archivo compilado no existe, compilar ahora
 if (!fs.existsSync(mainPath)) {
@@ -63,7 +74,13 @@ if (!fs.existsSync(mainPath)) {
 
 // Iniciar el servidor
 console.log('✅ Starting server...');
-const server = spawn('node', ['dist/main.js'], {
+console.log('Server path:', mainPath);
+
+// Determine the relative path from backend directory
+const relativeMainPath = path.relative(backendPath, mainPath);
+console.log('Relative path:', relativeMainPath);
+
+const server = spawn('node', [relativeMainPath], {
   cwd: backendPath,
   stdio: 'inherit',
   env: process.env
