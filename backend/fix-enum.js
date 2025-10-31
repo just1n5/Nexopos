@@ -2,8 +2,15 @@
 
 const { Pool } = require('pg');
 
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.log('Skipping enum migration: DATABASE_URL not set.');
+  process.exit(0);
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: {
     rejectUnauthorized: false,
   },

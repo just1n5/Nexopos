@@ -10,9 +10,12 @@ if (!DB_URL) {
 
 console.log('Conectando a la base de datos...');
 
+// Detectar si necesita SSL (Render, Heroku, etc.)
+const needsSSL = DB_URL.includes('render.com') || DB_URL.includes('heroku.com') || DB_URL.includes('amazonaws.com');
+
 const pool = new Pool({
   connectionString: DB_URL,
-  ssl: false,
+  ssl: needsSSL ? { rejectUnauthorized: false } : false,
   options: '-c search_path=public'
 });
 
