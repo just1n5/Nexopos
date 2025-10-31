@@ -25,6 +25,7 @@ type ApiProduct = {
   barcode?: string | null
   categoryId?: string | null
   categoryName?: string | null
+  imageUrl?: string | null
   createdAt?: string | null
   updatedAt?: string | null
   variants?: ApiProductVariant[] | null
@@ -63,7 +64,7 @@ const mapProduct = (item: ApiProduct): Product => {
   const variants = Array.isArray(item.variants)
     ? item.variants.map((variant) => mapVariant(variant, item.id, basePrice))
     : []
-  
+
   const stock =
     variants.length > 0
       ? variants.reduce((sum, variant) => sum + Number(variant.stock ?? 0), 0)
@@ -79,7 +80,7 @@ const mapProduct = (item: ApiProduct): Product => {
     price: basePrice,
     stock,
     category: item.categoryName ?? 'General',
-    image: undefined,
+    image: item.imageUrl ?? undefined,
     tax: 0,
     variants,
     barcode: item.barcode ?? undefined,
@@ -205,6 +206,20 @@ class ProductsService {
 
     const payload = await parseResponse<ApiProduct[]>(response, 'Error al obtener productos por categoría')
     return payload.map(mapProduct)
+  }
+
+  async uploadProductImage(file: File, token: string): Promise<{ imageUrl: string }> {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    const response = await apiFetch('/products/upload-image', {
+      method: 'POST',
+      body: formData,
+      token,
+      skipContentType: true // Let browser set multipart/form-data boundary
+    })
+
+    return parseResponse<{ imageUrl: string }>(response, 'Error al subir la imagen')
   }
 }
 

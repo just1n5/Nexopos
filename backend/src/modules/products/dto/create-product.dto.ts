@@ -33,6 +33,11 @@ export class CreateProductDto {
   @MaxLength(80)
   barcode?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

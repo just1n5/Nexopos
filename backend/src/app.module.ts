@@ -29,7 +29,11 @@ import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.
   imports: [
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..' , 'frontend', 'dist'),
-      exclude: ['/api*'],
+      exclude: ['/api*', '/uploads*'],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
     ConfigModule.forRoot({
       isGlobal: true,

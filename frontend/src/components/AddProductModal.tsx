@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Save, Camera, Package, DollarSign, Hash, Barcode, CheckCircle2 } from 'lucide-react'
+import { X, Save, Camera, Package, DollarSign, Hash, Barcode, CheckCircle2, Image as ImageIcon, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/useToast'
 import BarcodeScanner from './BarcodeScanner'
+import { productsService } from '@/services/productsService'
+import { useAuthStore } from '@/stores/authStore'
 
 interface AddProductModalProps {
   onClose: () => void
@@ -26,6 +28,7 @@ export interface NewProductData {
   unitCost?: string
   costPerGram?: string
   weightUnit?: 'GRAM' | 'KILO' | 'POUND'
+  imageUrl?: string
 }
 
 type IdentifierType = 'sku' | 'barcode' | 'both'
@@ -43,14 +46,19 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     tax: '19',
     unitCost: '',
     costPerGram: '',
-    weightUnit: 'KILO'
+    weightUnit: 'KILO',
+    imageUrl: ''
   })
 
   const [identifierType, setIdentifierType] = useState<IdentifierType>('both')
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const { toast } = useToast()
+  const { token } = useAuthStore()
 
   // Calcular errores en tiempo real
   const validateFields = (data: NewProductData) => {
@@ -168,6 +176,48 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     })
   }
 
+  // Manejar selección de imagen
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Archivo inválido",
+        description: "Por favor selecciona una imagen (JPG, PNG, WebP)",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validar tamaño (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Imagen muy grande",
+        description: "El tamaño máximo es 5MB",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setImageFile(file)
+
+    // Crear preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Limpiar imagen seleccionada
+  const handleClearImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setFormData({ ...formData, imageUrl: '' })
+  }
+
   // Manejar guardado
   const handleSave = async () => {
     if (!isFormValid()) {
@@ -181,8 +231,33 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
     setIsSaving(true)
     try {
+      let imageUrl = formData.imageUrl
+
+      // Subir imagen primero si hay una seleccionada
+      if (imageFile && token) {
+        setIsUploadingImage(true)
+        try {
+          const result = await productsService.uploadProductImage(imageFile, token)
+          imageUrl = result.imageUrl
+          toast({
+            title: "✓ Imagen cargada",
+            description: "La imagen se optimizó correctamente",
+            variant: "default" as any
+          })
+        } catch (error) {
+          console.error('Error subiendo imagen:', error)
+          toast({
+            title: "Advertencia",
+            description: "No se pudo subir la imagen, pero se guardará el producto sin ella",
+            variant: "default" as any
+          })
+        } finally {
+          setIsUploadingImage(false)
+        }
+      }
+
       // Preparar datos según el tipo de identificador seleccionado
-      const dataToSave: NewProductData = { ...formData }
+      const dataToSave: NewProductData = { ...formData, imageUrl }
 
       if (identifierType === 'sku') {
         delete dataToSave.barcode
@@ -315,6 +390,65 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                     placeholder="Ej: Camiseta de algodón 100%, talla M"
                     className="h-11"
                   />
+                </div>
+
+                {/* Imagen del Producto */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-gray-700" />
+                    Imagen del Producto (Opcional)
+                  </label>
+
+                  {!imagePreview ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="product-image-input"
+                      />
+                      <label
+                        htmlFor="product-image-input"
+                        className="cursor-pointer flex flex-col items-center gap-3"
+                      >
+                        <div className="p-3 bg-primary/10 rounded-full">
+                          <Upload className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            Haz clic para subir una imagen
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            JPG, PNG o WebP (máx. 5MB)
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={handleClearImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-xs">
+                        {imageFile?.name}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    La imagen se optimizará automáticamente al guardar
+                  </p>
                 </div>
               </div>
 
@@ -571,7 +705,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"
                       />
-                      Guardando...
+                      {isUploadingImage ? 'Subiendo imagen...' : 'Guardando...'}
                     </>
                   ) : (
                     <>

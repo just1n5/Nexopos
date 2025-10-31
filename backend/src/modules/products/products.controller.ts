@@ -7,9 +7,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  UseGuards
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../users/guards/permissions.guard';
 import { Permissions, Permission } from '../users/decorators/permissions.decorator';
@@ -19,19 +22,44 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
+import { UploadService } from '../upload/upload.service';
 
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Post()
   @Permissions(Permission.PRODUCTS_CREATE)
   @ApiCreatedResponse({ description: 'Creates a new product along with its variants.' })
   create(@Body() createProductDto: CreateProductDto, @CurrentUser() user: User) {
     return this.productsService.create(createProductDto, user.tenantId);
+  }
+
+  @Post('upload-image')
+  @Permissions(Permission.PRODUCTS_CREATE)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({ description: 'Uploads and optimizes a product image.' })
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    const imageUrl = await this.uploadService.uploadProductImage(file);
+    return { imageUrl };
   }
 
   @Get()
