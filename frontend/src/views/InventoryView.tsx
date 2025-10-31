@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, RefreshCw, AlertCircle, X, Edit } from 'lucide-react';
+import { Package, Plus, Search, RefreshCw, AlertCircle, X, Edit, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -72,6 +72,7 @@ type NewProductFormState = {
   stock: string;
   saleType: 'unit' | 'weight';
   pricePerGram?: string;
+  imageUrl?: string;
   variants: [];
 };
 
@@ -131,11 +132,19 @@ export default function InventoryView() {
     description: '',
     sku: '',
     basePrice: '',
+    unitCost: '',
+    costPerGram: '',
     stock: '',
     saleType: 'unit',
     pricePerGram: '',
+    imageUrl: '',
     variants: []
   });
+
+  // Estados para manejo de imagen en edición
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     if (!token) return;
@@ -255,6 +264,48 @@ export default function InventoryView() {
 
     setShowAddModal(false);
     await fetchProducts();
+  };
+
+  // Manejar selección de imagen para edición
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Archivo inválido',
+        description: 'Por favor selecciona una imagen (JPG, PNG, WebP)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validar tamaño (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Imagen muy grande',
+        description: 'El tamaño máximo es 5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setImageFile(file);
+
+    // Crear preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Limpiar imagen seleccionada
+  const handleClearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setEditForm({ ...editForm, imageUrl: '' });
   };
 
   const filteredProducts = useMemo(() => {
@@ -422,11 +473,21 @@ export default function InventoryView() {
                                     description: product.description || '',
                                     sku: product.sku,
                                     basePrice: product.price.toString(),
+                                    unitCost: product.cost.toString(),
+                                    costPerGram: product.costPerGram?.toString() || '',
                                     stock: product.totalStock.toString(),
-                                    saleType: product.saleType as 'unit' | 'weight',
+                                    saleType: product.saleType.toLowerCase() as 'unit' | 'weight',
                                     pricePerGram: product.pricePerGram?.toString() || '',
+                                    imageUrl: product.imageUrl || '',
                                     variants: []
                                   });
+                                  // Limpiar estados de imagen
+                                  setImageFile(null);
+                                  setImagePreview(null);
+                                  // Si hay imagen existente, mostrarla en preview
+                                  if (product.imageUrl) {
+                                    setImagePreview(product.imageUrl);
+                                  }
                                   setShowEditModal(true);
                                 }}
                               >
@@ -586,8 +647,71 @@ export default function InventoryView() {
                           }
                         }}
                         placeholder="0.00"
+                        step="0.01"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      {editForm.saleType === 'weight' ? 'Costo por gramo' : 'Costo unitario'}
+                    </label>
+                    <Input
+                      type="number"
+                      value={editForm.saleType === 'weight' ? editForm.costPerGram : editForm.unitCost}
+                      onChange={(e) => {
+                        if (editForm.saleType === 'weight') {
+                          setEditForm({ ...editForm, costPerGram: e.target.value });
+                        } else {
+                          setEditForm({ ...editForm, unitCost: e.target.value });
+                        }
+                      }}
+                      placeholder="0.00"
+                      step="0.01"
+                    />
+                  </div>
+
+                  {/* Imagen del Producto */}
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      Imagen del Producto (Opcional)
+                    </label>
+                    {!imagePreview ? (
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary transition-colors bg-gray-50 dark:bg-gray-900">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                        />
+                        <div className="flex flex-col items-center">
+                          <Upload className="w-6 h-6 text-primary" />
+                          <span className="mt-2 text-sm text-gray-600 dark:text-gray-400">Haz clic para seleccionar una imagen</span>
+                          <span className="mt-1 text-xs text-gray-500">JPG, PNG o WebP (máx. 5MB)</span>
+                        </div>
+                      </label>
+                    ) : (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="absolute top-2 right-2"
+                          onClick={handleClearImage}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                        {imageFile && (
+                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{imageFile.name}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t">
@@ -599,27 +723,65 @@ export default function InventoryView() {
                         }
 
                         try {
+                          let imageUrl = editForm.imageUrl;
+
+                          // Subir imagen primero si hay una nueva seleccionada
+                          if (imageFile && token) {
+                            setIsUploadingImage(true);
+                            try {
+                              const result = await productsService.uploadProductImage(imageFile, token);
+                              imageUrl = result.imageUrl;
+                              toast({
+                                title: '✓ Imagen cargada',
+                                description: 'La imagen se optimizó correctamente',
+                                variant: 'default' as any
+                              });
+                            } catch (error) {
+                              console.error('Error subiendo imagen:', error);
+                              toast({
+                                title: 'Advertencia',
+                                description: 'No se pudo subir la imagen, pero se guardará el producto sin actualizar la imagen',
+                                variant: 'default' as any
+                              });
+                            } finally {
+                              setIsUploadingImage(false);
+                            }
+                          }
+
                           const updatePayload: any = {
                             name: editForm.name,
                             description: cleanDescription(editForm.description) || undefined,
                             sku: editForm.sku,
-                            saleType: editForm.saleType.toUpperCase()
+                            saleType: editForm.saleType.toUpperCase(),
+                            imageUrl: imageUrl || undefined
                           };
 
                           if (editForm.saleType === 'weight') {
                             const pricePerGram = parseDecimalInput(editForm.pricePerGram || '0');
+                            const costPerGram = parseDecimalInput(editForm.costPerGram || '0');
                             if (pricePerGram <= 0) {
                               toast({ title: 'Error', description: 'El precio por gramo debe ser mayor a cero', variant: 'destructive' });
                               return;
                             }
+                            if (costPerGram <= 0) {
+                              toast({ title: 'Error', description: 'El costo por gramo debe ser mayor a cero', variant: 'destructive' });
+                              return;
+                            }
                             updatePayload.pricePerGram = pricePerGram;
+                            updatePayload.costPerGram = costPerGram;
                           } else {
                             const basePrice = parseDecimalInput(editForm.basePrice);
+                            const unitCost = parseDecimalInput(editForm.unitCost || '0');
                             if (basePrice <= 0) {
                               toast({ title: 'Error', description: 'El precio debe ser mayor a cero', variant: 'destructive' });
                               return;
                             }
+                            if (unitCost <= 0) {
+                              toast({ title: 'Error', description: 'El costo unitario debe ser mayor a cero', variant: 'destructive' });
+                              return;
+                            }
                             updatePayload.basePrice = basePrice;
+                            updatePayload.unitCost = unitCost;
                           }
 
                           await productsService.updateProduct(selectedProductForEdit.id, updatePayload, token!);
@@ -627,6 +789,9 @@ export default function InventoryView() {
                           toast({ title: 'Producto actualizado', description: 'Los cambios se han guardado correctamente' });
                           setShowEditModal(false);
                           setSelectedProductForEdit(null);
+                          // Limpiar estados de imagen
+                          setImageFile(null);
+                          setImagePreview(null);
                           await fetchProducts();
                         } catch (error) {
                           console.error('Error actualizando producto:', error);
@@ -634,8 +799,9 @@ export default function InventoryView() {
                         }
                       }}
                       className="flex-1"
+                      disabled={isUploadingImage}
                     >
-                      Guardar Cambios
+                      {isUploadingImage ? 'Subiendo imagen...' : 'Guardar Cambios'}
                     </Button>
                     <Button variant="outline" onClick={() => { setShowEditModal(false); setSelectedProductForEdit(null); }}>
                       Cancelar
