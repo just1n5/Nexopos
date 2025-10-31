@@ -38,6 +38,34 @@ export class CashRegisterService {
       throw new ConflictException('You already have an open cash register session');
     }
 
+    // Check if user already closed a cash register today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const closedToday = await this.cashRegisterRepository.findOne({
+      where: {
+        userId,
+        status: CashRegisterStatus.CLOSED,
+      },
+      order: {
+        closedAt: 'DESC'
+      }
+    });
+
+    // Verificar si el cierre fue hoy
+    if (closedToday && closedToday.closedAt) {
+      const closedDate = new Date(closedToday.closedAt);
+      if (closedDate >= startOfDay && closedDate <= endOfDay) {
+        throw new ConflictException(
+          `Ya cerraste una caja hoy (${closedToday.sessionNumber} cerrada a las ${closedDate.toLocaleTimeString('es-CO')}). ` +
+          'Solo puedes cerrar caja una vez por día. Podrás abrir una nueva caja mañana.'
+        );
+      }
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
