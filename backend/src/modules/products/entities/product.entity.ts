@@ -47,6 +47,9 @@ export class Product {
   @Column({ length: 80, nullable: true })
   barcode?: string;
 
+  @Column({ length: 500, nullable: true })
+  imageUrl?: string;
+
   @Column('decimal', { precision: 12, scale: 2 })
   basePrice: number;
 

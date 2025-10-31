@@ -35,6 +35,7 @@ type ApiProduct = {
   basePrice: number | string;
   unitCost?: number | string;
   costPerGram?: number;
+  imageUrl?: string;
   status: string;
   saleType: string;
   pricePerGram?: number;
@@ -52,6 +53,7 @@ type InventoryRow = {
   price: number;
   cost: number;
   costPerGram?: number;
+  imageUrl?: string;
   status: string;
   saleType: string;
   pricePerGram?: number;
@@ -170,6 +172,7 @@ export default function InventoryView() {
           price: Number(item.basePrice ?? 0),
           cost: Number(item.unitCost ?? 0),
           costPerGram: item.costPerGram,
+          imageUrl: item.imageUrl,
           status: item.status,
           saleType: item.saleType,
           pricePerGram: item.pricePerGram,
