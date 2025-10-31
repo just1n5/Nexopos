@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
+import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   console.log('Starting bootstrap process...');
@@ -63,6 +65,30 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
   console.log('Swagger documentation configured.');
+
+  // SPA Fallback - Middleware para servir index.html en rutas del frontend
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use((req: Request, res: Response, next: NextFunction) => {
+    // Solo manejar GET requests
+    if (req.method !== 'GET') {
+      return next();
+    }
+
+    // Excluir rutas de API y uploads
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+
+    // Excluir archivos estáticos (tienen extensión)
+    if (req.path.match(/\.[a-zA-Z0-9]+$/)) {
+      return next();
+    }
+
+    // Servir index.html para rutas del frontend (SPA routing)
+    const indexPath = join(__dirname, '..', '..', 'frontend', 'dist', 'index.html');
+    res.sendFile(indexPath);
+  });
+  console.log('SPA fallback middleware configured.');
 
   // Puerto
   const port = process.env.PORT || 3000;

@@ -1,9 +1,8 @@
-﻿import { Module, Controller, Get, Res } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { Response } from 'express';
 
 import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -25,21 +24,6 @@ import { EmailModule } from './modules/email/email.module';
 import { TenantManagementModule } from './modules/tenant-management/tenant-management.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.module';
-
-// Controller para manejar SPA routing (catch-all)
-@Controller()
-export class AppController {
-  @Get('*')
-  serveFrontend(@Res() res: Response): void {
-    // Excluir rutas de API y uploads
-    if (res.req.url.startsWith('/api') || res.req.url.startsWith('/uploads')) {
-      return;
-    }
-
-    const indexPath = join(__dirname, '..', '..', 'frontend', 'dist', 'index.html');
-    res.sendFile(indexPath);
-  }
-}
 
 @Module({
   imports: [
@@ -109,7 +93,7 @@ export class AppController {
     AccountingModule,
     ScheduledTasksModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [],
 })
 export class AppModule {}
