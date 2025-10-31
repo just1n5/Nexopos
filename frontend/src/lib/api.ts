@@ -1,11 +1,19 @@
 ﻿const RAW_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 const NORMALIZED_BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+// Debug: Log API configuration on load
+console.log('🔧 [API Config] VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('🔧 [API Config] RAW_BASE_URL:', RAW_BASE_URL);
+console.log('🔧 [API Config] NORMALIZED_BASE_URL:', NORMALIZED_BASE_URL);
+console.log('🔧 [API Config] Environment:', import.meta.env.MODE);
+
 export const getApiBaseUrl = () => NORMALIZED_BASE_URL;
 
 export const buildApiUrl = (path: string) => {
   if (!path) return NORMALIZED_BASE_URL;
-  return `${NORMALIZED_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const fullUrl = `${NORMALIZED_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  console.log(`🌐 [API Request] ${path} → ${fullUrl}`);
+  return fullUrl;
 };
 
 export interface ApiRequestOptions extends RequestInit {
