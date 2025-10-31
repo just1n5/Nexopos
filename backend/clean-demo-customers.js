@@ -12,7 +12,8 @@ console.log('Conectando a la base de datos...');
 
 const pool = new Pool({
   connectionString: DB_URL,
-  ssl: false
+  ssl: false,
+  options: '-c search_path=public'
 });
 
 async function cleanDemoCustomers() {
