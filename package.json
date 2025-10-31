@@ -8,7 +8,7 @@
     "frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build",
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build && cd .. && echo 'Build completed successfully'",
     "start": "node server.js",
     "seed": "cd backend && npm run seed",
     "frontend:install": "cd frontend && npm install",
