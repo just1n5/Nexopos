@@ -3,7 +3,7 @@
 // Script para iniciar el servidor de NestJS en producción
 // Este script es usado por Dokku/Heroku para iniciar la aplicación
 
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,10 +15,24 @@ const mainPath = path.join(backendPath, 'dist', 'main.js');
 console.log('Main file path:', mainPath);
 console.log('File exists?', fs.existsSync(mainPath));
 
+// Si el archivo compilado no existe, compilar ahora
 if (!fs.existsSync(mainPath)) {
-  console.error('❌ main.js not found at:', mainPath);
-  console.error('Backend path exists?', fs.existsSync(backendPath));
-  console.error('Dist path exists?', fs.existsSync(path.join(backendPath, 'dist')));
+  console.log('⚠️  Compiled files not found. Compiling backend now...');
+  try {
+    execSync('npm run build', {
+      cwd: backendPath,
+      stdio: 'inherit'
+    });
+    console.log('✅ Backend compiled successfully');
+  } catch (error) {
+    console.error('❌ Failed to compile backend:', error.message);
+    process.exit(1);
+  }
+}
+
+// Verificar nuevamente si el archivo existe
+if (!fs.existsSync(mainPath)) {
+  console.error('❌ main.js still not found after compilation!');
   process.exit(1);
 }
 
