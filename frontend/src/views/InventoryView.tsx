@@ -33,6 +33,8 @@ type ApiProduct = {
   description?: string;
   sku: string;
   basePrice: number | string;
+  unitCost?: number | string;
+  costPerGram?: number;
   status: string;
   saleType: string;
   pricePerGram?: number;
@@ -48,6 +50,8 @@ type InventoryRow = {
   description?: string;
   sku: string;
   price: number;
+  cost: number;
+  costPerGram?: number;
   status: string;
   saleType: string;
   pricePerGram?: number;
@@ -61,6 +65,8 @@ type NewProductFormState = {
   description: string;
   sku: string;
   basePrice: string;
+  unitCost?: string;
+  costPerGram?: string;
   stock: string;
   saleType: 'unit' | 'weight';
   pricePerGram?: string;
@@ -162,6 +168,8 @@ export default function InventoryView() {
           description: item.description,
           sku: item.sku,
           price: Number(item.basePrice ?? 0),
+          cost: Number(item.unitCost ?? 0),
+          costPerGram: item.costPerGram,
           status: item.status,
           saleType: item.saleType,
           pricePerGram: item.pricePerGram,
@@ -212,6 +220,7 @@ export default function InventoryView() {
       sku,
       basePrice: basePriceValue,
       saleType: productData.saleType.toUpperCase(),
+      tax: productData.tax ? Number.parseFloat(productData.tax) : 19,
       variants: variantsPayload
     };
 
@@ -219,8 +228,22 @@ export default function InventoryView() {
       productPayload.barcode = barcode;
     }
 
-    if (productData.saleType === 'weight' && productData.pricePerGram) {
-      productPayload.pricePerGram = Number.parseFloat(productData.pricePerGram);
+    // Agregar costo y precio según tipo de venta
+    if (productData.saleType === 'weight') {
+      if (productData.pricePerGram) {
+        productPayload.pricePerGram = Number.parseFloat(productData.pricePerGram);
+      }
+      if (productData.costPerGram) {
+        productPayload.costPerGram = Number.parseFloat(productData.costPerGram);
+      }
+      if (productData.weightUnit) {
+        productPayload.weightUnit = productData.weightUnit;
+      }
+    } else {
+      // Producto por unidad
+      if (productData.unitCost) {
+        productPayload.unitCost = Number.parseFloat(productData.unitCost);
+      }
     }
 
     await productsService.createProduct(productPayload, token);
@@ -307,7 +330,9 @@ export default function InventoryView() {
                     <tr className="border-b dark:border-gray-700">
                       <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">Producto</th>
                       <th className="text-left p-2 font-medium text-gray-700 dark:text-gray-300">SKU</th>
+                      <th className="text-right p-2 font-medium text-gray-700 dark:text-gray-300">Costo</th>
                       <th className="text-right p-2 font-medium text-gray-700 dark:text-gray-300">Precio</th>
+                      <th className="text-right p-2 font-medium text-gray-700 dark:text-gray-300">Margen</th>
                       <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Stock Total</th>
                       <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Estado</th>
                       <th className="text-center p-2 font-medium text-gray-700 dark:text-gray-300">Última Actualización</th>
@@ -318,6 +343,17 @@ export default function InventoryView() {
                     {filteredProducts.map((product) => {
                       const isLowStock = product.totalStock > 0 && product.totalStock <= LOW_STOCK_THRESHOLD;
                       const isOutOfStock = product.totalStock === 0;
+
+                      // Calcular margen de ganancia
+                      const cost = product.saleType === 'WEIGHT'
+                        ? (product.costPerGram || 0) * 453.592  // Convertir a costo por libra
+                        : product.cost;
+                      const price = product.saleType === 'WEIGHT'
+                        ? (product.pricePerGram || 0) * 453.592
+                        : product.price;
+
+                      const marginAmount = price - cost;
+                      const marginPercent = cost > 0 ? (marginAmount / cost) * 100 : 0;
 
                       return (
                         <tr key={product.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -330,10 +366,25 @@ export default function InventoryView() {
                             </div>
                           </td>
                           <td className="p-2 text-gray-600 dark:text-gray-400">{product.sku}</td>
+                          <td className="p-2 text-right text-gray-600 dark:text-gray-400">
+                            {product.saleType === 'WEIGHT'
+                              ? `${formatCurrency(cost)}/lb`
+                              : formatCurrency(cost)}
+                          </td>
                           <td className="p-2 text-right font-medium dark:text-gray-200">
                             {product.saleType === 'WEIGHT'
-                              ? `${formatCurrency((product.pricePerGram || 0) * 453.592)}/lb`
-                              : formatCurrency(product.price)}
+                              ? `${formatCurrency(price)}/lb`
+                              : formatCurrency(price)}
+                          </td>
+                          <td className="p-2 text-right">
+                            <div className="flex flex-col items-end">
+                              <span className={`font-medium ${marginPercent >= 30 ? 'text-green-600 dark:text-green-400' : marginPercent >= 15 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {marginPercent.toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatCurrency(marginAmount)}
+                              </span>
+                            </div>
                           </td>
                           <td className="p-2 text-center">
                             {isOutOfStock ? (
