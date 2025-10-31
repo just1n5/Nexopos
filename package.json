@@ -9,7 +9,7 @@
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build && cd .. && echo 'Build completed successfully'",
-    "heroku-postbuild": "cd backend && npm install && npm run build",
+    "heroku-postbuild": "echo 'Frontend already built' && cd backend && npm install && npm run build && echo 'Backend build completed'",
     "start": "node server.js",
     "seed": "cd backend && npm run seed",
     "frontend:install": "cd frontend && npm install",
