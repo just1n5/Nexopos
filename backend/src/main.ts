@@ -69,7 +69,7 @@ async function bootstrap() {
 
   // Configurar archivos estáticos del frontend manualmente
   const expressApp = app.getHttpAdapter().getInstance();
-  const frontendDistPath = join(__dirname, '..', '..', 'frontend', 'dist');
+  const frontendDistPath = join(__dirname, '..', '..', '..', 'frontend', 'dist');
 
   // Servir archivos estáticos del frontend (CSS, JS, imágenes, etc.)
   expressApp.use(express.static(frontendDistPath, {
