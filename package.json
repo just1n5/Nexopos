@@ -8,18 +8,28 @@
     "frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd backend && npm install && npm run build",
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build",
     "start": "node server.js",
-    "seed": "cd backend && npm run seed"
+    "seed": "cd backend && npm run seed",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:build": "npm run frontend:install && cd frontend && npm run build",
+    "frontend:start": "cd frontend && npm run start"
   },
-  "keywords": ["pos", "point-of-sale", "retail", "colombia", "dian"],
+  "keywords": [
+    "pos",
+    "point-of-sale",
+    "retail",
+    "colombia",
+    "dian"
+  ],
   "author": "NexoPOS Team",
   "license": "MIT",
   "dependencies": {
-    "pg": "^8.11.3",
     "axios": "^1.6.0",
     "chalk": "^4.1.2",
-    "dotenv": "^16.3.1"
+    "codex": "^0.2.3",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
