@@ -9,6 +9,7 @@ export interface Product {
   stock: number
   category: string
   image?: string
+  imageUrl?: string
   tax: number // Porcentaje de impuesto (ej: 19 para 19%)
   saleType: ProductSaleType
   pricePerGram?: number
