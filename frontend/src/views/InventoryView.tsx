@@ -212,7 +212,10 @@ export default function InventoryView() {
     }
 
     const trimmedName = productData.name.trim();
-    const basePriceValue = Number.parseFloat(productData.basePrice);
+    // Para productos por peso, basePrice es 0 ya que el precio se calcula por gramo
+    const basePriceValue = productData.saleType === 'weight'
+      ? 0
+      : Number.parseFloat(productData.basePrice);
     const stockValue = toSafeInteger(productData.stock);
 
     // Determinar SKU y barcode según lo que se proporcionó
