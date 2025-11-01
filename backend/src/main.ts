@@ -8,8 +8,17 @@ import * as express from 'express';
 
 async function bootstrap() {
   console.log('Starting bootstrap process...');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+    rawBody: true,
+  });
   console.log('Nest application created.');
+
+  // Configurar límites de tamaño para uploads
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use(express.json({ limit: '50mb' }));
+  expressApp.use(express.urlencoded({ limit: '50mb', extended: true }));
+  console.log('Body parser configured with 50mb limit.');
 
   // Configuración Global
   app.setGlobalPrefix('api');
@@ -68,7 +77,6 @@ async function bootstrap() {
   console.log('Swagger documentation configured.');
 
   // Configurar archivos estáticos del frontend manualmente
-  const expressApp = app.getHttpAdapter().getInstance();
   const frontendDistPath = join(__dirname, '..', '..', '..', 'frontend', 'dist');
 
   // Servir archivos estáticos del frontend (CSS, JS, imágenes, etc.)
