@@ -515,9 +515,9 @@ export default function POSView() {
                           </div>
                         )}
                         <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md mb-3 flex items-center justify-center overflow-hidden">
-                          {product.imageUrl ? (
+                          {product.image ? (
                             <img
-                              src={product.imageUrl}
+                              src={product.image}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />
