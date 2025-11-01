@@ -44,6 +44,7 @@ async function bootstrap() {
     'https://nexopos-1.onrender.com', // Frontend en Render
     'http://nexopos.cloution-servidor.local', // Backend en Dokku (para pruebas locales del frontend)
     'http://nexopos-frontend.cloution-servidor.local', // Frontend en Dokku
+    'https://nexopos.cloution.cloud', // Dominio de producción
   ];
 
   app.enableCors({
