@@ -409,7 +409,12 @@ dokku postgres:connect nexopos-db
 
 ### URLs de Acceso
 
-**Producción (Dokku):**
+**Producción:**
+- **Dominio público:** https://nexopos.cloution.cloud
+- **API:** https://nexopos.cloution.cloud/api
+- **Swagger:** https://nexopos.cloution.cloud/api (si está habilitado)
+
+**Producción (Dokku - acceso directo):**
 - **Frontend:** http://192.168.80.17 (puerto configurado por Dokku)
 - **API:** http://192.168.80.17/api
 - **Swagger:** http://192.168.80.17/api (si está habilitado)
