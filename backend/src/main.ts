@@ -76,6 +76,14 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   console.log('Swagger documentation configured.');
 
+  // Configurar archivos estáticos de uploads (imágenes de productos)
+  const uploadsPath = join(process.cwd(), 'uploads');
+  expressApp.use('/uploads', express.static(uploadsPath, {
+    maxAge: '7d', // Cache de 7 días para imágenes
+    etag: true
+  }));
+  console.log('Uploads static files configured:', uploadsPath);
+
   // Configurar archivos estáticos del frontend manualmente
   const frontendDistPath = join(__dirname, '..', '..', '..', 'frontend', 'dist');
 

@@ -514,8 +514,16 @@ export default function POSView() {
                             </span>
                           </div>
                         )}
-                        <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md mb-3 flex items-center justify-center">
-                          <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+                        <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md mb-3 flex items-center justify-center overflow-hidden">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+                          )}
                         </div>
                         <h3 className="font-medium text-sm line-clamp-2 mb-1 dark:text-gray-100">{product.name}</h3>
                         <div className="flex items-center justify-between">
