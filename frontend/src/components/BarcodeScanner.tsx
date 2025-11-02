@@ -30,6 +30,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   const [cameras, setCameras] = useState<CameraDevice[]>([])
   const [selectedCameraId, setSelectedCameraId] = useState<string>('')
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
+  const scannerContainerRef = useRef<HTMLDivElement | null>(null)
   const scannerDivId = 'barcode-scanner-reader'
   const { toast } = useToast()
   const processingRef = useRef(false)
@@ -252,6 +253,14 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
       // Ahora iniciar html5-qrcode con el deviceId
       // Como ya verificamos que funciona, html5-qrcode debería usar la misma cámara
+      // html5-qrcode requiere que el contenedor exista en el DOM
+      if (!scannerContainerRef.current) {
+        throw new Error('Contenedor del escáner aún no está disponible')
+      }
+
+      // Limpiar cualquier contenido previo antes de iniciar
+      scannerContainerRef.current.innerHTML = ''
+
       await html5QrcodeRef.current.start(
         selectedCameraId,  // Pasar el deviceId directamente como string
         {
@@ -318,7 +327,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         // Esperar un momento para que el video se inicialice
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        const videoElement = document.querySelector(`#${scannerDivId} video`) as HTMLVideoElement
+        const videoElement = scannerContainerRef.current.querySelector('video') as HTMLVideoElement
         if (videoElement && videoElement.srcObject) {
           const stream = videoElement.srcObject as MediaStream
           const videoTrack = stream.getVideoTracks()[0]
@@ -661,6 +670,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                   <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-gray-200">
                     <div
                       id={scannerDivId}
+                      ref={scannerContainerRef}
                       className="w-full aspect-video"
                     />
 
