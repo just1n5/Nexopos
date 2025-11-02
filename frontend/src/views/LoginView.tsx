@@ -109,8 +109,10 @@ export default function LoginView() {
       setError(
         errorResponse.message ||
           `Error al verificar ${loginMethod === 'phone' ? 'número' : 'correo'}. Intenta de nuevo.`,
-      )
-    }
+  )
+}
+
+
   }
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -452,3 +454,4 @@ export default function LoginView() {
       </div>
     </div>
   )
+}
