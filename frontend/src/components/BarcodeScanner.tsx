@@ -118,6 +118,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
     setIsInitializing(true)
 
+    const waitForContainer = async () => {
+      if (scannerContainerRef.current) {
+        return scannerContainerRef.current
+      }
+
+      const maxAttempts = 10
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+        if (scannerContainerRef.current) {
+          return scannerContainerRef.current
+        }
+      }
+
+      return null
+    }
+
     try {
       // Resetear estado de procesamiento
       processingRef.current = false
@@ -254,12 +270,13 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       // Ahora iniciar html5-qrcode con el deviceId
       // Como ya verificamos que funciona, html5-qrcode debería usar la misma cámara
       // html5-qrcode requiere que el contenedor exista en el DOM
-      if (!scannerContainerRef.current) {
+      const container = await waitForContainer()
+      if (!container) {
         throw new Error('Contenedor del escáner aún no está disponible')
       }
 
       // Limpiar cualquier contenido previo antes de iniciar
-      scannerContainerRef.current.innerHTML = ''
+      container.innerHTML = ''
 
       await html5QrcodeRef.current.start(
         selectedCameraId,  // Pasar el deviceId directamente como string
@@ -327,7 +344,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         // Esperar un momento para que el video se inicialice
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        const videoElement = scannerContainerRef.current.querySelector('video') as HTMLVideoElement
+        const videoElement = container.querySelector('video') as HTMLVideoElement | null
         if (videoElement && videoElement.srcObject) {
           const stream = videoElement.srcObject as MediaStream
           const videoTrack = stream.getVideoTracks()[0]
