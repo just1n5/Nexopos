@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Between } from 'typeorm';
 import { CashRegister, CashRegisterStatus } from './entities/cash-register.entity';
 import { CashMovement, MovementType, MovementCategory } from './entities/cash-movement.entity';
 import {
@@ -12,6 +12,30 @@ import {
   CashRegisterSummaryDto
 } from './dto/cash-register.dto';
 import { JournalEntryService } from '../accounting/services/journal-entry.service';
+
+const CO_TIME_ZONE = 'America/Bogota';
+
+/**
+ * Calcula el rango de inicio y fin del día para una zona horaria específica.
+ * Se convierte a la hora local sumando el offset y luego se normaliza nuevamente a UTC.
+ */
+function getDayRangeForTimeZone(timeZone: string, referenceDate: Date = new Date()) {
+  const localisedString = referenceDate.toLocaleString('en-US', { timeZone, hour12: false });
+  const localisedDate = new Date(localisedString);
+  const offsetMs = localisedDate.getTime() - referenceDate.getTime();
+  const localDate = new Date(referenceDate.getTime() + offsetMs);
+
+  const startLocal = new Date(localDate);
+  startLocal.setHours(0, 0, 0, 0);
+
+  const endLocal = new Date(localDate);
+  endLocal.setHours(23, 59, 59, 999);
+
+  return {
+    start: new Date(startLocal.getTime() - offsetMs),
+    end: new Date(endLocal.getTime() - offsetMs),
+  };
+}
 
 @Injectable()
 export class CashRegisterService {
@@ -39,16 +63,13 @@ export class CashRegisterService {
     }
 
     // Check if user already closed a cash register today
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+    const { start: startOfDay, end: endOfDay } = getDayRangeForTimeZone(CO_TIME_ZONE);
 
     const closedToday = await this.cashRegisterRepository.findOne({
       where: {
         userId,
         status: CashRegisterStatus.CLOSED,
+        closedAt: Between(startOfDay, endOfDay),
       },
       order: {
         closedAt: 'DESC'
@@ -58,12 +79,17 @@ export class CashRegisterService {
     // Verificar si el cierre fue hoy
     if (closedToday && closedToday.closedAt) {
       const closedDate = new Date(closedToday.closedAt);
-      if (closedDate >= startOfDay && closedDate <= endOfDay) {
-        throw new ConflictException(
-          `Ya cerraste una caja hoy (${closedToday.sessionNumber} cerrada a las ${closedDate.toLocaleTimeString('es-CO')}). ` +
-          'Solo puedes cerrar caja una vez por día. Podrás abrir una nueva caja mañana.'
-        );
-      }
+      const closedTime = closedDate.toLocaleTimeString('es-CO', {
+        timeZone: CO_TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      throw new ConflictException(
+        `Ya cerraste una caja hoy (${closedToday.sessionNumber} cerrada a las ${closedTime} hora Colombia). ` +
+        'Solo puedes cerrar caja una vez por día. Podrás abrir una nueva caja mañana.'
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -403,16 +429,13 @@ export class CashRegisterService {
       return [];
     }
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+    const { start: startOfDay, end: endOfDay } = getDayRangeForTimeZone(CO_TIME_ZONE);
 
     return this.cashMovementRepository.find({
       where: {
         cashRegisterId: currentSession.id,
         type: MovementType.EXPENSE,
+        createdAt: Between(startOfDay, endOfDay),
       },
       order: { createdAt: 'DESC' }
     });
