@@ -259,20 +259,40 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           qrbox: (viewfinderWidth, viewfinderHeight) => {
             // ÁREA MÁXIMA: 95% del área visible para detectar desde lo más lejos posible
             const minEdgePercentage = 0.95 // 95% del área
+
+            // Cuando el visor aún no tiene tamaño (el modal está montándose) usar un fallback seguro
+            if (!viewfinderWidth || !viewfinderHeight) {
+              const fallbackWidth = 320
+              const fallbackHeight = 128
+              console.log('📐 Área fallback de detección utilizada', {
+                viewfinderWidth,
+                viewfinderHeight,
+                qrboxWidth: fallbackWidth,
+                qrboxHeight: fallbackHeight,
+                reason: 'viewfinder sin dimensiones iniciales'
+              })
+              return {
+                width: fallbackWidth,
+                height: fallbackHeight
+              }
+            }
+
             const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight)
-            const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage)
+            const rawWidth = Math.floor(minEdgeSize * minEdgePercentage)
+            const qrboxWidth = Math.max(rawWidth, 260) // asegurar mínimo 260px
+            const qrboxHeight = Math.max(Math.floor(qrboxWidth * 0.4), 100) // mínimo 100px
 
             console.log('📐 Área de detección:', {
               viewfinderWidth,
               viewfinderHeight,
-              qrboxWidth: qrboxSize,
-              qrboxHeight: Math.floor(qrboxSize * 0.4),
+              qrboxWidth,
+              qrboxHeight,
               percentage: '95%'
             })
 
             return {
-              width: qrboxSize,
-              height: Math.floor(qrboxSize * 0.4) // Proporción 2.5:1 para códigos de barras estándar
+              width: qrboxWidth,
+              height: qrboxHeight // Proporción 2.5:1 para códigos de barras estándar
             }
           },
           aspectRatio: 1.777778, // 16:9
@@ -446,29 +466,25 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
   // Cambiar modo o cámara seleccionada
   useEffect(() => {
-    if (mode === 'camera' && selectedCameraId) {
-      // Detener scanner actual si existe
-      if (html5QrcodeRef.current && isScanning) {
-        stopScanner().then(() => {
-          // Iniciar con la nueva cámara
-          startScanner()
-        })
-      } else {
-        // Iniciar scanner cuando se cambia a modo cámara
-        startScanner()
-      }
+    if (mode !== 'camera' || !selectedCameraId) {
+      stopScanner()
+      return
     }
 
-    return () => {
-      // Limpiar solo si el modo era camera
-      if (mode === 'camera' && html5QrcodeRef.current) {
-        const state = html5QrcodeRef.current.getState()
-        if (state === 2) { // Solo si está SCANNING
-          stopScanner()
-        }
+    let cancelled = false
+
+    ;(async () => {
+      await stopScanner()
+      if (!cancelled) {
+        await startScanner()
       }
+    })()
+
+    return () => {
+      cancelled = true
+      stopScanner()
     }
-  }, [isScanning, mode, selectedCameraId, startScanner, stopScanner])
+  }, [mode, selectedCameraId, startScanner, stopScanner])
 
   // Limpiar al desmontar
   useEffect(() => {
