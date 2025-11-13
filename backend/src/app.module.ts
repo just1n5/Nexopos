@@ -49,6 +49,12 @@ import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.
             ssl: {
               rejectUnauthorized: false,
             },
+            // Forzar IPv4 para evitar problemas con IPv6 en Supabase
+            extra: {
+              connectionTimeoutMillis: 10000,
+              // Forzar resolución DNS a IPv4
+              family: 4,
+            },
             autoLoadEntities: true,
             synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
             logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
@@ -61,6 +67,11 @@ import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.
             database: configService.get<string>('DB_NAME', 'nexopos'),
             username: configService.get<string>('DB_USER', 'nexopos_user'),
             password: configService.get<string>('DB_PASSWORD', 'nexopos123'),
+            // Forzar IPv4 también en configuración manual
+            extra: {
+              connectionTimeoutMillis: 10000,
+              family: 4,
+            },
             autoLoadEntities: true,
             synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
             logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
