@@ -94,6 +94,7 @@ export class SalesService {
       // 🔒 VALIDAR Y BLOQUEAR STOCK CON PESSIMISTIC LOCK (DENTRO DE LA TRANSACCIÓN)
       // Esto previene race conditions en ventas concurrentes
       const stockLocks: Map<string, { stock: any, productInfo: any }> = new Map();
+      const stockReservations: Map<string, { reservationId: string }> = new Map();
 
       for (const itemDto of createSaleDto.items) {
         const productInfo = await this.getProductInfo(itemDto.productId, tenantId, itemDto.productVariantId);
@@ -133,6 +134,33 @@ export class SalesService {
 
         // Guardar referencia al stock bloqueado y productInfo para uso posterior
         stockLocks.set(stockKey, { stock: stockRecord, productInfo });
+
+        // 🎯 CREAR RESERVA DE STOCK (usando el nuevo sistema de reservas)
+        // Esto bloqueará temporalmente el stock durante la transacción
+        try {
+          const reservation = await this.inventoryService.reserveStock(
+            itemDto.productId,
+            itemDto.quantity,
+            tenantId,
+            userId,
+            {
+              variantId: itemDto.productVariantId,
+              referenceType: 'sale',
+              referenceId: null, // Se actualizará después al crear la venta
+              notes: `Reserva temporal para venta en proceso`
+            },
+            15 // 15 minutos de expiración
+          );
+
+          stockReservations.set(stockKey, { reservationId: reservation.id });
+
+          console.log(`[SalesService] Stock reservado: ${productInfo.name}, Cantidad: ${itemDto.quantity}, ReservationId: ${reservation.id}`);
+        } catch (reservationError) {
+          console.error(`[SalesService] Error al reservar stock para ${productInfo.name}:`, reservationError.message);
+          throw new BadRequestException(
+            `No se pudo reservar stock para ${productInfo.name}: ${reservationError.message}`
+          );
+        }
       }
 
       // Generate sale number
@@ -198,45 +226,71 @@ export class SalesService {
 
         await queryRunner.manager.save(saleItem);
 
-        // 🔒 ACTUALIZAR INVENTARIO DENTRO DE LA TRANSACCIÓN (NO POST-COMMIT)
-        // Reducir cantidad del stock bloqueado
-        const newQuantity = Number(stock.stock_quantity) - itemDto.quantity;
+        // ✅ CONFIRMAR RESERVA DE STOCK (usando el nuevo sistema de reservas)
+        // Esto confirmará la reserva y actualizará el inventario atómicamente
+        const reservation = stockReservations.get(stockKey);
 
-        await queryRunner.manager
-          .createQueryBuilder()
-          .update('inventory_stock')
-          .set({
-            quantity: newQuantity,
-            availableQuantity: newQuantity, // Actualizar también availableQuantity
-            lastMovementDate: new Date()
-          })
-          .where('id = :id', { id: stock.stock_id })
-          .execute();
+        if (reservation) {
+          try {
+            // Confirmar la reserva - esto automáticamente:
+            // 1. Descuenta del stock real (quantity)
+            // 2. Libera reservedQuantity
+            // 3. Crea InventoryMovement
+            // 4. Marca reserva como CONFIRMED
+            await this.inventoryService.confirmReservation(
+              reservation.reservationId,
+              userId
+            );
 
-        // Crear registro de movimiento de inventario
-        await queryRunner.manager
-          .createQueryBuilder()
-          .insert()
-          .into('inventory_movements')
-          .values({
-            tenantId: tenantId,
-            productId: itemDto.productId,
-            productVariantId: itemDto.productVariantId || null,
-            type: 'SALE',
-            quantityBefore: Number(stock.stock_quantity),
-            quantityChange: -itemDto.quantity,
-            quantityAfter: newQuantity,
-            unitCost: productInfo.costPrice,
-            totalCost: toDecimal(productInfo.costPrice * itemDto.quantity),
-            referenceType: 'sale',
-            referenceId: savedSale.id,
-            referenceNumber: savedSale.saleNumber,
-            userId: userId || 'system',
-            notes: 'Stock reducido por venta',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })
-          .execute();
+            console.log(`[SalesService] Reserva confirmada para ${productInfo.name}, ReservationId: ${reservation.reservationId}`);
+          } catch (confirmError) {
+            console.error(`[SalesService] Error al confirmar reserva para ${productInfo.name}:`, confirmError.message);
+            throw new BadRequestException(
+              `No se pudo confirmar la reserva de stock para ${productInfo.name}: ${confirmError.message}`
+            );
+          }
+        } else {
+          // Fallback: si no hay reserva (no debería ocurrir), actualizar stock directamente
+          console.warn(`[SalesService] No se encontró reserva para ${stockKey}, actualizando stock directamente`);
+
+          const newQuantity = Number(stock.stock_quantity) - itemDto.quantity;
+
+          await queryRunner.manager
+            .createQueryBuilder()
+            .update('inventory_stock')
+            .set({
+              quantity: newQuantity,
+              availableQuantity: newQuantity,
+              lastMovementDate: new Date()
+            })
+            .where('id = :id', { id: stock.stock_id })
+            .execute();
+
+          // Crear registro de movimiento de inventario
+          await queryRunner.manager
+            .createQueryBuilder()
+            .insert()
+            .into('inventory_movements')
+            .values({
+              tenantId: tenantId,
+              productId: itemDto.productId,
+              productVariantId: itemDto.productVariantId || null,
+              type: 'SALE',
+              quantityBefore: Number(stock.stock_quantity),
+              quantityChange: -itemDto.quantity,
+              quantityAfter: newQuantity,
+              unitCost: productInfo.costPrice,
+              totalCost: toDecimal(productInfo.costPrice * itemDto.quantity),
+              referenceType: 'sale',
+              referenceId: savedSale.id,
+              referenceNumber: savedSale.saleNumber,
+              userId: userId || 'system',
+              notes: 'Stock reducido por venta (fallback sin reserva)',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            .execute();
+        }
       }
 
       // Create payments
