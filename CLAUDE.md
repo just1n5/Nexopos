@@ -184,28 +184,69 @@ npm run migration:revert
 
 ### Backend
 
+**IMPORTANTE:** El proyecto ahora usa **Supabase** como base de datos en producción.
+
 Crear archivo `backend/.env` basado en `backend/.env.example`:
+
+#### Producción (Supabase - RECOMENDADO)
+
+**IMPORTANTE:** Usar el **Connection Pooler** de Supabase (Supavisor) en vez de la conexión directa:
+- ✅ Soporta IPv4 (compatible con servidores sin IPv6)
+- ✅ Maneja miles de conexiones concurrentes
+- ✅ Sin costo adicional
+
+```env
+# Server
+PORT=3000
+NODE_ENV=production
+
+# Supabase Database - Connection Pooler (Session Mode)
+# Formato: postgresql://postgres.PROJECT_REF:[PASSWORD]@aws-1-[REGION].pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres.vohlomomrskxnuksodmt:[YOUR-PASSWORD]@aws-1-us-east-2.pooler.supabase.com:5432/postgres
+DB_SCHEMA=public
+DB_SYNC=false  # IMPORTANTE: false en producción
+DB_LOGGING=false
+
+# Auth
+JWT_SECRET=super-secret-change-me-in-production
+JWT_EXPIRES_IN=1d
+BCRYPT_SALT_ROUNDS=12
+```
+
+**Conexión Directa (alternativa - solo si tienes IPv6):**
+```env
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.vohlomomrskxnuksodmt.supabase.co:5432/postgres
+```
+
+**Notas sobre Supabase Connection Pooler:**
+- Session Mode (puerto 5432): Ideal para NexoPOS - conexión dedicada por cliente
+- Transaction Mode (puerto 6543): Solo para serverless - comparte conexiones
+- Ver `SUPABASE_CREDENTIALS.md` para más detalles
+
+#### Desarrollo Local (PostgreSQL Local - ALTERNATIVA)
 
 ```env
 # Server
 PORT=3000
 NODE_ENV=development
 
-# Database
+# Local Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=nexopos
 DB_USER=nexopos
 DB_PASSWORD=changeme
 DB_SCHEMA=public
-DB_LOGGING=false
-DB_SYNC=false  # IMPORTANTE: false en producción
+DB_LOGGING=true
+DB_SYNC=true  # Puede usar true solo en desarrollo local
 
 # Auth
 JWT_SECRET=super-secret-change-me
 JWT_EXPIRES_IN=3600s
 BCRYPT_SALT_ROUNDS=12
 ```
+
+**Ver:** `SUPABASE_CREDENTIALS.md` para credenciales de producción.
 
 ## URLs de Desarrollo
 
@@ -265,7 +306,7 @@ BCRYPT_SALT_ROUNDS=12
 
 ## Estado Actual del Proyecto
 
-El proyecto está en fase MVP con funcionalidades core implementadas:
+### Funcionalidades MVP Implementadas
 - ✅ Punto de venta básico
 - ✅ Gestión de inventario
 - ✅ Control de fiado
@@ -273,6 +314,26 @@ El proyecto está en fase MVP con funcionalidades core implementadas:
 - ✅ Reportes básicos
 - 🚧 Integración DIAN (en progreso)
 - 🚧 Multi-sucursal (planificado)
+
+### Migración a Supabase ✅ COMPLETADA
+
+**Fecha:** 2025-11-10
+**Estado:** Producción funcionando con Supabase
+
+El proyecto ha sido migrado exitosamente a **Supabase** como base de datos principal:
+
+- ✅ **Schema 100% migrado:** 27 ENUMs, 25 tablas, 42 FKs, 44 índices
+- ✅ **Producción activa:** Dokku conectado y operando con Supabase
+- ✅ **PostgreSQL 17.6.1:** Última versión estable
+- ✅ **Escalabilidad:** Base de datos en la nube lista para crecer
+
+**Documentación de la migración:**
+- `MIGRACION_COMPLETADA.md` - Resumen completo de la migración
+- `SUPABASE_CREDENTIALS.md` - Credenciales y configuración
+- `CONECTIVIDAD_SUPABASE.md` - Diagnóstico de conectividad
+
+**Dashboard Supabase:**
+https://supabase.com/dashboard/project/vohlomomrskxnuksodmt
 
 ## Despliegue en Producción (Dokku)
 
@@ -468,7 +529,7 @@ dokku ps:restart nexopos
 - **Logs** - Los logs de Dokku se rotan automáticamente
 - **Recursos** - La laptop servidor debe tener recursos suficientes (RAM, CPU)
 
-### Futuras Mejoras
+### Futuras Mejoras - Infraestructura
 
 - [ ] Configurar dominio personalizado (ej. nexopos.miempresa.com)
 - [ ] Configurar SSL/HTTPS con Let's Encrypt
@@ -476,6 +537,40 @@ dokku ps:restart nexopos
 - [ ] Configurar backups automáticos de base de datos
 - [ ] Monitoreo con herramientas externas
 - [ ] Configurar alertas de errores
+
+## Problemas Conocidos y Mejoras Críticas
+
+⚠️ **IMPORTANTE**: El sistema tiene problemas críticos de consistencia transaccional que deben resolverse antes de escalar a producción con múltiples usuarios concurrentes.
+
+### Problemas Críticos Identificados
+
+1. **Race Condition en Ventas Concurrentes**
+   - **Ubicación:** `backend/src/modules/sales/sales.service.ts:100-110`
+   - **Problema:** La validación de stock ocurre fuera de la transacción principal
+   - **Impacto:** Overselling - vender más unidades de las disponibles
+   - **Probabilidad:** ALTA con múltiples cajeros
+
+2. **Actualización de Inventario Fuera de Transacción**
+   - **Ubicación:** `backend/src/modules/sales/sales.service.ts:218-236`
+   - **Problema:** El stock se actualiza DESPUÉS de crear la venta
+   - **Impacto:** Ventas registradas sin descuento de inventario si falla `adjustStock()`
+   - **Probabilidad:** MEDIA
+
+3. **Transacciones No Atómicas**
+   - **Problema:** Venta, Inventario y Caja usan transacciones separadas
+   - **Impacto:** Inconsistencias entre módulos si alguna operación falla
+   - **Probabilidad:** MEDIA-ALTA
+
+### Roadmap de Mejoras Técnicas
+
+**Ver `ARQUITECTURA_Y_MEJORAS.md` para análisis completo y plan de acción detallado.**
+
+Prioridades:
+1. 🔴 **URGENTE**: Implementar bloqueos pesimistas en ventas
+2. 🔴 **URGENTE**: Mover actualización de inventario dentro de transacción de venta
+3. 🟡 **IMPORTANTE**: Implementar sistema de reservas de stock
+4. 🟡 **IMPORTANTE**: Tests de concurrencia
+5. 🟢 **RECOMENDADO**: Queue system para operaciones post-venta
 
 ## Notas de Git
 

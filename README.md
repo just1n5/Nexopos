@@ -4,7 +4,9 @@
   <img src="https://img.shields.io/badge/Version-1.0.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/React-18.2.0-61DAFB.svg" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-5.0.0-3178C6.svg" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Status-MVP-green.svg" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Production-green.svg" alt="Status">
+  <img src="https://img.shields.io/badge/Database-Supabase-green.svg" alt="Database">
+  <img src="https://img.shields.io/badge/PostgreSQL-17.6.1-336791.svg" alt="PostgreSQL">
 </div>
 
 ## 📋 Descripción
@@ -32,18 +34,20 @@ NexoPOS es una plataforma de software como servicio (SaaS) de nueva generación,
 - **Routing:** React Router v6
 - **Build Tool:** Vite
 
-### Backend (Planificado)
-- **Runtime:** Node.js
-- **Framework:** NestJS
-- **Base de datos:** PostgreSQL
-- **ORM:** Prisma
-- **Autenticación:** JWT + OAuth 2.0
-- **API:** RESTful + GraphQL
+### Backend ✅ EN PRODUCCIÓN
+- **Runtime:** Node.js 18+
+- **Framework:** NestJS + TypeScript
+- **Base de datos:** Supabase (PostgreSQL 17.6.1)
+- **ORM:** TypeORM
+- **Autenticación:** JWT con Passport
+- **API:** RESTful con Swagger Docs
 
 ### Infraestructura
-- **Despliegue:** Dokku (PaaS auto-hospedado)
-- **Servidor:** Laptop local (192.168.80.17)
+- **Despliegue:** Dokku (PaaS auto-hospedado) + Cloudflare
+- **Base de Datos:** Supabase (Cloud PostgreSQL)
+- **Servidor:** Servidor local (192.168.80.17)
 - **CI/CD:** Git push deployment
+- **Región:** us-east-2 (Ohio, USA)
 
 ## 🚀 Instalación y Configuración
 

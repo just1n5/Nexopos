@@ -1,0 +1,1 @@
+ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;

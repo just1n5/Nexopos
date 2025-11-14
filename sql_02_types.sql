@@ -1,0 +1,243 @@
+CREATE TYPE public.account_nature_enum AS ENUM (
+'DEBIT',
+'CREDIT'
+);
+
+CREATE TYPE public.account_type_enum AS ENUM (
+'ASSET',
+'LIABILITY',
+'EQUITY',
+'INCOME',
+'EXPENSE',
+'COST'
+);
+
+CREATE TYPE public.cash_movements_category_enum AS ENUM (
+'SALES_INCOME',
+'OTHER_INCOME',
+'SUPPLIER_PAYMENT',
+'RENT',
+'UTILITIES',
+'SALARIES',
+'MAINTENANCE',
+'SUPPLIES',
+'TRANSPORT',
+'OTHER_EXPENSE',
+'CASH_IN',
+'CASH_OUT',
+'CORRECTION',
+'SYSTEM'
+);
+
+CREATE TYPE public.cash_movements_type_enum AS ENUM (
+'SALE',
+'REFUND',
+'RETURN',
+'EXPENSE',
+'DEPOSIT',
+'WITHDRAWAL',
+'ADJUSTMENT',
+'OPENING',
+'CLOSING'
+);
+
+CREATE TYPE public.customer_credits_status_enum AS ENUM (
+'pending',
+'partial',
+'paid',
+'overdue',
+'cancelled'
+);
+
+CREATE TYPE public.customer_credits_type_enum AS ENUM (
+'sale',
+'payment',
+'adjustment',
+'return'
+);
+
+CREATE TYPE public.expense_payment_method_enum AS ENUM (
+'CASH',
+'BANK',
+'CARD',
+'TRANSFER',
+'CREDIT'
+);
+
+CREATE TYPE public.expense_status_enum AS ENUM (
+'PENDING',
+'PAID',
+'CANCELLED'
+);
+
+CREATE TYPE public.expense_type_enum AS ENUM (
+'INVENTORY_PURCHASE',
+'RENT',
+'UTILITIES',
+'INTERNET_PHONE',
+'PAYROLL',
+'PROFESSIONAL_SERVICES',
+'INSURANCE',
+'MAINTENANCE',
+'TRAVEL',
+'ADVERTISING',
+'OFFICE_SUPPLIES',
+'TAXES_FEES',
+'OTHER'
+);
+
+CREATE TYPE public.fiscal_responsibility_enum AS ENUM (
+'R-01-IVA',
+'R-02-RETEFUENTE',
+'R-03-RETEIVA',
+'R-04-RETEICA',
+'R-07-REGIMEN-SIMPLE',
+'R-99-NO-RESPONSABLE'
+);
+
+CREATE TYPE public.journal_entry_status_enum AS ENUM (
+'DRAFT',
+'CONFIRMED',
+'CANCELLED'
+);
+
+CREATE TYPE public.journal_entry_type_enum AS ENUM (
+'SALE',
+'SALE_CREDIT',
+'SALE_REFUND',
+'PURCHASE',
+'EXPENSE',
+'PAYMENT_RECEIVED',
+'PAYMENT_MADE',
+'CASH_REGISTER_OPEN',
+'CASH_REGISTER_CLOSE',
+'CASH_DEPOSIT',
+'CASH_WITHDRAWAL',
+'ADJUSTMENT',
+'OPENING_BALANCE',
+'CLOSING',
+'OTHER'
+);
+
+CREATE TYPE public.movement_category_enum AS ENUM (
+'SALES_INCOME',
+'OTHER_INCOME',
+'SUPPLIER_PAYMENT',
+'RENT',
+'UTILITIES',
+'SALARIES',
+'MAINTENANCE',
+'SUPPLIES',
+'TRANSPORT',
+'OTHER_EXPENSE',
+'CASH_IN',
+'CASH_OUT',
+'CORRECTION',
+'SYSTEM'
+);
+
+CREATE TYPE public.movement_status_enum AS ENUM (
+'PENDING',
+'COMPLETED',
+'CANCELLED'
+);
+
+CREATE TYPE public.movement_type_enum AS ENUM (
+'INITIAL',
+'IN',
+'OUT',
+'ADJUSTMENT_IN',
+'ADJUSTMENT_OUT',
+'TRANSFER_IN',
+'TRANSFER_OUT',
+'DAMAGE',
+'EXPIRY',
+'SALE',
+'RETURN_CUSTOMER',
+'RETURN_SUPPLIER',
+'ADJUSTMENT',
+'PURCHASE',
+'RETURN'
+);
+
+CREATE TYPE public.otp_purpose_enum AS ENUM (
+'ACCOUNT_DELETION',
+'ACCOUNT_SUSPENSION',
+'EMAIL_VERIFICATION'
+);
+
+CREATE TYPE public.payment_method_enum AS ENUM (
+'CASH',
+'CARD',
+'TRANSFER',
+'NEQUI',
+'DAVI_PLATA',
+'CREDIT'
+);
+
+CREATE TYPE public.payment_status_enum AS ENUM (
+'PENDING',
+'COMPLETED',
+'REFUNDED',
+'CANCELLED'
+);
+
+CREATE TYPE public.person_type_enum AS ENUM (
+'NATURAL',
+'JURIDICA'
+);
+
+CREATE TYPE public.stock_status_enum AS ENUM (
+'IN_STOCK',
+'LOW_STOCK',
+'OUT_OF_STOCK',
+'RESERVED'
+);
+
+CREATE TYPE public.tax_regime_enum AS ENUM (
+'SIMPLIFIED',
+'COMMON',
+'SPECIAL',
+'GRANDES_CONTRIBUYENTES'
+);
+
+CREATE TYPE public.taxes_type_enum AS ENUM (
+'IVA',
+'INC',
+'RETENCION',
+'OTHER'
+);
+
+CREATE TYPE public.vat_declaration_period_enum AS ENUM (
+'MONTHLY',
+'BIMONTHLY',
+'QUARTERLY'
+);
+
+CREATE TYPE public.weight_unit_enum AS ENUM (
+'GRAM',
+'KILO',
+'POUND'
+);
+
+CREATE TYPE public.withholding_concept_enum AS ENUM (
+'COMPRAS',
+'SERVICIOS_DECLARANTE',
+'SERVICIOS_NO_DECLARANTE',
+'HONORARIOS_JURIDICA',
+'HONORARIOS_NATURAL',
+'ARRENDAMIENTO',
+'RENDIMIENTOS_FINANCIEROS',
+'OTROS'
+);
+
+CREATE TYPE public.withholding_direction_enum AS ENUM (
+'RECEIVED',
+'PRACTICED'
+);
+
+CREATE TYPE public.withholding_type_enum AS ENUM (
+'RETEFTE',
+'RETEIVA',
+'RETEICA'
+);

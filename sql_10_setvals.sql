@@ -1,0 +1,1 @@
+SELECT pg_catalog.setval('public.migrations_id_seq', 139, true);
