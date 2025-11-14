@@ -18,6 +18,8 @@
     "test:e2e": "jest --config ./jest-e2e.json",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:prod": "node dist/scripts/seed.js",
+    "seed:test-users": "ts-node src/scripts/seed-test-users.ts",
+    "seed:test-data": "ts-node src/scripts/seed-test-data.ts",
     "seed:accounting": "ts-node src/scripts/seed-accounting.ts",
     "seed:accounting:prod": "node dist/scripts/seed-accounting.js",
     "fix:stock": "ts-node src/scripts/fixes/add-initial-stock.ts",
