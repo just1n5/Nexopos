@@ -114,8 +114,7 @@ export class Product {
     name: 'weight_unit',
     type: 'enum',
     enum: WeightUnit,
-    nullable: true,
-    default: WeightUnit.GRAM
+    nullable: true
   })
   weightUnit?: WeightUnit;
 
