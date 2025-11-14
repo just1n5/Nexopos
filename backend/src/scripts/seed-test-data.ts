@@ -189,18 +189,25 @@ async function createProducts(
       continue;
     }
 
-    const product = productRepository.create({
+    // Solo incluir pricePerGram y weightUnit si el producto se vende por peso
+    const productPayload: any = {
       name: productData.name,
       sku: productData.sku,
       barcode: productData.barcode,
       basePrice: productData.basePrice,
       tax: productData.tax,
       saleType: productData.saleType,
-      pricePerGram: productData.pricePerGram,
-      weightUnit: productData.weightUnit,
       status: ProductStatus.ACTIVE,
       tenantId,
-    });
+    };
+
+    // Solo agregar campos de peso si el producto se vende por peso
+    if (productData.saleType === ProductSaleType.WEIGHT) {
+      productPayload.pricePerGram = productData.pricePerGram;
+      productPayload.weightUnit = productData.weightUnit;
+    }
+
+    const product = productRepository.create(productPayload);
 
     const saved = await productRepository.save(product);
     console.log(`  ✅ ${productData.name} (${productData.saleType})`);
