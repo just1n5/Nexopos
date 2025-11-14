@@ -209,7 +209,7 @@ async function createProducts(
 
     const product = productRepository.create(productPayload);
 
-    const saved = await productRepository.save(product);
+    const saved = await productRepository.save(product) as Product;
     console.log(`  ✅ ${productData.name} (${productData.saleType})`);
     createdProducts.push(saved);
   }
