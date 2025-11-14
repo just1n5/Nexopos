@@ -37,16 +37,10 @@ export class SalesService {
   async create(createSaleDto: CreateSaleDto, userId: string, tenantId: string): Promise<Sale> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
+    await queryRunner.startTransaction('SERIALIZABLE'); // 🔒 SERIALIZABLE para prevenir race conditions
 
     // Declare variables outside try-catch for post-transaction access
     let savedSale: Sale;
-    let inventoryUpdates: Array<{
-      productId: string;
-      variantId?: string;
-      quantity: number;
-      costPrice: number;
-    }> = [];
     let finalTotal: number;
     let roundedTotalPayment: number;
 
@@ -97,16 +91,48 @@ export class SalesService {
         }
       }
 
-      // Validar stock disponible ANTES de crear la venta
+      // 🔒 VALIDAR Y BLOQUEAR STOCK CON PESSIMISTIC LOCK (DENTRO DE LA TRANSACCIÓN)
+      // Esto previene race conditions en ventas concurrentes
+      const stockLocks: Map<string, { stock: any, productInfo: any }> = new Map();
+
       for (const itemDto of createSaleDto.items) {
         const productInfo = await this.getProductInfo(itemDto.productId, tenantId, itemDto.productVariantId);
 
-        if (productInfo.stock < itemDto.quantity) {
-          const productName = productInfo.name;
+        // Construir clave única para el stock (productId + variantId)
+        const stockKey = `${itemDto.productId}_${itemDto.productVariantId || 'null'}`;
+
+        // Bloquear registro de stock con SELECT FOR UPDATE
+        const stockRecord = await queryRunner.manager
+          .createQueryBuilder()
+          .select('stock')
+          .from('inventory_stock', 'stock')
+          .where('stock.productId = :productId', { productId: itemDto.productId })
+          .andWhere('stock.tenantId = :tenantId', { tenantId })
+          .andWhere(
+            itemDto.productVariantId
+              ? 'stock.productVariantId = :variantId'
+              : 'stock.productVariantId IS NULL',
+            itemDto.productVariantId ? { variantId: itemDto.productVariantId } : {}
+          )
+          .setLock('pessimistic_write') // 🔒 LOCK PESIMISTA
+          .getRawOne();
+
+        if (!stockRecord) {
           throw new BadRequestException(
-            `Stock insuficiente para ${productName}. Disponible: ${productInfo.stock}, Solicitado: ${itemDto.quantity}`
+            `No se encontró registro de inventario para ${productInfo.name}`
           );
         }
+
+        const availableStock = Number(stockRecord.stock_quantity || 0);
+
+        if (availableStock < itemDto.quantity) {
+          throw new BadRequestException(
+            `Stock insuficiente para ${productInfo.name}. Disponible: ${availableStock}, Solicitado: ${itemDto.quantity}`
+          );
+        }
+
+        // Guardar referencia al stock bloqueado y productInfo para uso posterior
+        stockLocks.set(stockKey, { stock: stockRecord, productInfo });
       }
 
       // Generate sale number
@@ -133,9 +159,16 @@ export class SalesService {
 
       savedSale = await queryRunner.manager.save(sale);
 
-      // Create sale items
+      // Create sale items AND update inventory (DENTRO DE LA TRANSACCIÓN)
       for (const itemDto of createSaleDto.items) {
-        const productInfo = await this.getProductInfo(itemDto.productId, tenantId, itemDto.productVariantId);
+        const stockKey = `${itemDto.productId}_${itemDto.productVariantId || 'null'}`;
+        const locked = stockLocks.get(stockKey);
+
+        if (!locked) {
+          throw new Error(`Stock lock not found for product ${itemDto.productId}`);
+        }
+
+        const { productInfo, stock } = locked;
 
         const subtotal = toDecimal(itemDto.quantity * itemDto.unitPrice);
         const itemDiscountAmount = toDecimal(itemDto.discountAmount || (subtotal * (itemDto.discountPercent || 0) / 100));
@@ -165,13 +198,45 @@ export class SalesService {
 
         await queryRunner.manager.save(saleItem);
 
-        // Store for later inventory update (after transaction commit)
-        inventoryUpdates.push({
-          productId: itemDto.productId,
-          variantId: itemDto.productVariantId,
-          quantity: itemDto.quantity,
-          costPrice: productInfo.costPrice
-        });
+        // 🔒 ACTUALIZAR INVENTARIO DENTRO DE LA TRANSACCIÓN (NO POST-COMMIT)
+        // Reducir cantidad del stock bloqueado
+        const newQuantity = Number(stock.stock_quantity) - itemDto.quantity;
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update('inventory_stock')
+          .set({
+            quantity: newQuantity,
+            availableQuantity: newQuantity, // Actualizar también availableQuantity
+            lastMovementDate: new Date()
+          })
+          .where('id = :id', { id: stock.stock_id })
+          .execute();
+
+        // Crear registro de movimiento de inventario
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into('inventory_movements')
+          .values({
+            tenantId: tenantId,
+            productId: itemDto.productId,
+            productVariantId: itemDto.productVariantId || null,
+            type: 'SALE',
+            quantityBefore: Number(stock.stock_quantity),
+            quantityChange: -itemDto.quantity,
+            quantityAfter: newQuantity,
+            unitCost: productInfo.costPrice,
+            totalCost: toDecimal(productInfo.costPrice * itemDto.quantity),
+            referenceType: 'sale',
+            referenceId: savedSale.id,
+            referenceNumber: savedSale.saleNumber,
+            userId: userId || 'system',
+            notes: 'Stock reducido por venta',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .execute();
       }
 
       // Create payments
@@ -202,6 +267,54 @@ export class SalesService {
       savedSale.status = SaleStatus.COMPLETED;
       await queryRunner.manager.save(savedSale);
 
+      // 🔒 REGISTRAR EN CAJA DENTRO DE LA TRANSACCIÓN (CRÍTICO)
+      // Buscar sesión de caja abierta para el usuario
+      const currentCashRegister = await queryRunner.manager
+        .createQueryBuilder()
+        .select('cr')
+        .from('cash_register', 'cr')
+        .where('cr.userId = :userId', { userId })
+        .andWhere('cr.status = :status', { status: 'OPEN' })
+        .getRawOne();
+
+      if (currentCashRegister) {
+        // Crear movimientos de caja para cada pago
+        for (const paymentDto of createSaleDto.payments) {
+          const amount = toDecimal(paymentDto.amount);
+
+          // Calcular balance actual de la caja
+          const currentBalance = Number(currentCashRegister.cr_openingBalance || 0);
+
+          await queryRunner.manager
+            .createQueryBuilder()
+            .insert()
+            .into('cash_movements')
+            .values({
+              cashRegisterId: currentCashRegister.cr_id,
+              type: 'SALE',
+              category: 'SALES_INCOME',
+              amount: amount,
+              balanceBefore: currentBalance,
+              balanceAfter: toDecimal(currentBalance + amount),
+              saleId: savedSale.id,
+              paymentMethod: paymentDto.method,
+              description: `Venta ${savedSale.saleNumber}`,
+              documentNumber: savedSale.saleNumber,
+              documentType: 'SALE',
+              userId: userId,
+              requiresApproval: false,
+              isApproved: true,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            .execute();
+        }
+
+        console.log(`[SalesService] Registrado en caja ${currentCashRegister.cr_sessionNumber} dentro de la transacción`);
+      } else {
+        console.log('[SalesService] No hay sesión de caja abierta - registro omitido');
+      }
+
       await queryRunner.commitTransaction();
       await queryRunner.release();
 
@@ -214,30 +327,13 @@ export class SalesService {
       throw error;
     }
 
-    // Post-transaction operations (these happen AFTER the main transaction is committed)
+    // ========================================
+    // POST-TRANSACTION OPERATIONS (Solo operaciones NO-CRÍTICAS)
+    // ========================================
+    // NOTA: Inventario y Caja ya fueron actualizados DENTRO de la transacción
+    // Solo quedan operaciones que pueden fallar sin afectar la venta
     try {
-      // Update inventory AFTER committing the transaction to avoid nested transaction conflicts
-      for (const update of inventoryUpdates) {
-        await this.inventoryService.adjustStock(
-          update.productId,
-          -update.quantity, // Negative for sales (stock reduction)
-          MovementType.SALE,
-          userId || 'system',
-          tenantId,
-          {
-            variantId: update.variantId,
-            referenceType: 'sale',
-            referenceId: savedSale.id,
-            referenceNumber: savedSale.saleNumber,
-            unitCost: update.costPrice,
-            notes: 'Stock reduced by sale'
-          }
-        );
-      }
-
-      // ========================================
-      // CONTABILIDAD: Generar asiento contable automáticamente
-      // ========================================
+      // CONTABILIDAD: Generar asiento contable automáticamente (NO-CRÍTICO)
       try {
         const journalEntry = await this.journalEntryService.createSaleEntry(savedSale, tenantId, userId);
 
@@ -297,65 +393,8 @@ export class SalesService {
         }
       }
 
-      // Register sale in cash register (after successful transaction)
-      try {
-        console.log('[SalesService] Attempting to register sale in cash register:', {
-          saleId: savedSale.id,
-          saleNumber: savedSale.saleNumber,
-          total: savedSale.total,
-          payments: createSaleDto.payments,
-          userId
-        });
-        await this.cashRegisterService.registerSalePayment(
-          null, // Will use current session
-          {
-            id: savedSale.id,
-            saleNumber: savedSale.saleNumber,
-            total: savedSale.total,
-            payments: createSaleDto.payments,
-            userId
-          }
-        );
-        console.log('[SalesService] Sale registered in cash register successfully');
-      } catch (error) {
-        console.error('[SalesService] Error registering sale in cash register:', error);
-        console.error('[SalesService] Error stack:', error.stack);
-        // Don't fail the sale if cash register registration fails
-      }
-
-      // Generate automatic journal entry for the sale (CONTABILIDAD INVISIBLE)
-      try {
-        console.log('[SalesService] Creating automatic journal entry for sale:', {
-          saleId: savedSale.id,
-          saleNumber: savedSale.saleNumber,
-          total: savedSale.total,
-          tenantId
-        });
-
-        // Fetch the complete sale with items and payments for the journal entry
-        const saleWithRelations = await this.findOne(savedSale.id);
-
-        const journalEntry = await this.journalEntryService.createSaleEntry(
-          saleWithRelations,
-          tenantId,
-          userId
-        );
-
-        // Update sale with journal entry reference
-        await this.saleRepository.update(savedSale.id, {
-          journalEntryId: journalEntry.id
-        });
-
-        console.log('[SalesService] Journal entry created successfully:', {
-          journalEntryId: journalEntry.id,
-          entryNumber: journalEntry.entryNumber
-        });
-      } catch (error) {
-        console.error('[SalesService] Error creating journal entry:', error);
-        console.error('[SalesService] Error details:', error.message);
-        // Don't fail the sale if journal entry creation fails
-        // The accounting can be fixed later
-      }
+      // ✅ Caja ya registrada DENTRO de la transacción (líneas 270-316)
+      // ✅ Inventario ya actualizado DENTRO de la transacción (líneas 201-239)
 
       return this.findOne(savedSale.id);
     } catch (error) {
