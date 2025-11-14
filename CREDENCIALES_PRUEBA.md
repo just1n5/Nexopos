@@ -142,6 +142,32 @@ npm run test:e2e
 - `SUPABASE_CREDENTIALS.md` - Credenciales y configuración de Supabase
 - `backend/test/README.md` - Documentación de tests E2E
 
+## 🚀 Ejecución de Seeders en Producción
+
+Para poblar la base de datos de Supabase con los datos de prueba, ejecuta los seeders desde el servidor Dokku:
+
+### 1. Crear Usuarios de Prueba
+
+```bash
+ssh dokku@192.168.80.17 run nexopos node /app/backend/dist/src/scripts/seed-test-users.js
+```
+
+### 2. Crear Datos de Prueba (Productos, Categorías, Clientes, Stock)
+
+```bash
+ssh dokku@192.168.80.17 run nexopos node /app/backend/dist/src/scripts/seed-test-data.js
+```
+
+### 3. Verificación
+
+Después de ejecutar los seeders, verifica que los datos fueron creados exitosamente:
+
+- **Usuarios:** 6 usuarios (1 Super Admin, 1 Admin, 1 Manager, 3 Cajeros)
+- **Categorías:** 6 categorías (Abarrotes, Bebidas, Snacks, Lácteos, Aseo, Frutas y Verduras)
+- **Productos:** 20 productos (17 por unidad, 3 por peso)
+- **Clientes:** 10 clientes (5 individuales sin crédito, 2 individuales con crédito, 2 empresas, 3 testing)
+- **Stock inicial:** 20-100 unidades por producto
+
 ---
 
 **Fecha de creación:** 2025-11-14
