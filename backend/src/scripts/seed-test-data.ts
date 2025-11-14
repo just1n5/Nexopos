@@ -189,8 +189,8 @@ async function createProducts(
       continue;
     }
 
-    // Solo incluir pricePerGram y weightUnit si el producto se vende por peso
-    const productPayload: any = {
+    // Usar QueryBuilder para insertar solo las columnas necesarias
+    const insertData: any = {
       name: productData.name,
       sku: productData.sku,
       barcode: productData.barcode,
@@ -203,13 +203,19 @@ async function createProducts(
 
     // Solo agregar campos de peso si el producto se vende por peso
     if (productData.saleType === ProductSaleType.WEIGHT) {
-      productPayload.pricePerGram = productData.pricePerGram;
-      productPayload.weightUnit = productData.weightUnit;
+      insertData.pricePerGram = productData.pricePerGram;
+      insertData.weightUnit = productData.weightUnit;
     }
 
-    const product = productRepository.create(productPayload);
+    const result = await productRepository
+      .createQueryBuilder()
+      .insert()
+      .into(Product)
+      .values(insertData)
+      .returning('*')
+      .execute();
 
-    const saved = await productRepository.save(product) as unknown as Product;
+    const saved = result.generatedMaps[0] as Product;
     console.log(`  ✅ ${productData.name} (${productData.saleType})`);
     createdProducts.push(saved);
   }
