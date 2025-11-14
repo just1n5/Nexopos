@@ -189,33 +189,50 @@ async function createProducts(
       continue;
     }
 
-    // Usar QueryBuilder para insertar solo las columnas necesarias
-    const insertData: any = {
-      name: productData.name,
-      sku: productData.sku,
-      barcode: productData.barcode,
-      basePrice: productData.basePrice,
-      tax: productData.tax,
-      saleType: productData.saleType,
-      status: ProductStatus.ACTIVE,
-      tenantId,
-    };
+    // Usar SQL crudo para control total sobre las columnas insertadas
+    let query: string;
+    let params: any[];
 
-    // Solo agregar campos de peso si el producto se vende por peso
     if (productData.saleType === ProductSaleType.WEIGHT) {
-      insertData.pricePerGram = productData.pricePerGram;
-      insertData.weightUnit = productData.weightUnit;
+      // Producto por peso: incluir weight_unit y pricePerGram
+      query = `
+        INSERT INTO products (name, sku, barcode, "basePrice", tax, "saleType", status, "tenantId", "pricePerGram", "weightUnit")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `;
+      params = [
+        productData.name,
+        productData.sku,
+        productData.barcode,
+        productData.basePrice,
+        productData.tax,
+        productData.saleType,
+        ProductStatus.ACTIVE,
+        tenantId,
+        productData.pricePerGram,
+        productData.weightUnit
+      ];
+    } else {
+      // Producto por unidad: NO incluir weight_unit
+      query = `
+        INSERT INTO products (name, sku, barcode, "basePrice", tax, "saleType", status, "tenantId")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `;
+      params = [
+        productData.name,
+        productData.sku,
+        productData.barcode,
+        productData.basePrice,
+        productData.tax,
+        productData.saleType,
+        ProductStatus.ACTIVE,
+        tenantId
+      ];
     }
 
-    const result = await productRepository
-      .createQueryBuilder()
-      .insert()
-      .into(Product)
-      .values(insertData)
-      .returning('*')
-      .execute();
-
-    const saved = result.generatedMaps[0] as Product;
+    const result = await dataSource.query(query, params);
+    const saved = result[0] as Product;
     console.log(`  ✅ ${productData.name} (${productData.saleType})`);
     createdProducts.push(saved);
   }
