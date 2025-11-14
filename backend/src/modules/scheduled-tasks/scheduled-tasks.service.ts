@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CashRegisterService } from '../cash-register/cash-register.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CashRegister, CashRegisterStatus } from '../cash-register/entities/cash-register.entity';
@@ -11,6 +12,7 @@ export class ScheduledTasksService {
 
   constructor(
     private readonly cashRegisterService: CashRegisterService,
+    private readonly inventoryService: InventoryService,
     @InjectRepository(CashRegister)
     private cashRegisterRepository: Repository<CashRegister>,
   ) {}
@@ -125,6 +127,30 @@ export class ScheduledTasksService {
       this.logger.log('🎉 Cierre automático de cajas completado');
     } catch (error) {
       this.logger.error('💥 Error fatal en cierre automático de cajas:', error.stack);
+    }
+  }
+
+  /**
+   * Limpieza de reservas de stock expiradas
+   * Se ejecuta cada 5 minutos
+   */
+  @Cron('*/5 * * * *', {
+    name: 'cleanup-expired-reservations',
+    timeZone: 'America/Bogota',
+  })
+  async cleanupExpiredReservations() {
+    this.logger.debug('🧹 Iniciando limpieza de reservas de stock expiradas...');
+
+    try {
+      const cleanedCount = await this.inventoryService.cleanupExpiredReservations();
+
+      if (cleanedCount > 0) {
+        this.logger.log(`✅ Limpiadas ${cleanedCount} reserva(s) expirada(s)`);
+      } else {
+        this.logger.debug('✅ No hay reservas expiradas para limpiar');
+      }
+    } catch (error) {
+      this.logger.error('❌ Error al limpiar reservas expiradas:', error.stack);
     }
   }
 

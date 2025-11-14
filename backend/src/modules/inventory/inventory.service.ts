@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LessThanOrEqual } from 'typeorm';
 import { InventoryStock, StockStatus } from './entities/inventory-stock.entity';
 import { InventoryMovement, MovementType } from './entities/inventory-movement.entity';
+import { StockReservation, ReservationStatus } from './entities/stock-reservation.entity';
 
 @Injectable()
 export class InventoryService {
@@ -13,6 +14,8 @@ export class InventoryService {
     private stockRepository: Repository<InventoryStock>,
     @InjectRepository(InventoryMovement)
     private movementRepository: Repository<InventoryMovement>,
+    @InjectRepository(StockReservation)
+    private reservationRepository: Repository<StockReservation>,
     private dataSource: DataSource,
   ) {
     console.log('InventoryService instantiated');
@@ -361,5 +364,302 @@ export class InventoryService {
     await this.stockRepository.save(stock);
 
     return movement;
+  }
+
+  // ========================================
+  // SISTEMA DE RESERVAS DE STOCK
+  // ========================================
+
+  /**
+   * Reserva stock temporalmente para una venta u operación
+   * @param productId ID del producto
+   * @param quantity Cantidad a reservar
+   * @param tenantId ID del tenant
+   * @param userId ID del usuario que crea la reserva
+   * @param metadata Metadatos adicionales
+   * @param expirationMinutes Minutos hasta que expire la reserva (default: 15)
+   * @returns La reserva creada
+   */
+  async reserveStock(
+    productId: string,
+    quantity: number,
+    tenantId: string,
+    userId: string,
+    metadata?: {
+      variantId?: string;
+      warehouseId?: string;
+      referenceType?: string;
+      referenceId?: string;
+      referenceNumber?: string;
+      notes?: string;
+    },
+    expirationMinutes: number = 15
+  ): Promise<StockReservation> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Obtener stock con bloqueo pesimista
+      const stockRecord = await queryRunner.manager
+        .createQueryBuilder(InventoryStock, 'stock')
+        .where('stock.productId = :productId', { productId })
+        .andWhere('stock.tenantId = :tenantId', { tenantId })
+        .andWhere(
+          metadata?.variantId
+            ? 'stock.productVariantId = :variantId'
+            : 'stock.productVariantId IS NULL',
+          metadata?.variantId ? { variantId: metadata.variantId } : {}
+        )
+        .setLock('pessimistic_write') // 🔒 LOCK PESIMISTA
+        .getOne();
+
+      if (!stockRecord) {
+        throw new NotFoundException(`Stock record not found for product ${productId}`);
+      }
+
+      // Calcular stock disponible (quantity - reservedQuantity)
+      const currentReserved = Number(stockRecord.reservedQuantity) || 0;
+      const available = Number(stockRecord.quantity) - currentReserved;
+
+      if (available < quantity) {
+        throw new BadRequestException(
+          `Stock insuficiente. Disponible: ${available}, Solicitado: ${quantity}`
+        );
+      }
+
+      // Crear reserva
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + expirationMinutes);
+
+      const reservation = queryRunner.manager.create(StockReservation, {
+        tenantId,
+        stockId: stockRecord.id,
+        productId,
+        productVariantId: metadata?.variantId,
+        quantity,
+        status: ReservationStatus.ACTIVE,
+        referenceType: metadata?.referenceType,
+        referenceId: metadata?.referenceId,
+        referenceNumber: metadata?.referenceNumber,
+        userId,
+        notes: metadata?.notes,
+        expiresAt
+      });
+
+      const savedReservation = await queryRunner.manager.save(reservation);
+
+      // Actualizar reservedQuantity del stock
+      stockRecord.reservedQuantity = currentReserved + quantity;
+      stockRecord.availableQuantity = Number(stockRecord.quantity) - stockRecord.reservedQuantity;
+      await queryRunner.manager.save(stockRecord);
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(`Stock reserved: ${quantity} units of product ${productId}, expires at ${expiresAt}`);
+
+      return savedReservation;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Confirma una reserva y descuenta del stock real
+   * @param reservationId ID de la reserva a confirmar
+   * @param userId ID del usuario que confirma
+   * @returns El movimiento de inventario creado
+   */
+  async confirmReservation(
+    reservationId: string,
+    userId: string
+  ): Promise<InventoryMovement> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar reserva con bloqueo
+      const reservation = await queryRunner.manager
+        .createQueryBuilder(StockReservation, 'reservation')
+        .where('reservation.id = :id', { id: reservationId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!reservation) {
+        throw new NotFoundException(`Reservation ${reservationId} not found`);
+      }
+
+      if (reservation.status !== ReservationStatus.ACTIVE) {
+        throw new BadRequestException(`Reservation ${reservationId} is not active (status: ${reservation.status})`);
+      }
+
+      if (reservation.isExpired) {
+        throw new BadRequestException(`Reservation ${reservationId} has expired`);
+      }
+
+      // Buscar stock con bloqueo
+      const stock = await queryRunner.manager
+        .createQueryBuilder(InventoryStock, 'stock')
+        .where('stock.id = :id', { id: reservation.stockId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!stock) {
+        throw new NotFoundException(`Stock ${reservation.stockId} not found`);
+      }
+
+      // Descontar del stock real
+      const quantityBefore = Number(stock.quantity);
+      const quantityAfter = quantityBefore - reservation.quantity;
+
+      if (quantityAfter < 0) {
+        throw new BadRequestException(`Insufficient stock to confirm reservation`);
+      }
+
+      // Actualizar stock
+      stock.quantity = quantityAfter;
+      stock.reservedQuantity = Number(stock.reservedQuantity) - reservation.quantity;
+      stock.availableQuantity = stock.quantity - stock.reservedQuantity;
+      await queryRunner.manager.save(stock);
+
+      // Crear movimiento de inventario
+      const movement = queryRunner.manager.create(InventoryMovement, {
+        tenantId: reservation.tenantId,
+        productId: reservation.productId,
+        productVariantId: reservation.productVariantId,
+        type: MovementType.SALE,
+        quantity: -reservation.quantity,
+        quantityBefore,
+        quantityAfter,
+        referenceType: reservation.referenceType,
+        referenceId: reservation.referenceId,
+        referenceNumber: reservation.referenceNumber,
+        notes: `Stock confirmado desde reserva ${reservation.id}`,
+        userId
+      });
+
+      const savedMovement = await queryRunner.manager.save(movement);
+
+      // Marcar reserva como confirmada
+      reservation.status = ReservationStatus.CONFIRMED;
+      await queryRunner.manager.save(reservation);
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(`Reservation ${reservationId} confirmed, ${reservation.quantity} units deducted`);
+
+      return savedMovement;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Libera una reserva sin confirmar (rollback)
+   * @param reservationId ID de la reserva a liberar
+   * @returns La reserva actualizada
+   */
+  async releaseReservation(reservationId: string): Promise<StockReservation> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Buscar reserva con bloqueo
+      const reservation = await queryRunner.manager
+        .createQueryBuilder(StockReservation, 'reservation')
+        .where('reservation.id = :id', { id: reservationId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!reservation) {
+        throw new NotFoundException(`Reservation ${reservationId} not found`);
+      }
+
+      if (reservation.status === ReservationStatus.CONFIRMED) {
+        throw new BadRequestException(`Cannot release confirmed reservation ${reservationId}`);
+      }
+
+      if (reservation.status === ReservationStatus.RELEASED) {
+        // Ya fue liberada, retornar sin error
+        await queryRunner.release();
+        return reservation;
+      }
+
+      // Buscar stock con bloqueo
+      const stock = await queryRunner.manager
+        .createQueryBuilder(InventoryStock, 'stock')
+        .where('stock.id = :id', { id: reservation.stockId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!stock) {
+        throw new NotFoundException(`Stock ${reservation.stockId} not found`);
+      }
+
+      // Liberar cantidad reservada
+      stock.reservedQuantity = Number(stock.reservedQuantity) - reservation.quantity;
+      stock.availableQuantity = Number(stock.quantity) - stock.reservedQuantity;
+      await queryRunner.manager.save(stock);
+
+      // Marcar reserva como liberada
+      reservation.status = ReservationStatus.RELEASED;
+      await queryRunner.manager.save(reservation);
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(`Reservation ${reservationId} released, ${reservation.quantity} units freed`);
+
+      return reservation;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Limpia reservas expiradas automáticamente
+   * @returns Cantidad de reservas expiradas liberadas
+   */
+  async cleanupExpiredReservations(): Promise<number> {
+    const now = new Date();
+
+    const expiredReservations = await this.reservationRepository.find({
+      where: {
+        status: ReservationStatus.ACTIVE,
+        expiresAt: LessThanOrEqual(now)
+      }
+    });
+
+    let cleanedCount = 0;
+
+    for (const reservation of expiredReservations) {
+      try {
+        await this.releaseReservation(reservation.id);
+
+        // Marcar como expirada
+        reservation.status = ReservationStatus.EXPIRED;
+        await this.reservationRepository.save(reservation);
+
+        cleanedCount++;
+      } catch (error) {
+        this.logger.error(`Error cleaning up expired reservation ${reservation.id}:`, error);
+      }
+    }
+
+    if (cleanedCount > 0) {
+      this.logger.log(`Cleaned up ${cleanedCount} expired reservations`);
+    }
+
+    return cleanedCount;
   }
 }
